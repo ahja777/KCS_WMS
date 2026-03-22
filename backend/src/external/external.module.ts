@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { ExternalController } from './external.controller';
+import { EcommerceTestController } from './ecommerce-test.controller';
 import { ChannelService } from './services/channel.service';
 import { ChannelSyncService } from './services/channel-sync.service';
 import { CoupangAdapter } from './adapters/coupang.adapter';
@@ -14,7 +15,7 @@ import { AmazonAdapter } from './adapters/amazon.adapter';
       maxRedirects: 3,
     }),
   ],
-  controllers: [ExternalController],
+  controllers: [ExternalController, EcommerceTestController],
   providers: [
     ChannelService,
     ChannelSyncService,

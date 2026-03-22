@@ -38,6 +38,7 @@ import {
   Languages,
   FileSpreadsheet,
   Cog,
+  Globe,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -175,6 +176,7 @@ const menuItems: MenuItem[] = [
       { href: "/settlements/period-close", label: "기간마감", icon: Calculator },
     ],
   },
+  { href: "/ecommerce-test", label: "이커머스 API 테스트", icon: Globe, roles: ["ADMIN", "MANAGER"] },
 ];
 
 function filterMenuByRole(items: MenuItem[], role: UserRole | undefined): MenuItem[] {
@@ -343,7 +345,7 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="flex h-16 items-center justify-between px-4">
         {!sidebarCollapsed && (
-          <div className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-3 transition-opacity hover:opacity-80">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#3182F6] font-bold text-white text-sm">
               K
             </div>
@@ -352,12 +354,12 @@ export default function Sidebar() {
                 KCS WMS
               </h1>
             </div>
-          </div>
+          </Link>
         )}
         {sidebarCollapsed && (
-          <div className="mx-auto flex h-9 w-9 items-center justify-center rounded-xl bg-[#3182F6] font-bold text-white text-sm">
+          <Link href="/" className="mx-auto flex h-9 w-9 items-center justify-center rounded-xl bg-[#3182F6] font-bold text-white text-sm transition-opacity hover:opacity-80">
             K
-          </div>
+          </Link>
         )}
       </div>
 
