@@ -76,6 +76,10 @@ export interface User {
   name: string;
   role: UserRole;
   isActive: boolean;
+  company?: string;
+  duty?: string;
+  phone?: string;
+  mobile?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -225,6 +229,7 @@ export interface OutboundOrderLine {
   pickedQty: number;
   packedQty: number;
   shippedQty: number;
+  defectiveQty: number;
   lotNumber?: string;
 }
 
@@ -236,11 +241,15 @@ export interface OutboundOrder {
   partnerId: string;
   partner?: Partner;
   status: OutboundStatus;
+  orderSeq?: number;
+  deliveryTo?: string;
   shipDate?: string;
   deliveryDate?: string;
   completedDate?: string;
   shippingMethod?: string;
   trackingNumber?: string;
+  blNo?: string;
+  isUrgent?: boolean;
   lines: OutboundOrderLine[];
   notes?: string;
   createdAt: string;
@@ -683,4 +692,143 @@ export interface QueryParams {
   sortBy?: string;
   sortOrder?: "asc" | "desc";
   [key: string]: string | number | boolean | undefined;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 신규 ERD 테이블 타입 (화면설계서 기반)
+// ═══════════════════════════════════════════════════════════════
+
+export interface Role {
+  id: string;
+  code: string;
+  name: string;
+  description?: string;
+  permissions?: Record<string, boolean>;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  programs?: RoleProgram[];
+}
+
+export interface Program {
+  id: string;
+  code: string;
+  name: string;
+  programUrl?: string;
+  parentId?: string;
+  menuLevel: number;
+  icon?: string;
+  sortOrder: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  children?: Program[];
+}
+
+export interface RoleProgram {
+  id: string;
+  roleId: string;
+  programId: string;
+  canRead: boolean;
+  canWrite: boolean;
+  canDelete: boolean;
+  canExport: boolean;
+  createdAt: string;
+  updatedAt: string;
+  role?: Role;
+  program?: Program;
+}
+
+export interface Multilingual {
+  id: string;
+  langCode: string;
+  msgKey: string;
+  msgValue: string;
+  module?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Template {
+  id: string;
+  code: string;
+  name: string;
+  templateType: string;
+  templateFile?: string;
+  updateAllow: boolean;
+  startRow: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  columns?: TemplateColumn[];
+}
+
+export interface TemplateColumn {
+  id: string;
+  templateId: string;
+  colSeq: number;
+  colName: string;
+  colLevel: number;
+  isMandatory: boolean;
+  defaultValue?: string;
+  sampleValue?: string;
+  bindCol?: string;
+  colWidth?: number;
+  colAlign?: string;
+  isUniqueCol: boolean;
+  colType?: string;
+  colFormat?: string;
+}
+
+export interface WorkPolicy {
+  id: string;
+  warehouseId: string;
+  partnerId?: string;
+  policyType: string;
+  policyName: string;
+  inboundAllocRule?: string;
+  lotAutoGenerate: boolean;
+  expiryCheckOnRecv: boolean;
+  outboundPickRule?: string;
+  fifoEnabled: boolean;
+  fefoEnabled: boolean;
+  negativeStockAllow: boolean;
+  autoReplenish: boolean;
+  replenishThreshold?: number;
+  notes?: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Helpdesk {
+  id: string;
+  ticketNo: string;
+  title: string;
+  content: string;
+  category: string;
+  priority: string;
+  status: string;
+  requesterId: string;
+  assigneeId?: string;
+  resolvedAt?: string;
+  resolution?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SettlementRate {
+  id: string;
+  warehouseId: string;
+  partnerId?: string;
+  rateType: string;
+  rateName: string;
+  unitPrice: number;
+  currency: string;
+  effectiveFrom: string;
+  effectiveTo?: string;
+  isActive: boolean;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
 }

@@ -759,9 +759,9 @@ export const useDeleteStockTransfer = () => useDelete("stock-transfers");
 
 // ===== Location Products =====
 export const useLocationProducts = (params?: QueryParams) =>
-  useList<LocationProduct>("loc-products", params);
-export const useCreateLocationProduct = () => useCreate<LocationProduct>("loc-products");
-export const useDeleteLocationProduct = () => useDelete("loc-products");
+  useList<LocationProduct>("location-products", params);
+export const useCreateLocationProduct = () => useCreate<LocationProduct>("location-products");
+export const useDeleteLocationProduct = () => useDelete("location-products");
 
 // ===== Container Inventories =====
 export const useContainerInventories = (params?: QueryParams) =>
@@ -769,8 +769,8 @@ export const useContainerInventories = (params?: QueryParams) =>
 
 // ===== Period Closes =====
 export const usePeriodCloses = (params?: QueryParams) =>
-  useList<PeriodClose>("period-close", params);
-export const useCreatePeriodClose = () => useCreate<PeriodClose>("period-close");
+  useList<PeriodClose>("period-closes", params);
+export const useCreatePeriodClose = () => useCreate<PeriodClose>("period-closes");
 
 // ===== UOM =====
 export function useUoms(params?: QueryParams) {
@@ -842,3 +842,59 @@ export function useDeleteDispatch() {
     },
   });
 }
+
+// ═══════════════════════════════════════════════════════════════
+// 신규 ERD 테이블 API 훅 (화면설계서 기반 추가)
+// ═══════════════════════════════════════════════════════════════
+
+// ===== Roles (TMSYS050: 권한관리) =====
+export const useRoles = (params?: QueryParams) => useList<any>("roles", params);
+export const useRole = (id?: string) => useDetail<any>("roles", id);
+export const useCreateRole = () => useCreate<any>("roles");
+export const useUpdateRole = () => useUpdate<any>("roles");
+export const useDeleteRole = () => useDelete("roles");
+
+// ===== Programs (TMSYS040: 프로그램관리) =====
+export const usePrograms = (params?: QueryParams) => useList<any>("programs", params);
+export const useProgram = (id?: string) => useDetail<any>("programs", id);
+export const useCreateProgram = () => useCreate<any>("programs");
+export const useUpdateProgram = () => useUpdate<any>("programs");
+export const useDeleteProgram = () => useDelete("programs");
+
+// ===== RolePrograms (권한-프로그램 매핑) =====
+export const useRolePrograms = (params?: QueryParams) => useList<any>("role-programs", params);
+export const useCreateRoleProgram = () => useCreate<any>("role-programs");
+export const useUpdateRoleProgram = () => useUpdate<any>("role-programs");
+export const useDeleteRoleProgram = () => useDelete("role-programs");
+
+// ===== Multilingual (WMSYS020: 다국어관리) =====
+export const useMultilinguals = (params?: QueryParams) => useList<any>("multilinguals", params);
+export const useCreateMultilingual = () => useCreate<any>("multilinguals");
+export const useUpdateMultilingual = () => useUpdate<any>("multilinguals");
+export const useDeleteMultilingual = () => useDelete("multilinguals");
+
+// ===== Templates (WMSTP010: 템플릿관리) =====
+export const useTemplates = (params?: QueryParams) => useList<any>("templates", params);
+export const useTemplate = (id?: string) => useDetail<any>("templates", id);
+export const useCreateTemplate = () => useCreate<any>("templates");
+export const useUpdateTemplate = () => useUpdate<any>("templates");
+export const useDeleteTemplate = () => useDelete("templates");
+
+// ===== WorkPolicy (WMSMS020: 센터별작업정책) =====
+export const useWorkPolicies = (params?: QueryParams) => useList<any>("work-policies", params);
+export const useCreateWorkPolicy = () => useCreate<any>("work-policies");
+export const useUpdateWorkPolicy = () => useUpdate<any>("work-policies");
+export const useDeleteWorkPolicy = () => useDelete("work-policies");
+
+// ===== Helpdesk (TMSYS130) =====
+export const useHelpdesks = (params?: QueryParams) => useList<Helpdesk>("helpdesks", params);
+export const useHelpdesk = (id?: string) => useDetail<Helpdesk>("helpdesks", id);
+export const useCreateHelpdesk = () => useCreate<Helpdesk>("helpdesks");
+export const useUpdateHelpdesk = () => useUpdate<Helpdesk>("helpdesks");
+export const useDeleteHelpdesk = () => useDelete("helpdesks");
+
+// ===== SettlementRate (WMSAC010: 정산단가관리) =====
+export const useSettlementRates = (params?: QueryParams) => useList<SettlementRate>("settlement-rates", params);
+export const useCreateSettlementRate = () => useCreate<SettlementRate>("settlement-rates");
+export const useUpdateSettlementRate = () => useUpdate<SettlementRate>("settlement-rates");
+export const useDeleteSettlementRate = () => useDelete("settlement-rates");

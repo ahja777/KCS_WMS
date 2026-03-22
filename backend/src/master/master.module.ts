@@ -13,6 +13,16 @@ import { ContainerController } from './container.controller';
 import { ContainerService } from './container.service';
 import { ContainerGroupController } from './container-group.controller';
 import { ContainerGroupService } from './container-group.service';
+import {
+  RoleController,
+  ProgramController,
+  RoleProgramController,
+  MultilingualController,
+  TemplateController,
+  WorkPolicyController,
+  HelpdeskController,
+  SettlementRateController,
+} from './new-master.controller';
 
 @Module({
   controllers: [
@@ -23,6 +33,14 @@ import { ContainerGroupService } from './container-group.service';
     UomController,
     ContainerController,
     ContainerGroupController,
+    RoleController,
+    ProgramController,
+    RoleProgramController,
+    MultilingualController,
+    TemplateController,
+    WorkPolicyController,
+    HelpdeskController,
+    SettlementRateController,
   ],
   providers: [
     CommonCodeService,
