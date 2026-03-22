@@ -743,6 +743,7 @@ enum WorkOrderStatus {
 
 model WorkOrder {
   id            String          @id @default(uuid()) @db.VarChar(36)
+  orderNumber   String?         @db.VarChar(30)
   warehouseId   String          @db.VarChar(36)
   workType      WorkOrderType
   status        WorkOrderStatus @default(CREATED)

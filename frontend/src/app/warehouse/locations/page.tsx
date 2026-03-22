@@ -108,10 +108,10 @@ export default function LocationManagementPage() {
         />
       ),
     },
-    { key: "code", header: "로케이션" },
-    { key: "row", header: "행", render: (row) => <span>{row.row || ""}</span> },
-    { key: "col", header: "열", render: (row) => <span>{row.col || ""}</span> },
-    { key: "level", header: "단", render: (row) => <span>{row.level || ""}</span> },
+    { key: "code", header: "로케이션", sortable: true },
+    { key: "row", header: "행", sortable: true, render: (row) => <span>{row.row || ""}</span> },
+    { key: "col", header: "열", sortable: true, render: (row) => <span>{row.col || ""}</span> },
+    { key: "level", header: "단", sortable: true, render: (row) => <span>{row.level || ""}</span> },
   ];
 
   const controlColumns: Column<ShipmentControl>[] = [
@@ -121,11 +121,11 @@ export default function LocationManagementPage() {
       width: "40px",
       render: () => <input type="checkbox" className="h-4 w-4" />,
     },
-    { key: "locationCode", header: "로케이션" },
-    { key: "startDate", header: "적용시작일" },
-    { key: "endDate", header: "적용종료일", render: (row) => <span>{row.endDate || ""}</span> },
-    { key: "reasonCode", header: "사유코드", render: (row) => <span>{row.reasonCode || ""}</span> },
-    { key: "remark", header: "비고" },
+    { key: "locationCode", header: "로케이션", sortable: true },
+    { key: "startDate", header: "적용시작일", sortable: true },
+    { key: "endDate", header: "적용종료일", sortable: true, render: (row) => <span>{row.endDate || ""}</span> },
+    { key: "reasonCode", header: "사유코드", sortable: true, render: (row) => <span>{row.reasonCode || ""}</span> },
+    { key: "remark", header: "비고", sortable: true },
   ];
 
   return (

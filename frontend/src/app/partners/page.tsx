@@ -143,11 +143,13 @@ export default function PartnersPage() {
     {
       key: "createdAt",
       header: "생성일",
+      sortable: true,
       render: (row) => <span className="text-xs text-[#8B95A1]">{formatDate(row.createdAt, "yyyy-MM-dd")}</span>,
     },
     {
       key: "createdBy",
       header: "생성자",
+      sortable: true,
       render: () => <span className="text-xs text-[#8B95A1]">-</span>,
     },
   ];

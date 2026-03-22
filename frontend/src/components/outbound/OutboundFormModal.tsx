@@ -15,6 +15,7 @@ import {
   useCreateOutboundOrder,
   useUpdateOutboundOrder,
 } from "@/hooks/useApi";
+import { useToastStore } from "@/stores/toast.store";
 import type { Partner, Warehouse, Item } from "@/types";
 
 /* ── Shared style tokens ── */
@@ -89,6 +90,7 @@ export default function OutboundFormModal({
   onSuccess,
   editData,
 }: OutboundFormModalProps) {
+  const addToast = useToastStore((s) => s.addToast);
   const [activeTab, setActiveTab] = useState<"standard" | "quick">("standard");
   const [activeItemDropdown, setActiveItemDropdown] = useState<number | null>(
     null
@@ -194,11 +196,12 @@ export default function OutboundFormModal({
       } else {
         await createMutation.mutateAsync(payload);
       }
+      addToast({ type: "success", message: "저장되었습니다." });
       handleReset();
       onSuccess();
       onClose();
     } catch {
-      // error handled by mutation
+      addToast({ type: "error", message: "저장 중 오류가 발생했습니다." });
     }
   };
 
@@ -232,11 +235,12 @@ export default function OutboundFormModal({
         notes: quickNotes || undefined,
         items: itemsWithQty,
       } as any);
+      addToast({ type: "success", message: "저장되었습니다." });
       resetQuick();
       onSuccess();
       onClose();
     } catch {
-      // error handled by mutation
+      addToast({ type: "error", message: "저장 중 오류가 발생했습니다." });
     }
   };
 

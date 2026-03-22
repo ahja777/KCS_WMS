@@ -133,10 +133,11 @@ export default function HelpdeskPage() {
 
   const columns: Column<HelpTicket>[] = [
     { key: "ticketNumber", header: "요청번호", sortable: true },
-    { key: "screenName", header: "화면명" },
+    { key: "screenName", header: "화면명", sortable: true },
     {
       key: "type",
       header: "유형",
+      sortable: true,
       render: (row) => (
         <span className="inline-flex rounded-lg bg-[#F2F4F6] px-2.5 py-1 text-xs font-medium text-[#4E5968]">
           {row.type}
@@ -146,11 +147,13 @@ export default function HelpdeskPage() {
     {
       key: "status",
       header: "진행상황",
+      sortable: true,
       render: (row) => <Badge status={row.status} />,
     },
     {
       key: "description",
       header: "요청사항",
+      sortable: true,
       render: (row) => (
         <span className="block max-w-[200px] truncate text-[#6B7684]">
           {row.description}
@@ -160,9 +163,10 @@ export default function HelpdeskPage() {
     {
       key: "requestDate",
       header: "요청일",
+      sortable: true,
       render: (row) => formatDate(row.requestDate),
     },
-    { key: "requester", header: "요청자" },
+    { key: "requester", header: "요청자", sortable: true },
   ];
 
   return (

@@ -228,6 +228,7 @@ export default function ItemGroupsPage() {
     {
       key: "type",
       header: "상품군타입",
+      sortable: true,
       render: (row) => (
         <select
           value={row.type}
@@ -246,6 +247,7 @@ export default function ItemGroupsPage() {
     {
       key: "code",
       header: "상품군코드",
+      sortable: true,
       render: (row) => (
         <input
           type="text"
@@ -261,6 +263,7 @@ export default function ItemGroupsPage() {
     {
       key: "name",
       header: "상품군명",
+      sortable: true,
       render: (row) => (
         <input
           type="text"
@@ -275,6 +278,7 @@ export default function ItemGroupsPage() {
     {
       key: "inboundZone",
       header: "입고존",
+      sortable: true,
       render: (row) => (
         <select
           value={row.inboundZone}

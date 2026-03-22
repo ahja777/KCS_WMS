@@ -137,36 +137,43 @@ export default function ContainerGroupsPage() {
     {
       key: "centerId",
       header: "물류센터ID",
+      sortable: true,
       render: (row) => <span className="text-sm text-[#4E5968]">{row.centerId ?? "-"}</span>,
     },
     {
       key: "zoneId",
       header: "존ID",
+      sortable: true,
       render: (row) => <span className="text-sm text-[#4E5968]">{row.zoneId ?? "-"}</span>,
     },
     {
       key: "workerIp",
       header: "작업자IP",
+      sortable: true,
       render: (row) => <span className="text-sm text-[#4E5968]">{row.workerIp ?? "-"}</span>,
     },
     {
       key: "createdAt",
       header: "등록일자",
+      sortable: true,
       render: (row) => <span className="text-sm text-[#4E5968]">{formatDate(row.createdAt)}</span>,
     },
     {
       key: "createdBy",
       header: "등록자번호",
+      sortable: true,
       render: (row) => <span className="text-sm text-[#4E5968]">{row.createdBy ?? "-"}</span>,
     },
     {
       key: "updatedAt",
       header: "수정일자",
+      sortable: true,
       render: (row) => <span className="text-sm text-[#4E5968]">{formatDate(row.updatedAt)}</span>,
     },
     {
       key: "updatedBy",
       header: "수정자번호",
+      sortable: true,
       render: (row) => <span className="text-sm text-[#4E5968]">{row.updatedBy ?? "-"}</span>,
     },
   ];

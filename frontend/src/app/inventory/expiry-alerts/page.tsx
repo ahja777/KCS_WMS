@@ -99,37 +99,44 @@ export default function ExpiryAlertsPage() {
     {
       key: "partnerName",
       header: "화주",
+      sortable: true,
       render: (row) => <span className="text-sm text-[#191F28]">{row.partnerName}</span>,
     },
     {
       key: "locationCode",
       header: "로케이션",
+      sortable: true,
       render: (row) => <span className="text-sm text-[#4E5968]">{row.locationCode}</span>,
     },
     {
       key: "itemCode",
       header: "상품코드",
+      sortable: true,
       render: (row) => <span className="text-sm font-mono text-[#4E5968]">{row.itemCode}</span>,
     },
     {
       key: "itemName",
       header: "상품명",
+      sortable: true,
       render: (row) => <span className="text-sm text-[#191F28]">{row.itemName}</span>,
     },
     {
       key: "quantity",
       header: "수량",
+      sortable: true,
       render: (row) => <span className="text-sm text-right text-[#191F28]">{formatNumber(row.quantity)}</span>,
     },
     {
       key: "uom",
       header: "UOM",
       width: "70px",
+      sortable: true,
       render: (row) => <span className="text-sm text-[#4E5968]">{row.uom}</span>,
     },
     {
       key: "expiryDays",
       header: "유효일수",
+      sortable: true,
       render: (row) => (
         <span className={`text-sm font-bold ${row.expiryDays <= 0 ? "text-[#F04452]" : row.expiryDays <= 30 ? "text-[#FF9500]" : "text-[#191F28]"}`}>
           {row.expiryDays}
@@ -139,16 +146,19 @@ export default function ExpiryAlertsPage() {
     {
       key: "expiryDate",
       header: "유효기간",
+      sortable: true,
       render: (row) => <span className="text-sm text-[#4E5968]">{row.expiryDate}</span>,
     },
     {
       key: "lotNo",
       header: "LOT_NO",
+      sortable: true,
       render: (row) => <span className="text-sm text-[#4E5968]">{row.lotNo || "-"}</span>,
     },
     {
       key: "warehouseName",
       header: "창고",
+      sortable: true,
       render: (row) => <span className="text-sm text-[#4E5968]">{row.warehouseName}</span>,
     },
   ];

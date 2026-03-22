@@ -134,25 +134,27 @@ export default function SetProductsPage() {
     {
       key: "partner",
       header: "화 주",
+      sortable: true,
       render: (row) => {
         const p = partners.find((pp) => pp.id === (row as Item & { partnerId?: string }).partnerId);
         return <span className="text-sm">{p?.name ?? "-"}</span>;
       },
     },
-    { key: "code", header: "상품코드" },
-    { key: "name", header: "상품명" },
+    { key: "code", header: "상품코드", sortable: true },
+    { key: "name", header: "상품명", sortable: true },
   ];
 
   // Child item columns
   const childColumns: Column<SetItemRow>[] = [
-    { key: "no", header: "No" },
-    { key: "childCode", header: "*상품코드" },
-    { key: "childName", header: "*상품명" },
-    { key: "quantity", header: "*수량" },
-    { key: "uom", header: "*UOM" },
+    { key: "no", header: "No", sortable: true },
+    { key: "childCode", header: "*상품코드", sortable: true },
+    { key: "childName", header: "*상품명", sortable: true },
+    { key: "quantity", header: "*수량", sortable: true },
+    { key: "uom", header: "*UOM", sortable: true },
     {
       key: "createdAt",
       header: "생성일",
+      sortable: true,
       render: (row) =>
         row.createdAt ? new Date(row.createdAt).toLocaleDateString("ko-KR") : "-",
     },

@@ -312,11 +312,13 @@ export default function PartnerProductsPage() {
     {
       key: "traderCode",
       header: "\uAC70\uB798\uCC98\uCF54\uB4DC",
+      sortable: true,
       render: (row) => <span className="text-sm text-[#4E5968]">{row.traderCode || "-"}</span>,
     },
     {
       key: "expiryControl",
       header: "\uC720\uD6A8\uAE30\uAC04\uD1B5\uC81C\uC5EC\uBD80",
+      sortable: true,
       render: (row) => (
         <span className={`inline-flex rounded-lg px-2.5 py-1 text-xs font-medium ${row.expiryControl === "Y" ? "bg-[#E8F5E9] text-[#2E7D32]" : "bg-[#F2F4F6] text-[#8B95A1]"}`}>
           {row.expiryControl}
@@ -341,9 +343,9 @@ export default function PartnerProductsPage() {
     },
     { key: "groupCode", header: "\uC0C1\uD488\uAD70\uCF54\uB4DC", sortable: true, render: (row) => <span className="text-sm text-[#4E5968]">{row.groupCode || "-"}</span> },
     { key: "groupName", header: "\uC0C1\uD488\uAD70\uBA85", sortable: true, render: (row) => <span className="text-sm text-[#4E5968]">{row.groupName || "-"}</span> },
-    { key: "weightTolerancePct", header: "\uBB34\uAC8C\uC624\uCC28\uD5C8\uC6A9\uB960(%)", render: (row) => <span className="text-sm text-[#4E5968]">{row.weightTolerancePct || "-"}</span> },
-    { key: "minShippingExpiry", header: "\uCD9C\uD558\uCD5C\uC18C\uC720\uD6A8\uAE30\uAC04", render: (row) => <span className="text-sm text-[#4E5968]">{row.minShippingExpiry || "-"}</span> },
-    { key: "minShippingExpiryUnit", header: "\uCD9C\uD558\uCD5C\uC18C\uC720\uD6A8\uAE30\uAC04\uB2E8\uC704", render: (row) => <span className="text-sm text-[#4E5968]">{row.minShippingExpiryUnit || "-"}</span> },
+    { key: "weightTolerancePct", header: "\uBB34\uAC8C\uC624\uCC28\uD5C8\uC6A9\uB960(%)", sortable: true, render: (row) => <span className="text-sm text-[#4E5968]">{row.weightTolerancePct || "-"}</span> },
+    { key: "minShippingExpiry", header: "\uCD9C\uD558\uCD5C\uC18C\uC720\uD6A8\uAE30\uAC04", sortable: true, render: (row) => <span className="text-sm text-[#4E5968]">{row.minShippingExpiry || "-"}</span> },
+    { key: "minShippingExpiryUnit", header: "\uCD9C\uD558\uCD5C\uC18C\uC720\uD6A8\uAE30\uAC04\uB2E8\uC704", sortable: true, render: (row) => <span className="text-sm text-[#4E5968]">{row.minShippingExpiryUnit || "-"}</span> },
   ];
 
   const productColumns: Column<ProductRow>[] = [
@@ -362,9 +364,9 @@ export default function PartnerProductsPage() {
     },
     { key: "productCode", header: "\uC0C1\uD488\uCF54\uB4DC", sortable: true, render: (row) => <span className="text-sm text-[#4E5968]">{row.productCode || "-"}</span> },
     { key: "productName", header: "\uC0C1\uD488\uBA85", sortable: true, render: (row) => <span className="text-sm text-[#4E5968]">{row.productName || "-"}</span> },
-    { key: "weightToleranceKg", header: "\uBB34\uAC8C\uC624\uCC28\uD5C8\uC6A9\uBC94\uC704(Kg)", render: (row) => <span className="text-sm text-[#4E5968]">{row.weightToleranceKg || "-"}</span> },
-    { key: "minShippingExpiry", header: "\uCD9C\uD558\uCD5C\uC18C\uC720\uD6A8\uAE30\uAC04", render: (row) => <span className="text-sm text-[#4E5968]">{row.minShippingExpiry || "-"}</span> },
-    { key: "minShippingExpiryUnit", header: "\uCD9C\uD558\uCD5C\uC18C\uC720\uD6A8\uAE30\uAC04\uB2E8\uC704", render: (row) => <span className="text-sm text-[#4E5968]">{row.minShippingExpiryUnit || "-"}</span> },
+    { key: "weightToleranceKg", header: "\uBB34\uAC8C\uC624\uCC28\uD5C8\uC6A9\uBC94\uC704(Kg)", sortable: true, render: (row) => <span className="text-sm text-[#4E5968]">{row.weightToleranceKg || "-"}</span> },
+    { key: "minShippingExpiry", header: "\uCD9C\uD558\uCD5C\uC18C\uC720\uD6A8\uAE30\uAC04", sortable: true, render: (row) => <span className="text-sm text-[#4E5968]">{row.minShippingExpiry || "-"}</span> },
+    { key: "minShippingExpiryUnit", header: "\uCD9C\uD558\uCD5C\uC18C\uC720\uD6A8\uAE30\uAC04\uB2E8\uC704", sortable: true, render: (row) => <span className="text-sm text-[#4E5968]">{row.minShippingExpiryUnit || "-"}</span> },
   ];
 
   // === Action buttons component ===

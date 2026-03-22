@@ -13,6 +13,7 @@ import {
   useConfirmOutbound,
   useDeliverOutbound,
   useWarehouses,
+  useInventoryList,
 } from "@/hooks/useApi";
 import { useToastStore } from "@/stores/toast.store";
 import OutboundFormModal from "@/components/outbound/OutboundFormModal";
@@ -67,12 +68,24 @@ export default function OutboundPage() {
   const { data: warehouseData } = useWarehouses({ limit: 100 });
   const warehouses = warehouseData?.data ?? [];
 
+  const { data: inventoryResponse } = useInventoryList({ limit: 500 });
+  const inventoryItems = inventoryResponse?.data ?? [];
+
   const confirmOutbound = useConfirmOutbound();
   const deliverOutbound = useDeliverOutbound();
 
   const orders = response?.data ?? [];
   const total = response?.total ?? 0;
   const totalPages = response?.totalPages ?? 1;
+
+  // Build stock map: itemId -> total quantity
+  const stockMap = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const inv of inventoryItems) {
+      m[inv.itemId] = (m[inv.itemId] ?? 0) + inv.quantity;
+    }
+    return m;
+  }, [inventoryItems]);
 
   // Close context menu on click / escape
   useEffect(() => {
@@ -177,13 +190,15 @@ export default function OutboundPage() {
       const lines = order.lines ?? [];
       const totalOrdered = lines.reduce((s, l) => s + (l.orderedQty ?? 0), 0);
       const totalShipped = lines.reduce((s, l) => s + (l.shippedQty ?? 0), 0);
+      const currentStock = lines.reduce((s, l) => s + (stockMap[l.itemId] ?? 0), 0);
       return {
         order,
         totalOrdered,
         totalShipped,
+        currentStock,
       };
     });
-  }, [orders]);
+  }, [orders, stockMap]);
 
   // Detail lines for bottom grid
   const detailLines = useMemo(() => {
@@ -337,6 +352,7 @@ export default function OutboundPage() {
                 <th className="px-3 py-2.5 text-xs font-semibold text-[#8B95A1]">출고일자</th>
                 <th className="px-3 py-2.5 text-right text-xs font-semibold text-[#8B95A1]">주문량합계</th>
                 <th className="px-3 py-2.5 text-right text-xs font-semibold text-[#8B95A1]">출고량합계</th>
+                <th className="px-3 py-2.5 text-right text-xs font-semibold text-[#3182F6]">현재고</th>
                 <th className="px-3 py-2.5 text-xs font-semibold text-[#8B95A1]">송장번호</th>
                 <th className="px-3 py-2.5 text-xs font-semibold text-[#8B95A1]">배송방법</th>
               </tr>
@@ -365,7 +381,7 @@ export default function OutboundPage() {
                   </td>
                 </tr>
               ) : (
-                masterRows.map(({ order, totalOrdered, totalShipped }) => (
+                masterRows.map(({ order, totalOrdered, totalShipped, currentStock }) => (
                   <tr
                     key={order.id}
                     onClick={() => handleRowClick(order)}
@@ -393,6 +409,7 @@ export default function OutboundPage() {
                     <td className="px-3 py-2.5 text-sm text-[#4E5968]">{formatDate(order.deliveryDate ?? "")}</td>
                     <td className="px-3 py-2.5 text-right text-sm font-medium text-[#191F28]">{formatNumber(totalOrdered)}</td>
                     <td className="px-3 py-2.5 text-right text-sm font-medium text-[#191F28]">{formatNumber(totalShipped)}</td>
+                    <td className="px-3 py-2.5 text-right text-sm font-semibold text-[#3182F6]">{formatNumber(currentStock)}</td>
                     <td className="px-3 py-2.5 text-sm text-[#4E5968]">{order.trackingNumber ?? "-"}</td>
                     <td className="px-3 py-2.5 text-sm text-[#4E5968]">{order.shippingMethod ?? "-"}</td>
                   </tr>

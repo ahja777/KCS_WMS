@@ -263,16 +263,18 @@ export default function ItemsPage() {
     },
     { key: "code", header: "상품코드", sortable: true },
     { key: "name", header: "상품명", sortable: true },
-    { key: "uom", header: "UOM" },
+    { key: "uom", header: "UOM", sortable: true },
     {
       key: "minStock",
       header: "적정재고",
+      sortable: true,
       render: (row) =>
         row.minStock != null ? row.minStock.toLocaleString() : "-",
     },
     {
       key: "expiryDays",
       header: "유통기간",
+      sortable: true,
       render: (row) =>
         row.expiryDays != null && row.expiryDays > 0
           ? `${row.expiryDays}일`
@@ -285,12 +287,13 @@ export default function ItemsPage() {
     {
       key: "quantity",
       header: "수량",
+      sortable: true,
       render: (row) => row.quantity.toLocaleString(),
     },
-    { key: "baseUom", header: "기준UOM" },
-    { key: "convertUom", header: "변환UOM" },
-    { key: "startDate", header: "적용시작일" },
-    { key: "endDate", header: "적용종료일" },
+    { key: "baseUom", header: "기준UOM", sortable: true },
+    { key: "convertUom", header: "변환UOM", sortable: true },
+    { key: "startDate", header: "적용시작일", sortable: true },
+    { key: "endDate", header: "적용종료일", sortable: true },
   ];
 
   // Placeholder: UOM conversion history data (would come from API when available)

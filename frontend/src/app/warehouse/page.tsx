@@ -71,14 +71,15 @@ export default function WarehousePage() {
     { key: "code", header: "창고 코드", sortable: true },
     { key: "name", header: "창고명", sortable: true },
     { key: "country", header: "국가", sortable: true },
-    { key: "city", header: "도시" },
-    { key: "timezone", header: "시간대" },
+    { key: "city", header: "도시", sortable: true },
+    { key: "timezone", header: "시간대", sortable: true },
     {
       key: "status",
       header: "상태",
+      sortable: true,
       render: (row) => <Badge status={row.status} />,
     },
-    { key: "contactName", header: "담당자" },
+    { key: "contactName", header: "담당자", sortable: true },
     {
       key: "actions",
       header: "",

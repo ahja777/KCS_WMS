@@ -216,11 +216,13 @@ export default function WarehouseStockReportPage() {
     {
       key: "partnerCode",
       header: "화주코드",
+      sortable: true,
       render: () => <span className="text-sm font-mono text-[#4E5968]">-</span>,
     },
     {
       key: "partnerName",
       header: "화주명",
+      sortable: true,
       render: () => <span className="text-sm text-[#191F28]">-</span>,
     },
     {
@@ -232,6 +234,7 @@ export default function WarehouseStockReportPage() {
     {
       key: "itemName",
       header: "상품명",
+      sortable: true,
       render: (row) => <span className="text-sm text-[#191F28]">{row.item?.name ?? "-"}</span>,
     },
     {
@@ -243,6 +246,7 @@ export default function WarehouseStockReportPage() {
     {
       key: "uom",
       header: "UOM",
+      sortable: true,
       render: (row) => (
         <span className="inline-flex items-center rounded-full bg-[#F2F4F6] px-2.5 py-0.5 text-xs font-medium text-[#4E5968]">
           {row.item?.uom ?? "-"}
@@ -262,11 +266,13 @@ export default function WarehouseStockReportPage() {
     {
       key: "itemCode",
       header: "상품코드",
+      sortable: true,
       render: (row) => <span className="text-sm font-mono text-[#4E5968]">{row.item?.code ?? "-"}</span>,
     },
     {
       key: "itemName",
       header: "상품명",
+      sortable: true,
       render: (row) => <span className="text-sm text-[#191F28]">{row.item?.name ?? "-"}</span>,
     },
     {
@@ -278,6 +284,7 @@ export default function WarehouseStockReportPage() {
     {
       key: "uom",
       header: "UOM",
+      sortable: true,
       render: (row) => (
         <span className="inline-flex items-center rounded-full bg-[#F2F4F6] px-2.5 py-0.5 text-xs font-medium text-[#4E5968]">
           {row.item?.uom ?? "-"}

@@ -204,6 +204,7 @@ export interface InboundOrder {
   arrivedDate?: string;
   completedDate?: string;
   lines: InboundOrderLine[];
+  items?: InboundOrderLine[];
   notes?: string;
   createdAt: string;
   updatedAt: string;
@@ -831,4 +832,170 @@ export interface SettlementRate {
   notes?: string;
   createdAt: string;
   updatedAt: string;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 누락 타입 추가 (배차/채널/이동 등)
+// ═══════════════════════════════════════════════════════════════
+
+export type DispatchStatus = "PLANNED" | "ASSIGNED" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+
+export interface DispatchItem {
+  id: string;
+  dispatchId: string;
+  itemCode: string;
+  itemName: string;
+  orderedQty: number;
+  dispatchedQty: number;
+  notes?: string;
+}
+
+export interface Dispatch {
+  id: string;
+  warehouseId: string;
+  warehouse?: Warehouse;
+  vehicleId?: string;
+  vehicle?: Vehicle;
+  inboundOrderId?: string;
+  inboundOrder?: InboundOrder;
+  outboundOrderId?: string;
+  outboundOrder?: OutboundOrder;
+  dispatchDate: string;
+  dispatchSeq: number;
+  status: DispatchStatus;
+  notes?: string;
+  items: DispatchItem[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ChannelPlatform = "COUPANG" | "NAVER" | "AMAZON" | "SHOPIFY" | "EBAY" | "RAKUTEN" | "LAZADA" | "SHOPEE" | "ELEVENTH_ST";
+export type ChannelStatus = "ACTIVE" | "INACTIVE" | "ERROR" | "PENDING";
+export type ChannelOrderStatus = "NEW" | "SYNCED" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED" | "RETURN_REQUESTED" | "RETURNED" | "ERROR";
+
+export interface SalesChannel {
+  id: string;
+  name: string;
+  platform: ChannelPlatform;
+  sellerId?: string;
+  warehouseId: string;
+  warehouse?: Warehouse;
+  status: ChannelStatus;
+  syncEnabled: boolean;
+  syncInterval: number;
+  lastSyncAt?: string;
+  lastSyncError?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ChannelOrderItem {
+  id: string;
+  channelOrderId: string;
+  platformItemId?: string;
+  platformSku?: string;
+  itemName: string;
+  quantity: number;
+  unitPrice?: number;
+  itemId?: string;
+  item?: Item;
+}
+
+export interface ChannelOrder {
+  id: string;
+  channelId: string;
+  channel?: SalesChannel;
+  platformOrderId: string;
+  platformOrderNo?: string;
+  status: ChannelOrderStatus;
+  orderDate: string;
+  customerName?: string;
+  customerPhone?: string;
+  shippingAddress?: string;
+  totalAmount?: number;
+  currency?: string;
+  outboundOrderId?: string;
+  carrier?: string;
+  trackingNumber?: string;
+  items: ChannelOrderItem[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ChannelProduct {
+  id: string;
+  channelId: string;
+  itemId: string;
+  item?: Item;
+  platformProductId?: string;
+  platformSku?: string;
+  isLinked: boolean;
+  lastSyncAt?: string;
+}
+
+export type MovementStatus = "DRAFT" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+
+export interface InventoryMovementItem {
+  id: string;
+  movementId: string;
+  itemCode: string;
+  itemName: string;
+  fromLocation?: string;
+  toLocation?: string;
+  lotNo?: string;
+  stockQty: number;
+  moveQty: number;
+  uom?: string;
+}
+
+export interface InventoryMovement {
+  id: string;
+  warehouseId: string;
+  status: MovementStatus;
+  movementDate: string;
+  performedBy?: string;
+  notes?: string;
+  items: InventoryMovementItem[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SetItem {
+  id: string;
+  parentItemId: string;
+  parentItem?: Item;
+  childItemId: string;
+  childItem?: Item;
+  quantity: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PartnerProduct {
+  id: string;
+  partnerId: string;
+  partner?: Partner;
+  customerPartnerId: string;
+  customerPartner?: Partner;
+  itemId?: string;
+  item?: Item;
+  expiryControl: boolean;
+  outMinShelfLife?: number;
+  outMinShelfLifeUnit?: string;
+  weightToleranceKg?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface OrderHistory {
+  id: string;
+  orderType: string;
+  orderId: string;
+  action: string;
+  beforeData?: string;
+  afterData?: string;
+  performedBy?: string;
+  performedAt: string;
+  createdAt: string;
 }

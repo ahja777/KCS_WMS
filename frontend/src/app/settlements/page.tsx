@@ -193,16 +193,19 @@ function UnitPriceTab() {
     {
       key: "partnerId",
       header: "화주",
+      sortable: true,
       render: (row) => <span className="text-sm text-[#191F28]">{row.partner?.name ?? "-"}</span>,
     },
     {
       key: "contractDept",
       header: "계약부서",
+      sortable: true,
       render: (row) => <span className="text-sm text-[#191F28]">{row.contractDept ?? "-"}</span>,
     },
     {
       key: "contractEmployee",
       header: "계약사원",
+      sortable: true,
       render: (row) => <span className="text-sm text-[#191F28]">{row.contractEmployee ?? "-"}</span>,
     },
   ];
@@ -461,11 +464,13 @@ function CalculationTab() {
     {
       key: "partnerId",
       header: "화주",
+      sortable: true,
       render: (row) => <span className="text-sm text-[#191F28]">{row.partner?.name ?? "-"}</span>,
     },
     {
       key: "inboundFee",
       header: "입고료",
+      sortable: true,
       render: (row) => (
         <span className="block text-right text-sm text-[#191F28]">
           {formatNumber(row.inboundFee ?? 0)}
@@ -475,6 +480,7 @@ function CalculationTab() {
     {
       key: "outboundFee",
       header: "출고료",
+      sortable: true,
       render: (row) => (
         <span className="block text-right text-sm text-[#191F28]">
           {formatNumber(row.outboundFee ?? 0)}
@@ -484,6 +490,7 @@ function CalculationTab() {
     {
       key: "storageFee",
       header: "보관료",
+      sortable: true,
       render: (row) => (
         <span className="block text-right text-sm text-[#191F28]">
           {formatNumber(row.storageFee ?? 0)}
@@ -493,6 +500,7 @@ function CalculationTab() {
     {
       key: "transportFee",
       header: "운송료",
+      sortable: true,
       render: (row) => (
         <span className="block text-right text-sm text-[#191F28]">
           {formatNumber(row.transportFee ?? 0)}
@@ -502,6 +510,7 @@ function CalculationTab() {
     {
       key: "shuttleFee",
       header: "셔틀료",
+      sortable: true,
       render: (row) => (
         <span className="block text-right text-sm text-[#191F28]">
           {formatNumber(row.shuttleFee ?? 0)}
@@ -511,6 +520,7 @@ function CalculationTab() {
     {
       key: "totalAmount",
       header: "합계",
+      sortable: true,
       render: (row) => (
         <span className="block text-right text-sm font-bold text-[#3182F6]">
           {formatNumber(row.totalAmount)}

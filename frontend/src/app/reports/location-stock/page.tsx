@@ -216,11 +216,13 @@ export default function LocationStockReportPage() {
     {
       key: "warehouseName",
       header: "창고",
+      sortable: true,
       render: (row) => <span className="text-sm text-[#4E5968]">{row.warehouse?.name ?? "-"}</span>,
     },
     {
       key: "partner",
       header: "화주",
+      sortable: true,
       render: () => <span className="text-sm text-[#4E5968]">-</span>,
     },
     {
@@ -232,6 +234,7 @@ export default function LocationStockReportPage() {
     {
       key: "itemName",
       header: "상품명",
+      sortable: true,
       render: (row) => <span className="text-sm text-[#191F28]">{row.item?.name ?? "-"}</span>,
     },
     {
@@ -243,6 +246,7 @@ export default function LocationStockReportPage() {
     {
       key: "uom",
       header: "UOM",
+      sortable: true,
       render: (row) => (
         <span className="inline-flex items-center rounded-full bg-[#F2F4F6] px-2.5 py-0.5 text-xs font-medium text-[#4E5968]">
           {row.item?.uom ?? "-"}
@@ -252,6 +256,7 @@ export default function LocationStockReportPage() {
     {
       key: "occupancyRate",
       header: "적치율(%)",
+      sortable: true,
       render: (row) => {
         // Calculate occupancy as a ratio of quantity vs reservedQty+quantity (simulated)
         const rate = row.quantity > 0 ? Math.min(100, Math.round((row.quantity / (row.quantity + (row.availableQty || 1))) * 100)) : 0;
@@ -271,6 +276,7 @@ export default function LocationStockReportPage() {
     {
       key: "availablePlt",
       header: "가용PLT",
+      sortable: true,
       render: (row) => (
         <span className="text-sm text-[#191F28]">{formatNumber(row.availableQty ?? 0)}</span>
       ),

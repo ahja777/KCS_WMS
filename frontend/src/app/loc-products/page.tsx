@@ -128,14 +128,14 @@ export default function LocProductsPage() {
         />
       ),
     },
-    { key: "center", header: "물류센터" },
-    { key: "location", header: "로케이션" },
-    { key: "partnerName", header: "화주명" },
-    { key: "itemName", header: "상품명" },
-    { key: "createdAt", header: "등록일자" },
-    { key: "createdBy", header: "등록자" },
-    { key: "updatedAt", header: "수정일자" },
-    { key: "updatedBy", header: "수정자" },
+    { key: "center", header: "물류센터", sortable: true },
+    { key: "location", header: "로케이션", sortable: true },
+    { key: "partnerName", header: "화주명", sortable: true },
+    { key: "itemName", header: "상품명", sortable: true },
+    { key: "createdAt", header: "등록일자", sortable: true },
+    { key: "createdBy", header: "등록자", sortable: true },
+    { key: "updatedAt", header: "수정일자", sortable: true },
+    { key: "updatedBy", header: "수정자", sortable: true },
   ];
 
   return (

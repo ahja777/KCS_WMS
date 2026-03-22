@@ -117,21 +117,25 @@ export default function CategoryStockPage() {
     {
       key: "warehouseName",
       header: "창고",
+      sortable: true,
       render: (row) => <span className="text-sm text-[#191F28]">{row.warehouseName}</span>,
     },
     {
       key: "ownerName",
       header: "화주",
+      sortable: true,
       render: (row) => <span className="text-sm text-[#4E5968]">{row.ownerName}</span>,
     },
     {
       key: "location",
       header: "로케이션",
+      sortable: true,
       render: (row) => <span className="text-sm font-mono text-[#4E5968]">{row.location}</span>,
     },
     {
       key: "itemName",
       header: "상품",
+      sortable: true,
       render: (row) => <span className="text-sm text-[#191F28]">{row.itemName}</span>,
     },
     {

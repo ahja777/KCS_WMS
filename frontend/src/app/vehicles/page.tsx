@@ -110,6 +110,7 @@ export default function VehiclesPage() {
     {
       key: "type",
       header: "유형",
+      sortable: true,
       render: (row) => (
         <span className="inline-flex rounded-lg bg-[#F2F4F6] px-2.5 py-1 text-xs font-medium text-[#4E5968]">
           {getTypeLabel(row.type)}
@@ -117,10 +118,11 @@ export default function VehiclesPage() {
       ),
     },
     { key: "driverName", header: "기사명", sortable: true },
-    { key: "driverPhone", header: "연락처" },
+    { key: "driverPhone", header: "연락처", sortable: true },
     {
       key: "isActive",
       header: "상태",
+      sortable: true,
       render: (row) => <Badge status={row.isActive ? "ACTIVE" : "INACTIVE"} />,
     },
     {

@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
 import { useCompleteCycleCount } from "@/hooks/useApi";
+import { useToastStore } from "@/stores/toast.store";
 import type { CycleCount } from "@/types";
 
 interface CompleteFormData {
@@ -29,6 +30,7 @@ export default function CycleCountCompleteModal({
   onClose,
   onSuccess,
 }: CycleCountCompleteModalProps) {
+  const addToast = useToastStore((s) => s.addToast);
   const completeMutation = useCompleteCycleCount();
 
   const {
@@ -61,9 +63,10 @@ export default function CycleCountCompleteModal({
           notes: formData.notes || undefined,
         },
       });
+      addToast({ type: "success", message: "저장되었습니다." });
       onSuccess();
     } catch {
-      // error handled by react-query
+      addToast({ type: "error", message: "저장 중 오류가 발생했습니다." });
     }
   };
 

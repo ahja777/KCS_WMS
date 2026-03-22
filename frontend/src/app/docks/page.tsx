@@ -93,21 +93,25 @@ export default function DocksPage() {
     {
       key: "warehouseId",
       header: "창고",
+      sortable: true,
       render: (row) => row.warehouse?.name ?? "-",
     },
     {
       key: "maxTonnage",
       header: "진입가능톤수",
+      sortable: true,
       render: (row) => `${formatNumber(row.maxTonnage)}톤`,
     },
     {
       key: "vehiclePlateNumber",
       header: "차량번호",
+      sortable: true,
       render: (row) => row.vehiclePlateNumber || "-",
     },
     {
       key: "status",
       header: "상태",
+      sortable: true,
       render: (row) => <Badge status={row.status} />,
     },
     {

@@ -52,6 +52,16 @@ export function useDashboardSummary() {
 
 // ===== Generic CRUD hooks =====
 
+// Backend returns `items` for order lines, frontend types use `lines`
+function mapOrderLines(records: any[]): any[] {
+  return records.map((r) => {
+    if (r.items && !r.lines) {
+      return { ...r, lines: r.items };
+    }
+    return r;
+  });
+}
+
 function useList<T>(resource: string, params?: QueryParams) {
   return useQuery<PaginatedResponse<T>>({
     queryKey: [resource, params],
@@ -61,7 +71,10 @@ function useList<T>(resource: string, params?: QueryParams) {
       // Backend returns { data: T[], meta: { total, page, limit, totalPages } }
       // Frontend expects { data: T[], total, page, limit, totalPages }
       if (inner.meta) {
-        return { data: inner.data, ...inner.meta };
+        return { data: mapOrderLines(inner.data), ...inner.meta };
+      }
+      if (Array.isArray(inner.data)) {
+        return { ...inner, data: mapOrderLines(inner.data) };
       }
       return inner;
     },
@@ -73,7 +86,12 @@ function useDetail<T>(resource: string, id: string | undefined) {
     queryKey: [resource, id],
     queryFn: async () => {
       const { data: wrapped } = await api.get(`/${resource}/${id}`);
-      return wrapped.data;
+      const record = wrapped.data;
+      // Map items → lines for order detail
+      if (record && record.items && !record.lines) {
+        return { ...record, lines: record.items };
+      }
+      return record;
     },
     enabled: !!id,
   });

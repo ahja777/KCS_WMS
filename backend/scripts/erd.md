@@ -363,6 +363,7 @@ erDiagram
     }
     work_orders {
         varchar id PK
+        varchar orderNumber
         varchar warehouseId FK
         enum workType
         enum status
@@ -716,8 +717,8 @@ erDiagram
 | common_codes | 18 | item_groups | 4 |
 | uom_masters | 6 | uom_conversions | 3 |
 | inbound_orders | 7 | inbound_order_items | 19 |
-| inbound_receipts | 3 | outbound_orders | 8 |
-| outbound_order_items | 17 | outbound_shipments | 2 |
+| inbound_receipts | 3 | outbound_orders | 10 |
+| outbound_order_items | 19 | outbound_shipments | 2 |
 | inventories | 18 | inventory_transactions | 27 |
 | stock_adjustments | 3 | cycle_counts | 4 |
 | inventory_movements | 1 | inventory_movement_items | 1 |
@@ -740,7 +741,7 @@ erDiagram
 | owner_template_columns | 0 | work_policies | 0 |
 | helpdesks | 0 | - | - |
 
-**데이터 보유 테이블:** 21개 (총 245건)
+**데이터 보유 테이블:** 21개 (총 249건)
 **빈 테이블:** 38개
 
 ---
@@ -757,6 +758,7 @@ erDiagram
 | settlements | transportFee | FLOAT | 운송비 |
 | settlements | shuttleFee | FLOAT | 셔틀비 |
 | helpdesks | screenName | VARCHAR(100) | 화면명 |
+| work_orders | orderNumber | VARCHAR(30) | 작업지시번호 |
 
 ### 추가된 관계
 | From | To | 관계 |

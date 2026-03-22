@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
 import { useWarehouses, useCreateCycleCount } from "@/hooks/useApi";
+import { useToastStore } from "@/stores/toast.store";
 import type { Warehouse } from "@/types";
 
 interface CycleCountFormData {
@@ -28,6 +29,7 @@ export default function CycleCountFormModal({
   onClose,
   onSuccess,
 }: CycleCountFormModalProps) {
+  const addToast = useToastStore((s) => s.addToast);
   const { data: warehousesData } = useWarehouses({ limit: 100 });
   const warehouses = (warehousesData?.data ?? []).filter(
     (w: Warehouse) => w.status === "ACTIVE"
@@ -62,9 +64,10 @@ export default function CycleCountFormModal({
         itemCode: formData.itemCode || undefined,
         systemQty: Number(formData.systemQty),
       });
+      addToast({ type: "success", message: "저장되었습니다." });
       onSuccess();
     } catch {
-      // error handled by react-query
+      addToast({ type: "error", message: "저장 중 오류가 발생했습니다." });
     }
   };
 

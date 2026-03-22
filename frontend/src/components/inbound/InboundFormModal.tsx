@@ -7,6 +7,7 @@ import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
 import ItemSearchPopup from "@/components/ui/ItemSearchPopup";
 import { usePartners, useWarehouses, useItems, useCreateInboundOrder } from "@/hooks/useApi";
+import { useToastStore } from "@/stores/toast.store";
 import type { Partner, Warehouse, Item } from "@/types";
 
 interface InboundLineForm {
@@ -35,6 +36,7 @@ export default function InboundFormModal({
   onClose,
   onSuccess,
 }: InboundFormModalProps) {
+  const addToast = useToastStore((s) => s.addToast);
   const [activeTab, setActiveTab] = useState<"standard" | "quick">("standard");
   const [itemSearch, setItemSearch] = useState("");
   const [activeItemDropdown, setActiveItemDropdown] = useState<number | null>(null);
@@ -115,11 +117,12 @@ export default function InboundFormModal({
           expectedQty: Number(item.expectedQty),
         })),
       } as any);
+      addToast({ type: "success", message: "저장되었습니다." });
       reset();
       onSuccess();
       onClose();
     } catch (err: any) {
-      // error handled by mutation
+      addToast({ type: "error", message: "저장 중 오류가 발생했습니다." });
     }
   };
 
@@ -155,11 +158,12 @@ export default function InboundFormModal({
         notes: quickNotes || undefined,
         items: itemsWithQty,
       } as any);
+      addToast({ type: "success", message: "저장되었습니다." });
       resetQuick();
       onSuccess();
       onClose();
     } catch (err: any) {
-      // error handled by mutation
+      addToast({ type: "error", message: "저장 중 오류가 발생했습니다." });
     }
   };
 

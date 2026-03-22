@@ -159,6 +159,7 @@ export default function ChannelsPage() {
     {
       key: "platform",
       header: "플랫폼",
+      sortable: true,
       render: (row) => (
         <div className="flex items-center gap-2">
           <span
@@ -175,11 +176,13 @@ export default function ChannelsPage() {
     {
       key: "warehouse",
       header: "연결 창고",
+      sortable: true,
       render: (row) => row.warehouse?.name ?? "-",
     },
     {
       key: "status",
       header: "상태",
+      sortable: true,
       render: (row) => (
         <span
           className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ${statusColors[row.status] || ""}`}
@@ -196,6 +199,7 @@ export default function ChannelsPage() {
     {
       key: "syncEnabled",
       header: "자동동기화",
+      sortable: true,
       render: (row) => (
         <button
           onClick={(e) => {
@@ -220,6 +224,7 @@ export default function ChannelsPage() {
     {
       key: "lastSyncAt",
       header: "최근 동기화",
+      sortable: true,
       render: (row) =>
         row.lastSyncAt ? (
           <span className="text-sm text-[#4E5968]">

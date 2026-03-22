@@ -54,11 +54,13 @@ export default function AdjustmentsPage() {
     {
       key: "time",
       header: "작업시간",
+      sortable: true,
       render: (row) => <span className="text-sm text-[#4E5968]">{row.createdAt?.slice(11, 19) ?? "-"}</span>,
     },
     {
       key: "item",
       header: "상품",
+      sortable: true,
       render: (row) => (
         <div>
           <span className="text-sm font-medium text-[#191F28]">{row.item?.code ?? "-"}</span>
@@ -69,11 +71,13 @@ export default function AdjustmentsPage() {
     {
       key: "reason",
       header: "작업구분",
+      sortable: true,
       render: (row) => <span className="text-sm text-[#4E5968]">{REASON_LABELS[row.reason] || row.reason}</span>,
     },
     {
       key: "quantity",
       header: "작업수량",
+      sortable: true,
       render: (row) => {
         const isPositive = row.quantity > 0;
         return (
@@ -86,11 +90,13 @@ export default function AdjustmentsPage() {
     {
       key: "beforeQty",
       header: "기존재고",
+      sortable: true,
       render: (row) => <span className="text-sm text-[#4E5968]">{formatNumber(row.beforeQty)}</span>,
     },
     {
       key: "adjustedBy",
       header: "작업자",
+      sortable: true,
       render: (row) => <span className="text-sm text-[#4E5968]">{row.adjustedBy ?? "-"}</span>,
     },
   ];

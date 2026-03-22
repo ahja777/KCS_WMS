@@ -57,6 +57,7 @@ export default function LowStockReportPage() {
     {
       key: "name",
       header: "상품명",
+      sortable: true,
       render: (row) => <span className="text-sm text-[#4E5968]">{row.name}</span>,
     },
     {
@@ -72,6 +73,7 @@ export default function LowStockReportPage() {
     {
       key: "minStock",
       header: "적정재고",
+      sortable: true,
       render: (row) => <span className="text-sm text-[#4E5968]">{formatNumber(row.minStock)}</span>,
     },
     {
@@ -88,6 +90,7 @@ export default function LowStockReportPage() {
     {
       key: "uom",
       header: "UOM",
+      sortable: true,
       render: (row) => (
         <span className="inline-flex items-center rounded-full bg-[#F2F4F6] px-2.5 py-0.5 text-xs font-medium text-[#4E5968]">
           {row.uom}
@@ -97,6 +100,7 @@ export default function LowStockReportPage() {
     {
       key: "warehouse",
       header: "창고",
+      sortable: true,
       render: (row) => <span className="text-sm text-[#4E5968]">{row.warehouse}</span>,
     },
   ];

@@ -81,6 +81,7 @@ export default function PartnerOutboundReportPage() {
     {
       key: "carrier",
       header: "운송사",
+      sortable: true,
       render: (row) => <span className="text-sm text-[#191F28]">{row.partner?.name ?? "-"}</span>,
     },
     {
@@ -92,6 +93,7 @@ export default function PartnerOutboundReportPage() {
     {
       key: "destination",
       header: "상차지/배송처",
+      sortable: true,
       render: (row) => (
         <span className="text-sm text-[#191F28]">
           {row.partner?.name || "-"}
@@ -101,11 +103,13 @@ export default function PartnerOutboundReportPage() {
     {
       key: "owner",
       header: "화주",
+      sortable: true,
       render: (row) => <span className="text-sm text-[#4E5968]">{row.partner?.name ?? "-"}</span>,
     },
     {
       key: "itemName",
       header: "상품",
+      sortable: true,
       render: (row) => (
         <span className="text-sm text-[#191F28]">
           {row.lines?.[0]?.item?.name ?? "-"}
@@ -116,16 +120,19 @@ export default function PartnerOutboundReportPage() {
     {
       key: "inboundDispatch",
       header: "입고배차",
+      sortable: true,
       render: () => <span className="text-sm text-[#4E5968]">-</span>,
     },
     {
       key: "outboundDispatch",
       header: "출고배차",
+      sortable: true,
       render: () => <span className="text-sm text-[#4E5968]">-</span>,
     },
     {
       key: "uom",
       header: "UOM",
+      sortable: true,
       render: (row) => (
         <span className="inline-flex items-center rounded-full bg-[#F2F4F6] px-2.5 py-0.5 text-xs font-medium text-[#4E5968]">
           {row.lines?.[0]?.item?.uom ?? "-"}

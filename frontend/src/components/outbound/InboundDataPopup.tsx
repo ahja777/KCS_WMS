@@ -61,7 +61,8 @@ export default function InboundDataPopup({
   const flatRows: FlatRow[] = useMemo(() => {
     const rows: FlatRow[] = [];
     for (const order of orders) {
-      for (const line of order.lines ?? []) {
+      const orderLines = order.items ?? order.lines ?? [];
+      for (const line of orderLines) {
         rows.push({
           orderId: order.id,
           orderNumber: order.orderNumber,

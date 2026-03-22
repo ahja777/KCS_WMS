@@ -28,6 +28,7 @@ import {
   useConfirmInbound,
   useArriveInbound,
   useCreateInboundOrder,
+  useInventoryList,
 } from "@/hooks/useApi";
 import { usePermission } from "@/hooks/usePermission";
 import { useToastStore } from "@/stores/toast.store";
@@ -94,6 +95,9 @@ export default function InboundPage() {
   });
 
   const { data: selectedOrder } = useInboundOrder(selectedMasterId ?? undefined);
+
+  const { data: inventoryResponse } = useInventoryList({ limit: 500 });
+  const inventoryItems = inventoryResponse?.data ?? [];
 
   const confirmInbound = useConfirmInbound();
   const arriveInbound = useArriveInbound();
@@ -220,12 +224,22 @@ export default function InboundPage() {
     });
   };
 
+  // Build stock map: itemId -> total quantity
+  const stockMap = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const inv of inventoryItems) {
+      m[inv.itemId] = (m[inv.itemId] ?? 0) + inv.quantity;
+    }
+    return m;
+  }, [inventoryItems]);
+
   // Compute master grid summary totals per order
   const masterRows = useMemo(() => {
     return orders.map((order) => {
       const lines = order.lines ?? [];
       const totalExpectedQty = lines.reduce((s, l) => s + (l.expectedQty ?? 0), 0);
       const totalReceivedQty = lines.reduce((s, l) => s + (l.receivedQty ?? 0), 0);
+      const currentStock = lines.reduce((s, l) => s + (stockMap[l.itemId] ?? 0), 0);
       return {
         id: order.id,
         status: order.status,
@@ -236,11 +250,12 @@ export default function InboundPage() {
         arrivedDate: formatDate(order.arrivedDate ?? ""),
         totalExpectedQty,
         totalReceivedQty,
-        urgent: false, // placeholder - not in current type
+        currentStock,
+        urgent: false,
         blNumber: ((order as unknown as Record<string, unknown>).blNumber as string) ?? "-",
       };
     });
-  }, [orders]);
+  }, [orders, stockMap]);
 
   return (
     <div className="flex h-full flex-col gap-4">
@@ -417,6 +432,9 @@ export default function InboundPage() {
                   <th className="px-3 py-3 text-right text-xs font-medium text-[#8B95A1]">
                     입고량합계
                   </th>
+                  <th className="px-3 py-3 text-right text-xs font-medium text-[#3182F6]">
+                    현재고
+                  </th>
                   <th className="px-3 py-3 text-center text-xs font-medium text-[#8B95A1]">
                     긴급여부
                   </th>
@@ -500,6 +518,9 @@ export default function InboundPage() {
                       </td>
                       <td className="px-3 py-3 text-right text-sm font-medium text-[#191F28]">
                         {formatNumber(row.totalReceivedQty)}
+                      </td>
+                      <td className="px-3 py-3 text-right text-sm font-semibold text-[#3182F6]">
+                        {formatNumber(row.currentStock)}
                       </td>
                       <td className="px-3 py-3 text-center text-sm">
                         {row.urgent ? (

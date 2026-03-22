@@ -179,21 +179,25 @@ export default function ContainersPage() {
     {
       key: "containerGroupId",
       header: "용기군",
+      sortable: true,
       render: (row) => row.containerGroup?.groupName ?? "-",
     },
     {
       key: "inboundWarehouseCode",
       header: "입고창고코드",
+      sortable: true,
       render: (row) => row.inboundWarehouseCode ?? "-",
     },
     {
       key: "shelfLife",
       header: "유통기간",
+      sortable: true,
       render: (row) => row.shelfLife ?? "-",
     },
     {
       key: "shelfLifeDays",
       header: "유통기간일수",
+      sortable: true,
       render: (row) => row.shelfLifeDays ?? "-",
     },
   ];
