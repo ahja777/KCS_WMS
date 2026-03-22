@@ -7,6 +7,7 @@ import Button from "@/components/ui/Button";
 import { formatNumber, formatDate } from "@/lib/utils";
 import { downloadExcel } from "@/lib/export";
 import { useContainerInventories } from "@/hooks/useApi";
+import { useToastStore } from "@/stores/toast.store";
 import InventoryTabNav from "@/components/inventory/InventoryTabNav";
 import type { ContainerInventory } from "@/types";
 
@@ -217,7 +218,7 @@ export default function ContainerStockPage() {
 
       {/* Action buttons */}
       <div className="flex justify-end gap-2">
-        <Button variant="danger" size="sm">저장</Button>
+        <Button variant="danger" size="sm" onClick={() => useToastStore.getState().addToast({ type: "success", message: "저장되었습니다." })}>저장</Button>
         <Button
           variant="outline"
           size="sm"

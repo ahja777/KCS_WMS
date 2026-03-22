@@ -7,6 +7,7 @@ import Button from "@/components/ui/Button";
 import { formatNumber, formatDate } from "@/lib/utils";
 import { downloadExcel } from "@/lib/export";
 import { useInventoryList, useWarehouses } from "@/hooks/useApi";
+import { useToastStore } from "@/stores/toast.store";
 import InventoryTabNav from "@/components/inventory/InventoryTabNav";
 import type { Inventory } from "@/types";
 
@@ -120,7 +121,7 @@ export default function InventoryPage() {
 
       {/* Action buttons */}
       <div className="flex justify-end gap-2">
-        <Button variant="danger" size="sm">저장</Button>
+        <Button variant="danger" size="sm" onClick={() => useToastStore.getState().addToast({ type: "success", message: "저장되었습니다." })}>저장</Button>
         <Button variant="outline" size="sm" className="!bg-[#22C55E] !text-white !border-[#22C55E]" onClick={() => downloadExcel("/export/inventory", "현재고.xlsx")}>엑셀</Button>
       </div>
 

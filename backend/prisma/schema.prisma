@@ -137,12 +137,14 @@ model User {
   role      UserRole @default(OPERATOR)
   isActive  Boolean  @default(true)
   // 화면설계서 TMSYS030: 사용자관리 추가 필드
-  company   String?  @db.VarChar(100)
-  duty      String?  @db.VarChar(50)
-  phone     String?  @db.VarChar(30)
-  mobile    String?  @db.VarChar(30)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  company    String?  @db.VarChar(100)
+  duty       String?  @db.VarChar(50)
+  department String?  @db.VarChar(50)
+  phone      String?  @db.VarChar(30)
+  mobile     String?  @db.VarChar(30)
+  multiLogin Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@map("users")
 }
@@ -414,6 +416,7 @@ model OutboundOrder {
   items         OutboundOrderItem[]
   shipments     OutboundShipment[]
   channelOrders ChannelOrder[]
+  dispatches    Dispatch[]
 
   @@index([status, warehouseId])
   @@index([warehouseId])
@@ -690,10 +693,11 @@ model Dispatch {
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
-  warehouse    Warehouse      @relation(fields: [warehouseId], references: [id])
-  vehicle      Vehicle?       @relation(fields: [vehicleId], references: [id])
-  inboundOrder InboundOrder?  @relation(fields: [inboundOrderId], references: [id])
-  items        DispatchItem[]
+  warehouse     Warehouse      @relation(fields: [warehouseId], references: [id])
+  vehicle       Vehicle?       @relation(fields: [vehicleId], references: [id])
+  inboundOrder  InboundOrder?  @relation(fields: [inboundOrderId], references: [id])
+  outboundOrder OutboundOrder? @relation(fields: [outboundOrderId], references: [id])
+  items         DispatchItem[]
 
   @@index([warehouseId, dispatchDate])
   @@index([vehicleId])
@@ -842,16 +846,20 @@ model Settlement {
   partnerId   String?          @db.VarChar(36)
   periodStart DateTime
   periodEnd   DateTime
-  status      SettlementStatus @default(DRAFT)
-  inboundFee  Float            @default(0)
-  outboundFee Float            @default(0)
-  storageFee  Float            @default(0)
-  handlingFee Float            @default(0)
-  totalAmount Float            @default(0)
-  notes       String?          @db.Text
-  createdBy   String?          @db.VarChar(36)
-  createdAt   DateTime         @default(now())
-  updatedAt   DateTime         @updatedAt
+  status           SettlementStatus @default(DRAFT)
+  contractDept     String?          @db.VarChar(100)
+  contractEmployee String?          @db.VarChar(50)
+  inboundFee       Float            @default(0)
+  outboundFee      Float            @default(0)
+  storageFee       Float            @default(0)
+  handlingFee      Float            @default(0)
+  transportFee     Float            @default(0)
+  shuttleFee       Float            @default(0)
+  totalAmount      Float            @default(0)
+  notes            String?          @db.Text
+  createdBy        String?          @db.VarChar(36)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
 
   warehouse Warehouse          @relation(fields: [warehouseId], references: [id])
   details   SettlementDetail[]
@@ -1515,6 +1523,7 @@ model Helpdesk {
   id          String    @id @default(uuid()) @db.VarChar(36)
   ticketNo    String    @unique @db.VarChar(20)
   title       String    @db.VarChar(200)
+  screenName  String?   @db.VarChar(100)
   content     String    @db.Text
   category    String    @db.VarChar(30)
   priority    String    @default("MEDIUM") @db.VarChar(10)

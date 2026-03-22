@@ -719,6 +719,8 @@ export function useCompleteWorkOrder() {
 // ===== Settlements =====
 export const useSettlements = (params?: QueryParams) =>
   useList<Settlement>("settlements", params);
+export const useSettlement = (id?: string) =>
+  useDetail<Settlement>("settlements", id);
 export const useCreateSettlement = () => useCreate<Settlement>("settlements");
 export const useUpdateSettlement = () => useUpdate<Settlement>("settlements");
 export const useDeleteSettlement = () => useDelete("settlements");
@@ -734,6 +736,8 @@ export const useDeleteContainer = () => useDelete("containers");
 // ===== Container Groups =====
 export const useContainerGroups = (params?: QueryParams) =>
   useList<ContainerGroup>("container-groups", params);
+export const useContainerGroup = (id?: string) =>
+  useDetail<ContainerGroup>("container-groups", id);
 export const useCreateContainerGroup = () => useCreate<ContainerGroup>("container-groups");
 export const useUpdateContainerGroup = () => useUpdate<ContainerGroup>("container-groups");
 export const useDeleteContainerGroup = () => useDelete("container-groups");
@@ -741,13 +745,19 @@ export const useDeleteContainerGroup = () => useDelete("container-groups");
 // ===== Ownership Transfers =====
 export const useOwnershipTransfers = (params?: QueryParams) =>
   useList<OwnershipTransfer>("ownership-transfers", params);
+export const useOwnershipTransfer = (id?: string) =>
+  useDetail<OwnershipTransfer>("ownership-transfers", id);
 export const useCreateOwnershipTransfer = () => useCreate<OwnershipTransfer>("ownership-transfers");
+export const useUpdateOwnershipTransfer = () => useUpdate<OwnershipTransfer>("ownership-transfers");
 export const useDeleteOwnershipTransfer = () => useDelete("ownership-transfers");
 
 // ===== Assemblies =====
 export const useAssemblies = (params?: QueryParams) =>
   useList<Assembly>("assemblies", params);
+export const useAssembly = (id?: string) =>
+  useDetail<Assembly>("assemblies", id);
 export const useCreateAssembly = () => useCreate<Assembly>("assemblies");
+export const useUpdateAssembly = () => useUpdate<Assembly>("assemblies");
 export const useDeleteAssembly = () => useDelete("assemblies");
 
 // ===== Stock Transfers =====
@@ -760,7 +770,10 @@ export const useDeleteStockTransfer = () => useDelete("stock-transfers");
 // ===== Location Products =====
 export const useLocationProducts = (params?: QueryParams) =>
   useList<LocationProduct>("location-products", params);
+export const useLocationProduct = (id?: string) =>
+  useDetail<LocationProduct>("location-products", id);
 export const useCreateLocationProduct = () => useCreate<LocationProduct>("location-products");
+export const useUpdateLocationProduct = () => useUpdate<LocationProduct>("location-products");
 export const useDeleteLocationProduct = () => useDelete("location-products");
 
 // ===== Container Inventories =====
@@ -770,7 +783,24 @@ export const useContainerInventories = (params?: QueryParams) =>
 // ===== Period Closes =====
 export const usePeriodCloses = (params?: QueryParams) =>
   useList<PeriodClose>("period-closes", params);
+export const usePeriodClose = (id?: string) =>
+  useDetail<PeriodClose>("period-closes", id);
 export const useCreatePeriodClose = () => useCreate<PeriodClose>("period-closes");
+export const useUpdatePeriodClose = () => useUpdate<PeriodClose>("period-closes");
+export const useDeletePeriodClose = () => useDelete("period-closes");
+
+export function useExecutePeriodClose() {
+  const queryClient = useQueryClient();
+  return useMutation<PeriodClose, Error, string>({
+    mutationFn: async (id) => {
+      const { data: wrapped } = await api.post(`/period-closes/${id}/execute`);
+      return wrapped.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["period-closes"] });
+    },
+  });
+}
 
 // ===== UOM =====
 export function useUoms(params?: QueryParams) {
@@ -814,6 +844,30 @@ export function useDispatches(params?: QueryParams) {
       const inner = wrapped.data;
       if (inner.meta) return { data: inner.data, ...inner.meta };
       return inner;
+    },
+  });
+}
+
+export function useDispatch(id?: string) {
+  return useQuery({
+    queryKey: ["dispatches", id],
+    queryFn: async () => {
+      const { data: wrapped } = await api.get(`/dispatches/${id}`);
+      return wrapped.data;
+    },
+    enabled: !!id,
+  });
+}
+
+export function useUpdateDispatch() {
+  const queryClient = useQueryClient();
+  return useMutation<unknown, Error, { id: string; payload: Record<string, unknown> }>({
+    mutationFn: async ({ id, payload }) => {
+      const { data: wrapped } = await api.put(`/dispatches/${id}`, payload);
+      return wrapped.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["dispatches"] });
     },
   });
 }

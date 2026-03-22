@@ -42,7 +42,7 @@ export default function InboundFormModal({
   // Quick tab state
   const [quickWarehouseId, setQuickWarehouseId] = useState("");
   const [quickPartnerId, setQuickPartnerId] = useState("");
-  const [quickExpectedDate, setQuickExpectedDate] = useState("");
+  const [quickExpectedDate, setQuickExpectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [quickNotes, setQuickNotes] = useState("");
   const [quickSearch, setQuickSearch] = useState("");
   const [quickQty, setQuickQty] = useState<Record<string, number>>({});
@@ -70,7 +70,7 @@ export default function InboundFormModal({
       orderNumber: "",
       partnerId: "",
       warehouseId: "",
-      expectedDate: "",
+      expectedDate: new Date().toISOString().split('T')[0],
       notes: "",
       items: [{ itemId: "", expectedQty: 1 }],
     },
@@ -166,7 +166,7 @@ export default function InboundFormModal({
   const resetQuick = () => {
     setQuickWarehouseId("");
     setQuickPartnerId("");
-    setQuickExpectedDate("");
+    setQuickExpectedDate(new Date().toISOString().split('T')[0]);
     setQuickNotes("");
     setQuickSearch("");
     setQuickQty({});

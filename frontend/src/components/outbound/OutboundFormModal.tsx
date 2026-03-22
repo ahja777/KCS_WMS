@@ -6,6 +6,8 @@ import { Plus, Trash2, AlertCircle, Search, RotateCcw } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
 import ItemSearchPopup from "@/components/ui/ItemSearchPopup";
+import InboundDataPopup from "@/components/outbound/InboundDataPopup";
+import type { SelectedInboundItem } from "@/components/outbound/InboundDataPopup";
 import {
   usePartners,
   useWarehouses,
@@ -91,11 +93,12 @@ export default function OutboundFormModal({
   const [activeItemDropdown, setActiveItemDropdown] = useState<number | null>(
     null
   );
+  const [showInboundPopup, setShowInboundPopup] = useState(false);
 
   // Quick tab state
   const [quickWarehouseId, setQuickWarehouseId] = useState("");
   const [quickPartnerId, setQuickPartnerId] = useState("");
-  const [quickShipDate, setQuickShipDate] = useState("");
+  const [quickShipDate, setQuickShipDate] = useState(new Date().toISOString().split('T')[0]);
   const [quickNotes, setQuickNotes] = useState("");
   const [quickSearch, setQuickSearch] = useState("");
   const [quickQty, setQuickQty] = useState<Record<string, number>>({});
@@ -130,7 +133,7 @@ export default function OutboundFormModal({
     defaultValues: {
       orderNumber: "",
       partnerId: "",
-      shipDate: "",
+      shipDate: new Date().toISOString().split('T')[0],
       blNumber: "",
       deliveryPartnerId: "",
       orderType: "NORMAL",
@@ -244,7 +247,7 @@ export default function OutboundFormModal({
   const resetQuick = () => {
     setQuickWarehouseId("");
     setQuickPartnerId("");
-    setQuickShipDate("");
+    setQuickShipDate(new Date().toISOString().split('T')[0]);
     setQuickNotes("");
     setQuickSearch("");
     setQuickQty({});
@@ -446,6 +449,14 @@ export default function OutboundFormModal({
               }}
             >
               신규배송처
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowInboundPopup(true)}
+            >
+              입고내역
             </Button>
             <div className="flex-1" />
             <Button
@@ -772,6 +783,26 @@ export default function OutboundFormModal({
               }
             }}
             excludeIds={watchItems?.map((i) => i.itemId).filter(Boolean) ?? []}
+          />
+
+          {/* Inbound Data Popup */}
+          <InboundDataPopup
+            isOpen={showInboundPopup}
+            onClose={() => setShowInboundPopup(false)}
+            onSelect={(items: SelectedInboundItem[]) => {
+              if (items.length === 0) return;
+              // Set partner and warehouse from the first selected item
+              setValue("partnerId", items[0].partnerId);
+              setValue("warehouseId", items[0].warehouseId);
+              // Clear existing items and add new lines from inbound data
+              const newLines: OutboundLineForm[] = items.map((item) => ({
+                ...defaultLine,
+                itemId: item.itemId,
+                orderedQty: item.quantity,
+                uom: item.uom,
+              }));
+              setValue("items", newLines);
+            }}
           />
         </form>
       ) : (

@@ -8,6 +8,7 @@ import { formatNumber, formatDate } from "@/lib/utils";
 import { useWarehouses } from "@/hooks/useApi";
 import { useQuery } from "@tanstack/react-query";
 import api from "@/lib/api";
+import { useToastStore } from "@/stores/toast.store";
 import InventoryTabNav from "@/components/inventory/InventoryTabNav";
 import type { PaginatedResponse, InventoryTransaction } from "@/types";
 
@@ -136,7 +137,7 @@ export default function InventoryTransactionsPage() {
 
       {/* Action buttons */}
       <div className="flex justify-end gap-2">
-        <Button variant="danger" size="sm">저장</Button>
+        <Button variant="danger" size="sm" onClick={() => useToastStore.getState().addToast({ type: "success", message: "저장되었습니다." })}>저장</Button>
         <Button variant="outline" size="sm" className="!bg-[#22C55E] !text-white !border-[#22C55E]">엑셀</Button>
       </div>
 
