@@ -3,32 +3,23 @@
 import { useState } from "react";
 import { Plus, AlertCircle } from "lucide-react";
 import Table, { type Column } from "@/components/ui/Table";
-import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
+import Modal from "@/components/ui/Modal";
 import { formatNumber, formatDateTime } from "@/lib/utils";
-import { useWarehouses, useStockAdjustments } from "@/hooks/useApi";
+import { useWarehouses, useStockAdjustments, useCreateAdjustment } from "@/hooks/useApi";
 import { useToastStore } from "@/stores/toast.store";
-import AdjustmentFormModal from "@/components/inventory/AdjustmentFormModal";
 import InventoryTabNav from "@/components/inventory/InventoryTabNav";
 import type { StockAdjustment } from "@/types";
 
 const REASON_LABELS: Record<string, string> = {
-  DAMAGE: "파손",
-  LOSS: "분실",
-  FOUND: "발견",
-  CORRECTION: "보정",
-  RETURN: "반품",
-  EXPIRED: "유효기간 만료",
+  DAMAGE: "파손", LOSS: "분실", FOUND: "발견", CORRECTION: "보정", RETURN: "반품", EXPIRED: "유효기간 만료",
 };
 
-const REASON_COLORS: Record<string, string> = {
-  DAMAGE: "bg-[#FFEAED] text-[#F04452]",
-  LOSS: "bg-[#FFEAED] text-[#F04452]",
-  FOUND: "bg-[#E8F7EF] text-[#1FC47D]",
-  CORRECTION: "bg-[#E8F2FF] text-[#3182F6]",
-  RETURN: "bg-[#FFF3E0] text-[#FF8B00]",
-  EXPIRED: "bg-[#FFF3E0] text-[#FF8B00]",
-};
+const inputBase =
+  "w-full rounded-xl border-0 bg-[#F7F8FA] px-4 py-3 text-sm text-[#191F28] placeholder-[#B0B8C1] outline-none transition-all focus:border focus:border-[#3182F6] focus:bg-white focus:ring-2 focus:ring-[#3182F6]/20";
+
+const selectBase =
+  "w-full rounded-xl border-0 bg-[#F7F8FA] px-4 py-3 text-sm text-[#191F28] outline-none transition-colors focus:bg-[#F2F4F6] focus:ring-2 focus:ring-[#3182F6]/20";
 
 export default function AdjustmentsPage() {
   const [warehouseFilter, setWarehouseFilter] = useState("");
@@ -39,10 +30,7 @@ export default function AdjustmentsPage() {
   const { data: warehouseResponse } = useWarehouses({ limit: 100 });
   const warehouseOptions = [
     { value: "", label: "전체 창고" },
-    ...(warehouseResponse?.data ?? []).map((w) => ({
-      value: w.id,
-      label: w.name,
-    })),
+    ...(warehouseResponse?.data ?? []).map((w) => ({ value: w.id, label: w.name })),
   ];
 
   const { data: response, isLoading, error } = useStockAdjustments(
@@ -54,85 +42,60 @@ export default function AdjustmentsPage() {
   const total = response?.total ?? 0;
   const totalPages = response?.totalPages ?? 1;
 
+  // Columns matching slide 34 grid: No, 작업일, 작업시간, 작업구분, 작업수량, 기존재고, 작업자
   const columns: Column<StockAdjustment>[] = [
     {
+      key: "createdAt",
+      header: "작업일",
+      sortable: true,
+      render: (row) => <span className="text-sm text-[#4E5968]">{row.createdAt?.slice(0, 10) ?? "-"}</span>,
+    },
+    {
+      key: "time",
+      header: "작업시간",
+      render: (row) => <span className="text-sm text-[#4E5968]">{row.createdAt?.slice(11, 19) ?? "-"}</span>,
+    },
+    {
       key: "item",
-      header: "품목",
+      header: "상품",
       render: (row) => (
         <div>
-          <p className="text-sm font-medium text-[#191F28]">{row.item?.code ?? "-"}</p>
-          <p className="text-xs text-[#8B95A1]">{row.item?.name ?? "-"}</p>
+          <span className="text-sm font-medium text-[#191F28]">{row.item?.code ?? "-"}</span>
+          <span className="ml-2 text-sm text-[#8B95A1]">{row.item?.name ?? ""}</span>
         </div>
       ),
     },
     {
+      key: "reason",
+      header: "작업구분",
+      render: (row) => <span className="text-sm text-[#4E5968]">{REASON_LABELS[row.reason] || row.reason}</span>,
+    },
+    {
       key: "quantity",
-      header: "조정 수량",
+      header: "작업수량",
       render: (row) => {
         const isPositive = row.quantity > 0;
         return (
           <span className={`text-sm font-bold ${isPositive ? "text-[#1FC47D]" : "text-[#F04452]"}`}>
-            {isPositive ? "+" : ""}
-            {formatNumber(row.quantity)}
+            {isPositive ? "+" : ""}{formatNumber(row.quantity)}
           </span>
         );
       },
     },
     {
-      key: "reason",
-      header: "사유",
-      render: (row) => (
-        <span
-          className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${REASON_COLORS[row.reason] || "bg-[#F2F4F6] text-[#8B95A1]"}`}
-        >
-          {REASON_LABELS[row.reason] || row.reason}
-        </span>
-      ),
-    },
-    {
       key: "beforeQty",
-      header: "조정전 수량",
-      render: (row) => (
-        <span className="text-sm text-[#4E5968]">{formatNumber(row.beforeQty)}</span>
-      ),
-    },
-    {
-      key: "afterQty",
-      header: "조정후 수량",
-      render: (row) => (
-        <span className="text-sm font-semibold text-[#191F28]">{formatNumber(row.afterQty)}</span>
-      ),
+      header: "기존재고",
+      render: (row) => <span className="text-sm text-[#4E5968]">{formatNumber(row.beforeQty)}</span>,
     },
     {
       key: "adjustedBy",
-      header: "담당자",
-      render: (row) => (
-        <span className="text-sm text-[#4E5968]">{row.adjustedBy ?? "-"}</span>
-      ),
-    },
-    {
-      key: "notes",
-      header: "비고",
-      render: (row) => (
-        <span className="text-sm text-[#8B95A1] max-w-[160px] truncate block">
-          {row.notes ?? "-"}
-        </span>
-      ),
-    },
-    {
-      key: "createdAt",
-      header: "일시",
-      sortable: true,
-      render: (row) => (
-        <span className="text-sm text-[#4E5968] whitespace-nowrap">
-          {formatDateTime(row.createdAt)}
-        </span>
-      ),
+      header: "작업자",
+      render: (row) => <span className="text-sm text-[#4E5968]">{row.adjustedBy ?? "-"}</span>,
     },
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-[#191F28]">재고 조정</h1>
         <Button onClick={() => setIsModalOpen(true)}>
@@ -147,16 +110,11 @@ export default function AdjustmentsPage() {
         <div className="mb-6 flex flex-wrap items-center gap-4">
           <select
             value={warehouseFilter}
-            onChange={(e) => {
-              setWarehouseFilter(e.target.value);
-              setPage(1);
-            }}
+            onChange={(e) => { setWarehouseFilter(e.target.value); setPage(1); }}
             className="rounded-xl border-0 bg-[#F7F8FA] px-4 py-3 text-sm text-[#191F28] outline-none transition-colors focus:bg-[#F2F4F6] focus:ring-2 focus:ring-[#3182F6]/20"
           >
             {warehouseOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
           </select>
         </div>
@@ -180,14 +138,131 @@ export default function AdjustmentsPage() {
         )}
       </div>
 
-      <AdjustmentFormModal
+      {/* Adjustment form modal matching slide 34 popup */}
+      <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSuccess={() => {
-          setIsModalOpen(false);
-          addToast({ type: "success", message: "재고 조정이 완료되었습니다." });
-        }}
-      />
+        title="재고 조정"
+        size="md"
+      >
+        <AdjustmentForm
+          onClose={() => setIsModalOpen(false)}
+          onSuccess={() => {
+            setIsModalOpen(false);
+            addToast({ type: "success", message: "재고 조정이 완료되었습니다." });
+          }}
+        />
+      </Modal>
+    </div>
+  );
+}
+
+function AdjustmentForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+  const [warehouse, setWarehouse] = useState("");
+  const [location, setLocation] = useState("");
+  const [product, setProduct] = useState("");
+  const [uom, setUom] = useState("EA");
+  const [currentStock, setCurrentStock] = useState(0);
+  const [adjustType, setAdjustType] = useState<"+" | "-">("+");
+  const [adjustQty, setAdjustQty] = useState(0);
+  const [reason, setReason] = useState("");
+
+  const createMutation = useCreateAdjustment();
+  const { data: warehouseResponse } = useWarehouses({ limit: 100 });
+  const warehouses = warehouseResponse?.data ?? [];
+
+  const handleSubmit = async () => {
+    if (!warehouse) return;
+    try {
+      const qty = adjustType === "+" ? adjustQty : -adjustQty;
+      await createMutation.mutateAsync({
+        warehouseId: warehouse,
+        itemCode: product,
+        quantity: qty,
+        reason: reason || "CORRECTION",
+        adjustedBy: "admin",
+        notes: reason,
+      });
+      onSuccess();
+    } catch {
+      // error handled by mutation
+    }
+  };
+
+  return (
+    <div className="space-y-5">
+      {/* Form fields matching slide 34 */}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="mb-2 block text-sm font-medium text-[#4E5968]">창고</label>
+          <select value={warehouse} onChange={(e) => setWarehouse(e.target.value)} className={selectBase}>
+            <option value="">선택</option>
+            {warehouses.map((w) => <option key={w.id} value={w.id}>{w.name}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className="mb-2 block text-sm font-medium text-[#4E5968]">로케이션</label>
+          <input type="text" value={location} onChange={(e) => setLocation(e.target.value)} className={inputBase} placeholder="로케이션 코드" />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="mb-2 block text-sm font-medium text-[#4E5968]">상품</label>
+          <input type="text" value={product} onChange={(e) => setProduct(e.target.value)} className={inputBase} placeholder="상품 코드" />
+        </div>
+        <div>
+          <label className="mb-2 block text-sm font-medium text-[#4E5968]">UOM</label>
+          <select value={uom} onChange={(e) => setUom(e.target.value)} className={selectBase}>
+            <option value="EA">EA</option>
+            <option value="BOX">BOX</option>
+            <option value="PALLET">PALLET</option>
+          </select>
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-4">
+        <div>
+          <label className="mb-2 block text-sm font-medium text-[#4E5968]">재고수량</label>
+          <input type="number" value={currentStock} onChange={(e) => setCurrentStock(Number(e.target.value))} className={inputBase} readOnly />
+        </div>
+        <div>
+          <label className="mb-2 block text-sm font-medium text-[#4E5968]">증가/감소</label>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setAdjustType("+")}
+              className={`flex-1 rounded-xl py-3 text-sm font-semibold transition-colors ${adjustType === "+" ? "bg-[#1FC47D] text-white" : "bg-[#F2F4F6] text-[#4E5968]"}`}
+            >
+              + 증가
+            </button>
+            <button
+              onClick={() => setAdjustType("-")}
+              className={`flex-1 rounded-xl py-3 text-sm font-semibold transition-colors ${adjustType === "-" ? "bg-[#F04452] text-white" : "bg-[#F2F4F6] text-[#4E5968]"}`}
+            >
+              - 감소
+            </button>
+          </div>
+        </div>
+        <div>
+          <label className="mb-2 block text-sm font-medium text-[#4E5968]">조정수량</label>
+          <input type="number" value={adjustQty} onChange={(e) => setAdjustQty(Number(e.target.value))} className={inputBase} min={0} />
+        </div>
+      </div>
+      <div>
+        <label className="mb-2 block text-sm font-medium text-[#4E5968]">사유</label>
+        <input type="text" value={reason} onChange={(e) => setReason(e.target.value)} className={inputBase} placeholder="조정 사유를 입력하세요" />
+      </div>
+
+      <div className="flex justify-end gap-3 pt-2">
+        <button onClick={onClose} className="rounded-xl bg-[#F2F4F6] px-6 py-2.5 text-sm font-semibold text-[#4E5968] hover:bg-[#E5E8EB]">
+          닫기
+        </button>
+        <button
+          onClick={handleSubmit}
+          disabled={createMutation.isPending}
+          className="rounded-xl bg-[#3182F6] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#1B64DA] disabled:opacity-50"
+        >
+          {createMutation.isPending ? "처리중..." : "저장"}
+        </button>
+      </div>
     </div>
   );
 }

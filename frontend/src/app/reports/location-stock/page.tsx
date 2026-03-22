@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useCallback } from "react";
 import Link from "next/link";
-import { ArrowLeft, MapPin, Package, Download, AlertCircle } from "lucide-react";
+import { ArrowLeft, Search, Download, AlertCircle } from "lucide-react";
 import Table, { type Column } from "@/components/ui/Table";
 import Button from "@/components/ui/Button";
 import { formatNumber } from "@/lib/utils";
@@ -13,6 +13,7 @@ import type { Inventory } from "@/types";
 export default function LocationStockReportPage() {
   const [warehouseId, setWarehouseId] = useState("");
   const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [page, setPage] = useState(1);
 
   const { data: warehouseResponse } = useWarehouses({ limit: 100 });
@@ -29,11 +30,18 @@ export default function LocationStockReportPage() {
   const total = inventoryResponse?.total ?? 0;
   const totalPages = inventoryResponse?.totalPages ?? 1;
 
-  const summary = useMemo(() => ({
-    totalLocations: new Set(items.map((i) => i.locationCode).filter(Boolean)).size,
-    totalQty: items.reduce((s, i) => s + i.quantity, 0),
-    totalItems: new Set(items.map((i) => i.itemId)).size,
-  }), [items]);
+  const handleSearch = useCallback(() => {
+    setSearch(searchInput);
+    setPage(1);
+  }, [searchInput]);
+
+  const handleExcel = useCallback(() => {
+    const params = new URLSearchParams();
+    if (warehouseId) params.set("warehouseId", warehouseId);
+    if (search) params.set("search", search);
+    const qs = params.toString();
+    downloadExcel(`/export/inventory${qs ? `?${qs}` : ""}`, "로케이션별재고조회.xlsx");
+  }, [warehouseId, search]);
 
   const columns: Column<Inventory>[] = [
     {
@@ -41,56 +49,55 @@ export default function LocationStockReportPage() {
       header: "로케이션",
       sortable: true,
       render: (row) => (
-        <div className="flex items-center gap-2">
-          <MapPin className="h-4 w-4 text-[#8B95A1]" />
-          <span className="text-sm font-medium text-[#191F28]">{row.locationCode || "-"}</span>
-        </div>
+        <span className="text-sm font-medium text-[#191F28]">{row.locationCode || "-"}</span>
       ),
     },
     {
+      key: "warehouseName",
+      header: "창고",
+      render: (row) => <span className="text-sm text-[#4E5968]">{row.warehouse?.name ?? "-"}</span>,
+    },
+    {
       key: "itemCode",
-      header: "품목코드",
+      header: "상품코드",
+      sortable: true,
       render: (row) => <span className="text-sm font-mono text-[#4E5968]">{row.item?.code ?? "-"}</span>,
     },
     {
       key: "itemName",
-      header: "품목명",
+      header: "상품명",
       render: (row) => <span className="text-sm text-[#191F28]">{row.item?.name ?? "-"}</span>,
     },
     {
-      key: "lotNo",
-      header: "LOT번호",
-      render: (row) =>
-        row.lotNumber ? (
-          <span className="rounded-lg bg-[#F2F4F6] px-2 py-1 text-xs font-medium text-[#4E5968]">{row.lotNumber}</span>
-        ) : (
-          <span className="text-sm text-[#B0B8C1]">-</span>
-        ),
-    },
-    {
       key: "quantity",
-      header: "총수량",
+      header: "수량",
       sortable: true,
       render: (row) => <span className="text-sm font-bold text-[#191F28]">{formatNumber(row.quantity)}</span>,
     },
     {
-      key: "availableQty",
-      header: "가용수량",
-      render: (row) => <span className="text-sm font-semibold text-[#1FC47D]">{formatNumber(row.availableQty)}</span>,
-    },
-    {
-      key: "reservedQty",
-      header: "예약수량",
+      key: "uom",
+      header: "UOM",
       render: (row) => (
-        <span className={`text-sm font-semibold ${row.reservedQty > 0 ? "text-[#FF8B00]" : "text-[#B0B8C1]"}`}>
-          {formatNumber(row.reservedQty)}
+        <span className="inline-flex items-center rounded-full bg-[#F2F4F6] px-2.5 py-0.5 text-xs font-medium text-[#4E5968]">
+          {row.item?.uom ?? "-"}
         </span>
       ),
+    },
+    {
+      key: "lotNumber",
+      header: "LOT번호",
+      render: (row) =>
+        row.lotNumber ? (
+          <span className="rounded-lg bg-[#E8F3FF] px-2 py-1 text-xs font-medium text-[#3182F6]">{row.lotNumber}</span>
+        ) : (
+          <span className="text-sm text-[#B0B8C1]">-</span>
+        ),
     },
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link
@@ -99,22 +106,34 @@ export default function LocationStockReportPage() {
           >
             <ArrowLeft className="h-5 w-5" />
           </Link>
-          <h1 className="text-2xl font-bold text-[#191F28]">로케이션별 재고 현황</h1>
+          <div>
+            <h1 className="text-2xl font-bold text-[#191F28]">로케이션별재고조회</h1>
+            <p className="text-sm text-[#8B95A1]">리포트 &gt; 로케이션별재고조회</p>
+          </div>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => downloadExcel(`/export/inventory${warehouseId ? `?warehouseId=${warehouseId}` : ""}`, "로케이션별재고.xlsx")}
-        >
-          <Download className="h-4 w-4" />
-          엑셀 다운로드
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleExcel}>
+            <Download className="h-4 w-4" />
+            엑셀
+          </Button>
+        </div>
       </div>
 
-      {/* Filters */}
-      <div className="rounded-2xl bg-white p-7 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-        <div className="flex flex-wrap gap-4">
-          <div className="min-w-[200px] flex-1">
+      {/* Search Filters */}
+      <div className="rounded-2xl bg-white p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+        <div className="flex flex-wrap items-end gap-4">
+          <div className="min-w-[180px] flex-1">
+            <label className="mb-2 block text-sm font-medium text-[#4E5968]">로케이션</label>
+            <input
+              type="text"
+              placeholder="로케이션 검색..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+              className="w-full rounded-xl border-0 bg-[#F7F8FA] px-4 py-3 text-sm text-[#191F28] placeholder-[#B0B8C1] outline-none focus:ring-2 focus:ring-[#3182F6]/20"
+            />
+          </div>
+          <div className="min-w-[180px] flex-1">
             <label className="mb-2 block text-sm font-medium text-[#4E5968]">창고</label>
             <select
               value={warehouseId}
@@ -127,44 +146,40 @@ export default function LocationStockReportPage() {
               ))}
             </select>
           </div>
-          <div className="min-w-[200px] flex-1">
-            <label className="mb-2 block text-sm font-medium text-[#4E5968]">검색</label>
-            <input
-              type="text"
-              placeholder="품목코드, 품목명 검색..."
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-              className="w-full rounded-xl border-0 bg-[#F7F8FA] px-4 py-3 text-sm text-[#191F28] placeholder-[#B0B8C1] outline-none focus:ring-2 focus:ring-[#3182F6]/20"
-            />
+          <div className="min-w-[180px] flex-1">
+            <label className="mb-2 block text-sm font-medium text-[#4E5968]">화주</label>
+            <select
+              className="w-full rounded-xl border-0 bg-[#F7F8FA] px-4 py-3 text-sm text-[#191F28] outline-none focus:ring-2 focus:ring-[#3182F6]/20"
+              defaultValue=""
+            >
+              <option value="">전체</option>
+            </select>
           </div>
-        </div>
-      </div>
-
-      {/* Summary */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-        <div className="rounded-2xl bg-white p-7 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-          <p className="text-sm text-[#8B95A1]">로케이션 수</p>
-          <p className="mt-2 text-3xl font-bold text-[#3182F6]">{formatNumber(summary.totalLocations)}</p>
-        </div>
-        <div className="rounded-2xl bg-white p-7 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-          <p className="text-sm text-[#8B95A1]">품목 수</p>
-          <p className="mt-2 text-3xl font-bold text-[#191F28]">{formatNumber(summary.totalItems)}</p>
-        </div>
-        <div className="rounded-2xl bg-white p-7 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-          <p className="text-sm text-[#8B95A1]">총 재고 수량</p>
-          <p className="mt-2 text-3xl font-bold text-[#1FC47D]">{formatNumber(summary.totalQty)}</p>
+          <Button size="sm" onClick={handleSearch}>
+            <Search className="h-4 w-4" />
+            조회
+          </Button>
         </div>
       </div>
 
       {/* Table */}
-      <div className="rounded-2xl bg-white p-7 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+      <div className="rounded-2xl bg-white p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
         {error ? (
           <div className="flex items-center gap-3 rounded-xl bg-red-50 p-5 text-sm text-red-600">
             <AlertCircle className="h-5 w-5 shrink-0" />
             데이터를 불러오는 중 오류가 발생했습니다.
           </div>
         ) : (
-          <Table columns={columns} data={items} isLoading={isLoading} page={page} totalPages={totalPages} total={total} onPageChange={setPage} emptyMessage="재고 데이터가 없습니다." />
+          <Table
+            columns={columns}
+            data={items}
+            isLoading={isLoading}
+            page={page}
+            totalPages={totalPages}
+            total={total}
+            onPageChange={setPage}
+            emptyMessage="재고 데이터가 없습니다."
+          />
         )}
       </div>
     </div>

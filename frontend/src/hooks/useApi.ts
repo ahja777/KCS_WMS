@@ -24,6 +24,14 @@ import type {
   ItemGroup,
   WorkOrder,
   Settlement,
+  Container,
+  ContainerGroup,
+  OwnershipTransfer,
+  Assembly,
+  StockTransfer,
+  LocationProduct,
+  PeriodClose,
+  ContainerInventory,
 } from "@/types";
 
 // All backend responses are wrapped by TransformInterceptor:
@@ -715,6 +723,63 @@ export const useCreateSettlement = () => useCreate<Settlement>("settlements");
 export const useUpdateSettlement = () => useUpdate<Settlement>("settlements");
 export const useDeleteSettlement = () => useDelete("settlements");
 
+// ===== Containers =====
+export const useContainers = (params?: QueryParams) =>
+  useList<Container>("containers", params);
+export const useContainer = (id?: string) => useDetail<Container>("containers", id);
+export const useCreateContainer = () => useCreate<Container>("containers");
+export const useUpdateContainer = () => useUpdate<Container>("containers");
+export const useDeleteContainer = () => useDelete("containers");
+
+// ===== Container Groups =====
+export const useContainerGroups = (params?: QueryParams) =>
+  useList<ContainerGroup>("container-groups", params);
+export const useCreateContainerGroup = () => useCreate<ContainerGroup>("container-groups");
+export const useUpdateContainerGroup = () => useUpdate<ContainerGroup>("container-groups");
+export const useDeleteContainerGroup = () => useDelete("container-groups");
+
+// ===== Ownership Transfers =====
+export const useOwnershipTransfers = (params?: QueryParams) =>
+  useList<OwnershipTransfer>("ownership-transfers", params);
+export const useCreateOwnershipTransfer = () => useCreate<OwnershipTransfer>("ownership-transfers");
+export const useDeleteOwnershipTransfer = () => useDelete("ownership-transfers");
+
+// ===== Assemblies =====
+export const useAssemblies = (params?: QueryParams) =>
+  useList<Assembly>("assemblies", params);
+export const useCreateAssembly = () => useCreate<Assembly>("assemblies");
+export const useDeleteAssembly = () => useDelete("assemblies");
+
+// ===== Stock Transfers =====
+export const useStockTransfers = (params?: QueryParams) =>
+  useList<StockTransfer>("stock-transfers", params);
+export const useCreateStockTransfer = () => useCreate<StockTransfer>("stock-transfers");
+export const useUpdateStockTransfer = () => useUpdate<StockTransfer>("stock-transfers");
+export const useDeleteStockTransfer = () => useDelete("stock-transfers");
+
+// ===== Location Products =====
+export const useLocationProducts = (params?: QueryParams) =>
+  useList<LocationProduct>("loc-products", params);
+export const useCreateLocationProduct = () => useCreate<LocationProduct>("loc-products");
+export const useDeleteLocationProduct = () => useDelete("loc-products");
+
+// ===== Container Inventories =====
+export const useContainerInventories = (params?: QueryParams) =>
+  useList<ContainerInventory>("container-inventories", params);
+
+// ===== Period Closes =====
+export const usePeriodCloses = (params?: QueryParams) =>
+  useList<PeriodClose>("period-close", params);
+export const useCreatePeriodClose = () => useCreate<PeriodClose>("period-close");
+
+// ===== UOM =====
+export function useUoms(params?: QueryParams) {
+  return useList<{ id: string; code: string; name: string }>("uom", params);
+}
+export const useCreateUom = () => useCreate<{ id: string; code: string; name: string }>("uom");
+export const useUpdateUom = () => useUpdate<{ id: string; code: string; name: string }>("uom");
+export const useDeleteUom = () => useDelete("uom");
+
 export function useConfirmSettlement() {
   const queryClient = useQueryClient();
   return useMutation<Settlement, Error, string>({
@@ -727,3 +792,15 @@ export function useConfirmSettlement() {
     },
   });
 }
+
+// ===== Set Items =====
+export const useSetItems = (params?: QueryParams) =>
+  useList<any>("set-items", params);
+export const useCreateSetItem = () => useCreate<any>("set-items");
+export const useDeleteSetItem = () => useDelete("set-items");
+
+// ===== Partner Products =====
+export const usePartnerProducts = (params?: QueryParams) =>
+  useList<any>("partner-products", params);
+export const useCreatePartnerProduct = () => useCreate<any>("partner-products");
+export const useDeletePartnerProduct = () => useDelete("partner-products");

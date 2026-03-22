@@ -301,6 +301,7 @@ model Partner {
 
   inboundOrders  InboundOrder[]
   outboundOrders OutboundOrder[]
+  containers     Container[]
 
   @@index([type])
   @@index([name])
@@ -1045,4 +1046,251 @@ model ChannelSyncLog {
   @@index([channelId, syncType])
   @@index([channelId, createdAt])
   @@map("channel_sync_logs")
+}
+
+// ─── 화면설계서 기반 신규 모델 ─────────────────────────────
+
+// 물류용기군 (WMSPL020)
+model ContainerGroup {
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  groupCode String   @unique @db.VarChar(20)
+  groupName String   @db.VarChar(100)
+  centerId  String?  @db.VarChar(36)
+  zoneId    String?  @db.VarChar(36)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  containers Container[]
+
+  @@map("container_groups")
+}
+
+// 물류용기 (WMSPL010)
+model Container {
+  id                   String   @id @default(uuid()) @db.VarChar(36)
+  containerCode        String   @unique @db.VarChar(30)
+  containerName        String   @db.VarChar(100)
+  containerGroupId     String?  @db.VarChar(36)
+  partnerId            String?  @db.VarChar(36)
+  inboundWarehouseCode String?  @db.VarChar(20)
+  inboundZone          String?  @db.VarChar(20)
+  shelfLife            Int?
+  shelfLifeDays        Int?
+  weight               Float?
+  size                 String?  @db.VarChar(20)
+  notes                String?  @db.Text
+  optimalStock         Int?
+  stockUnit            String?  @db.VarChar(10)
+  isActive             Boolean  @default(true)
+  optimalStockDays     Int?
+  expiryDays           Int?
+  unitPrice            Float?
+  assetType            String?  @db.VarChar(20)
+  tagPrefix            String?  @db.VarChar(20)
+  companyEpcCode       String?  @db.VarChar(50)
+  barcode              String?  @db.VarChar(50)
+  weightToleranceKg    Float?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  containerGroup ContainerGroup? @relation(fields: [containerGroupId], references: [id])
+  partner        Partner?        @relation(fields: [partnerId], references: [id])
+
+  @@index([containerGroupId])
+  @@index([partnerId])
+  @@map("containers")
+}
+
+// 용기재고 (WMSST011)
+model ContainerInventory {
+  id             String    @id @default(uuid()) @db.VarChar(36)
+  partnerId      String?   @db.VarChar(36)
+  containerCode  String    @db.VarChar(30)
+  containerName  String?   @db.VarChar(100)
+  containerGroup String?   @db.VarChar(20)
+  normalStock    Int       @default(0)
+  stockUnit      String?   @db.VarChar(10)
+  optimalStock   Int?
+  locationCode   String?   @db.VarChar(30)
+  warehouseId    String?   @db.VarChar(36)
+  workDate       DateTime?
+  notes          String?   @db.Text
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@map("container_inventories")
+}
+
+// 재고이동 (WMSST040)
+model StockTransfer {
+  id               String    @id @default(uuid()) @db.VarChar(36)
+  partnerId        String?   @db.VarChar(36)
+  warehouseId      String?   @db.VarChar(36)
+  itemId           String?   @db.VarChar(36)
+  status           String    @default("PENDING") @db.VarChar(20)
+  fromLocationCode String    @db.VarChar(30)
+  toLocationCode   String?   @db.VarChar(30)
+  itemGroupCode    String?   @db.VarChar(20)
+  quantity         Int       @default(0)
+  workDateTime     DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([status])
+  @@index([warehouseId])
+  @@map("stock_transfers")
+}
+
+// 명의변경 (WMSST100)
+model OwnershipTransfer {
+  id            String   @id @default(uuid()) @db.VarChar(36)
+  workNumber    String   @db.VarChar(20)
+  status        String   @default("PENDING") @db.VarChar(20)
+  workDate      DateTime
+  fromPartnerId String   @db.VarChar(36)
+  fromItemId    String   @db.VarChar(36)
+  fromQuantity  Int
+  fromUom       String   @db.VarChar(10)
+  toPartnerId   String   @db.VarChar(36)
+  toItemId      String   @db.VarChar(36)
+  toQuantity    Int
+  toUom         String   @db.VarChar(10)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([status])
+  @@map("ownership_transfers")
+}
+
+// 임가공/조립 (WMSST070)
+model Assembly {
+  id          String    @id @default(uuid()) @db.VarChar(36)
+  workNumber  String    @db.VarChar(20)
+  status      String    @default("PENDING") @db.VarChar(20)
+  partnerId   String?   @db.VarChar(36)
+  warehouseId String?   @db.VarChar(36)
+  workDate    DateTime?
+  notes       String?   @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  items AssemblyItem[]
+
+  @@index([status])
+  @@map("assemblies")
+}
+
+model AssemblyItem {
+  id           String   @id @default(uuid()) @db.VarChar(36)
+  assemblyId   String   @db.VarChar(36)
+  itemId       String   @db.VarChar(36)
+  quantity     Int
+  uom          String   @db.VarChar(10)
+  type         String   @db.VarChar(20) // INPUT or OUTPUT
+  locationCode String?  @db.VarChar(30)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  assembly Assembly @relation(fields: [assemblyId], references: [id], onDelete: Cascade)
+
+  @@index([assemblyId])
+  @@map("assembly_items")
+}
+
+// 마감관리 (WMSOP060/WMSMS130)
+model PeriodClose {
+  id          String    @id @default(uuid()) @db.VarChar(36)
+  periodType  String    @db.VarChar(20) // DAILY, MONTHLY, YEARLY
+  periodDate  DateTime
+  warehouseId String?   @db.VarChar(36)
+  partnerId   String?   @db.VarChar(36)
+  status      String    @default("OPEN") @db.VarChar(20)
+  closedBy    String?   @db.VarChar(36)
+  closedAt    DateTime?
+  notes       String?   @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([periodDate])
+  @@index([status])
+  @@map("period_closes")
+}
+
+// LOC별입고상품 (WMSMS101)
+model LocationProduct {
+  id           String   @id @default(uuid()) @db.VarChar(36)
+  locationCode String   @db.VarChar(30)
+  partnerId    String?  @db.VarChar(36)
+  itemId       String   @db.VarChar(36)
+  centerId     String?  @db.VarChar(36)
+  createdBy    String?  @db.VarChar(36)
+  updatedBy    String?  @db.VarChar(36)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([locationCode])
+  @@index([itemId])
+  @@map("location_products")
+}
+
+// 화주별거래처상품 (WMSMS095)
+model PartnerProduct {
+  id                String  @id @default(uuid()) @db.VarChar(36)
+  partnerId         String  @db.VarChar(36)
+  customerPartnerId String  @db.VarChar(36)
+  expiryControl     Boolean @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([partnerId])
+  @@map("partner_products")
+}
+
+// 세트상품 (WMSMS092)
+model SetItem {
+  id           String   @id @default(uuid()) @db.VarChar(36)
+  parentItemId String   @db.VarChar(36)
+  childItemId  String   @db.VarChar(36)
+  quantity     Int      @default(1)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([parentItemId])
+  @@map("set_items")
+}
+
+// 주문이력 (WMSOP013)
+model OrderHistory {
+  id          String   @id @default(uuid()) @db.VarChar(36)
+  orderType   String   @db.VarChar(20) // INBOUND, OUTBOUND
+  orderId     String   @db.VarChar(36)
+  action      String   @db.VarChar(50)
+  beforeData  String?  @db.Text
+  afterData   String?  @db.Text
+  performedBy String?  @db.VarChar(36)
+  performedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([orderId])
+  @@index([orderType])
+  @@map("order_histories")
+}
+
+// 인터페이스 현황 (TMSYS090)
+model InterfaceLog {
+  id            String    @id @default(uuid()) @db.VarChar(36)
+  interfaceType String    @db.VarChar(50)
+  direction     String    @db.VarChar(10) // SEND, RECEIVE
+  status        String    @default("PENDING") @db.VarChar(20)
+  requestData   String?   @db.Text
+  responseData  String?   @db.Text
+  errorMessage  String?   @db.Text
+  processedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([interfaceType])
+  @@index([status])
+  @@map("interface_logs")
 }

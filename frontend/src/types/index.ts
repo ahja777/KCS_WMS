@@ -112,6 +112,13 @@ export interface Item {
   isActive: boolean;
   minStock: number;
   maxStock: number | null;
+  unitPrice?: number;
+  storageType?: string;
+  inboundZone?: string;
+  lotControl?: boolean;
+  expiryControl?: boolean;
+  expiryDays?: number;
+  itemGroupId?: string;
   imageUrl?: string;
   description?: string;
   createdAt: string;
@@ -416,6 +423,174 @@ export interface Settlement {
   totalAmount: number;
   status: SettlementStatus;
   details: SettlementDetail[];
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ===== Container =====
+
+export interface Container {
+  id: string;
+  containerCode: string;
+  containerName: string;
+  containerGroupId?: string;
+  containerGroup?: ContainerGroup;
+  partnerId?: string;
+  partner?: { id: string; code: string; name: string };
+  inboundWarehouseCode?: string;
+  inboundZone?: string;
+  shelfLife?: number;
+  shelfLifeDays?: number;
+  weight?: number;
+  size?: string;
+  notes?: string;
+  optimalStock?: number;
+  stockUnit?: string;
+  isActive: boolean;
+  optimalStockDays?: number;
+  expiryDays?: number;
+  unitPrice?: number;
+  assetType?: string;
+  tagPrefix?: string;
+  companyEpcCode?: string;
+  barcode?: string;
+  weightToleranceKg?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ===== Container Group =====
+
+export interface ContainerGroup {
+  id: string;
+  groupCode: string;
+  groupName: string;
+  centerId?: string;
+  zoneId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ===== Ownership Transfer =====
+
+export interface OwnershipTransfer {
+  id: string;
+  transferNumber: string;
+  warehouseId: string;
+  warehouse?: Warehouse;
+  itemId: string;
+  item?: Item;
+  fromPartnerId: string;
+  fromPartner?: Partner;
+  toPartnerId: string;
+  toPartner?: Partner;
+  quantity: number;
+  lotNumber?: string;
+  locationCode?: string;
+  notes?: string;
+  transferredBy?: string;
+  transferDate: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ===== Assembly =====
+
+export interface AssemblyItem {
+  id: string;
+  assemblyId: string;
+  itemId: string;
+  item?: Item;
+  quantity: number;
+  type: "INPUT" | "OUTPUT";
+}
+
+export interface Assembly {
+  id: string;
+  assemblyNumber: string;
+  warehouseId: string;
+  warehouse?: Warehouse;
+  status: "DRAFT" | "IN_PROGRESS" | "COMPLETED" | "CANCELLED";
+  items: AssemblyItem[];
+  notes?: string;
+  assembledBy?: string;
+  assemblyDate?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ===== Stock Transfer =====
+
+export interface StockTransfer {
+  id: string;
+  transferNumber: string;
+  fromWarehouseId: string;
+  fromWarehouse?: Warehouse;
+  toWarehouseId: string;
+  toWarehouse?: Warehouse;
+  itemId: string;
+  item?: Item;
+  quantity: number;
+  status: "DRAFT" | "IN_TRANSIT" | "COMPLETED" | "CANCELLED";
+  fromLocationCode?: string;
+  toLocationCode?: string;
+  lotNumber?: string;
+  notes?: string;
+  transferredBy?: string;
+  transferDate?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ===== Location Product =====
+
+export interface LocationProduct {
+  id: string;
+  warehouseId: string;
+  warehouse?: Warehouse;
+  locationCode: string;
+  itemId: string;
+  item?: Item;
+  priority?: number;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ===== Period Close =====
+
+export interface PeriodClose {
+  id: string;
+  warehouseId: string;
+  warehouse?: Warehouse;
+  periodFrom: string;
+  periodTo: string;
+  status: "OPEN" | "CLOSED" | "LOCKED";
+  closedBy?: string;
+  closedAt?: string;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ===== Container Inventory =====
+
+export interface ContainerInventory {
+  id: string;
+  partnerId?: string;
+  partnerCode?: string;
+  partnerName?: string;
+  containerCode: string;
+  containerName?: string;
+  containerGroup?: string;
+  normalStock: number;
+  stockUnit?: string;
+  optimalStock?: number;
+  locationCode?: string;
+  warehouseId?: string;
+  warehouseName?: string;
+  workDate?: string;
   notes?: string;
   createdAt: string;
   updatedAt: string;

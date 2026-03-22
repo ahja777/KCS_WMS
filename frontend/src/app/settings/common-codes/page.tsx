@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Search, Trash2, AlertCircle } from "lucide-react";
+import { Search, AlertCircle, Download } from "lucide-react";
 import Table, { type Column } from "@/components/ui/Table";
 import Badge from "@/components/ui/Badge";
+import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import {
@@ -34,49 +35,97 @@ type CodeFormData = z.infer<typeof codeSchema>;
 const inputBase =
   "w-full rounded-xl border-0 bg-[#F7F8FA] px-4 py-3 text-sm text-[#191F28] placeholder-[#B0B8C1] outline-none transition-all focus:border focus:border-[#3182F6] focus:bg-white focus:ring-2 focus:ring-[#3182F6]/20";
 
+const selectBase =
+  "rounded-xl border-0 bg-[#F7F8FA] px-4 py-3 text-sm text-[#191F28] outline-none transition-colors focus:bg-[#F2F4F6] focus:ring-2 focus:ring-[#3182F6]/20";
+
 export default function CommonCodesPage() {
-  const [search, setSearch] = useState("");
-  const debouncedSearch = useDebounce(search);
+  const [searchGroupCode, setSearchGroupCode] = useState("");
+  const [searchGroupName, setSearchGroupName] = useState("");
+  const [searchUserType, setSearchUserType] = useState("");
   const [selectedGroup, setSelectedGroup] = useState<string>("");
-  const [page, setPage] = useState(1);
+  const [leftPage, setLeftPage] = useState(1);
+  const [rightPage, setRightPage] = useState(1);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isRightFormOpen, setIsRightFormOpen] = useState(false);
   const [editingCode, setEditingCode] = useState<CommonCode | undefined>();
   const [deletingCode, setDeletingCode] = useState<CommonCode | undefined>();
 
   const addToast = useToastStore((s) => s.addToast);
 
   const { data: response, isLoading, error } = useCommonCodes({
-    page,
-    limit: 100,
-    ...(debouncedSearch ? { search: debouncedSearch } : {}),
-    ...(selectedGroup ? { groupCode: selectedGroup } : {}),
+    page: 1,
+    limit: 500,
   });
 
   const deleteMutation = useDeleteCommonCode();
 
   const codes = response?.data ?? [];
 
-  // Extract unique group codes
-  const allGroupCodes = Array.from(
-    new Set(codes.map((c) => c.groupCode))
-  ).sort();
+  // Build left-panel group rows: unique groupCodes with their info
+  const groupRows = useMemo(() => {
+    const map = new Map<string, { groupCode: string; groupName: string; userType: string; codeLevel: string }>();
+    for (const c of codes) {
+      if (!map.has(c.groupCode)) {
+        map.set(c.groupCode, {
+          groupCode: c.groupCode,
+          groupName: c.groupName ?? "",
+          userType: "마스터",
+          codeLevel: "삭제불가",
+        });
+      }
+    }
+    let result = Array.from(map.values());
+    // Apply search filters
+    if (searchGroupCode) {
+      result = result.filter((r) => r.groupCode.toLowerCase().includes(searchGroupCode.toLowerCase()));
+    }
+    if (searchGroupName) {
+      result = result.filter((r) => r.groupName.toLowerCase().includes(searchGroupName.toLowerCase()));
+    }
+    return result;
+  }, [codes, searchGroupCode, searchGroupName]);
 
-  const filteredCodes = selectedGroup
-    ? codes.filter((c) => c.groupCode === selectedGroup)
-    : codes;
+  // Right panel: codes filtered by selected group
+  const rightCodes = useMemo(() => {
+    if (!selectedGroup) return [];
+    return codes.filter((c) => c.groupCode === selectedGroup);
+  }, [codes, selectedGroup]);
 
-  const handleCreate = () => {
+  // Pagination for left
+  const leftPerPage = 20;
+  const leftTotalPages = Math.max(1, Math.ceil(groupRows.length / leftPerPage));
+  const leftPagedData = groupRows.slice((leftPage - 1) * leftPerPage, leftPage * leftPerPage);
+
+  // Pagination for right
+  const rightPerPage = 20;
+  const rightTotalPages = Math.max(1, Math.ceil(rightCodes.length / rightPerPage));
+  const rightPagedData = rightCodes.slice((rightPage - 1) * rightPerPage, rightPage * rightPerPage);
+
+  const handleSearch = () => {
+    setLeftPage(1);
+  };
+
+  const handleGroupClick = (groupCode: string) => {
+    setSelectedGroup(groupCode);
+    setRightPage(1);
+  };
+
+  const handleCreateLeft = () => {
     setEditingCode(undefined);
     setIsFormOpen(true);
   };
 
-  const handleEdit = (code: CommonCode) => {
-    setEditingCode(code);
-    setIsFormOpen(true);
+  const handleCreateRight = () => {
+    setEditingCode(undefined);
+    setIsRightFormOpen(true);
   };
 
-  const handleDeleteClick = (e: React.MouseEvent, code: CommonCode) => {
-    e.stopPropagation();
+  const handleEditRight = (code: CommonCode) => {
+    setEditingCode(code);
+    setIsRightFormOpen(true);
+  };
+
+  const handleDeleteClick = (code: CommonCode) => {
     setDeletingCode(code);
   };
 
@@ -92,119 +141,187 @@ export default function CommonCodesPage() {
     }
   };
 
-  const columns: Column<CommonCode>[] = [
-    { key: "code", header: "코드", sortable: true },
-    { key: "codeName", header: "코드명", sortable: true },
+  // Left grid columns: 사용자구분, 유형코드, 유형명, 코드레벨
+  const leftColumns: Column<typeof groupRows[number]>[] = [
+    { key: "userType", header: "*사용자구분" },
+    { key: "groupCode", header: "*유형코드", sortable: true },
+    { key: "groupName", header: "*유형명", sortable: true },
+    { key: "codeLevel", header: "*코드레벨" },
+  ];
+
+  // Right grid columns: 기초코드, 기초코드명, 값, 순서
+  const rightColumns: Column<CommonCode>[] = [
+    { key: "code", header: "기초코드", sortable: true },
+    { key: "codeName", header: "*기초코드명", sortable: true },
     { key: "value", header: "값" },
     { key: "sortOrder", header: "순서", sortable: true },
-    {
-      key: "isActive",
-      header: "사용여부",
-      render: (row) => <Badge status={row.isActive ? "ACTIVE" : "INACTIVE"} />,
-    },
-    {
-      key: "actions",
-      header: "",
-      render: (row) => (
-        <button
-          onClick={(e) => handleDeleteClick(e, row)}
-          className="rounded-lg p-1.5 text-[#B0B8C1] transition-colors hover:bg-red-50 hover:text-red-500"
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
-      ),
-    },
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
+      {/* Page header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-[#191F28]">공통코드 관리</h1>
-        <button
-          onClick={handleCreate}
-          className="flex items-center gap-2 rounded-xl bg-[#3182F6] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#1B64DA]"
-        >
-          <Plus className="h-4 w-4" />
-          코드 등록
-        </button>
+        <h1 className="text-2xl font-bold text-[#191F28]">기준관리</h1>
+        <p className="text-sm text-[#8B95A1]">시스템관리 &gt; 기준코드</p>
       </div>
 
-      <div className="flex gap-6">
-        {/* Left panel: Group list */}
-        <div className="w-[260px] shrink-0 rounded-2xl bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-          <h2 className="mb-4 text-sm font-semibold text-[#191F28]">코드유형</h2>
-          <button
-            onClick={() => setSelectedGroup("")}
-            className={`mb-1 w-full rounded-xl px-4 py-2.5 text-left text-sm font-medium transition-colors ${
-              !selectedGroup
-                ? "bg-[#E8F2FF] text-[#3182F6]"
-                : "text-[#4E5968] hover:bg-[#F7F8FA]"
-            }`}
-          >
-            전체
-          </button>
-          {allGroupCodes.map((group) => (
-            <button
-              key={group}
-              onClick={() => {
-                setSelectedGroup(group);
-                setPage(1);
-              }}
-              className={`mb-1 w-full rounded-xl px-4 py-2.5 text-left text-sm font-medium transition-colors ${
-                selectedGroup === group
-                  ? "bg-[#E8F2FF] text-[#3182F6]"
-                  : "text-[#4E5968] hover:bg-[#F7F8FA]"
-              }`}
+      {/* Search area */}
+      <div className="rounded-2xl bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+        <div className="flex flex-wrap items-end gap-4">
+          <div className="min-w-[200px]">
+            <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">유형코드</label>
+            <input
+              type="text"
+              value={searchGroupCode}
+              onChange={(e) => setSearchGroupCode(e.target.value)}
+              className={inputBase}
+              placeholder="유형코드"
+            />
+          </div>
+          <div className="min-w-[200px]">
+            <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">유형명</label>
+            <input
+              type="text"
+              value={searchGroupName}
+              onChange={(e) => setSearchGroupName(e.target.value)}
+              className={inputBase}
+              placeholder="유형명"
+            />
+          </div>
+          <div className="min-w-[160px]">
+            <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">사용자구분</label>
+            <select
+              value={searchUserType}
+              onChange={(e) => setSearchUserType(e.target.value)}
+              className={selectBase}
             >
-              {group}
-            </button>
-          ))}
-          {allGroupCodes.length === 0 && !isLoading && (
-            <p className="py-4 text-center text-sm text-[#B0B8C1]">코드유형 없음</p>
-          )}
+              <option value="">전체</option>
+              <option value="마스터">마스터</option>
+              <option value="고객사">고객사</option>
+            </select>
+          </div>
+          <button
+            onClick={handleSearch}
+            className="flex items-center gap-1.5 rounded-xl bg-[#3182F6] px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-[#1B64DA]"
+          >
+            <Search className="h-4 w-4" />
+            검색
+          </button>
         </div>
+      </div>
 
-        {/* Right panel: Code list */}
-        <div className="flex-1 rounded-2xl bg-white p-7 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-          <div className="mb-6">
-            <div className="relative max-w-md">
-              <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B95A1]" />
-              <input
-                type="text"
-                placeholder="코드, 코드명 검색..."
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setPage(1);
-                }}
-                className="w-full rounded-xl border-0 bg-[#F7F8FA] py-3 pl-11 pr-4 text-sm text-[#191F28] placeholder-[#8B95A1] outline-none transition-colors focus:bg-[#F2F4F6] focus:ring-2 focus:ring-[#3182F6]/20"
-              />
-            </div>
+      {/* Two-panel layout */}
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
+        {/* Left panel: 코드유형 목록 */}
+        <div className="rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+          {/* Left action buttons */}
+          <div className="flex items-center justify-end gap-2 px-5 pt-5">
+            <Button variant="danger" size="sm" onClick={() => addToast({ type: "info", message: "저장되었습니다." })}>
+              저장
+            </Button>
+            <Button size="sm" onClick={handleCreateLeft}>
+              신규
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => addToast({ type: "warning", message: "삭제할 항목을 선택해주세요." })}>
+              삭제
+            </Button>
           </div>
 
-          {error ? (
-            <div className="flex items-center gap-3 rounded-xl bg-red-50 p-5 text-sm text-red-600">
-              <AlertCircle className="h-5 w-5 shrink-0" />
-              데이터를 불러오는 중 오류가 발생했습니다.
-            </div>
-          ) : (
-            <Table
-              columns={columns}
-              data={filteredCodes}
-              isLoading={isLoading}
-              page={page}
-              totalPages={1}
-              total={filteredCodes.length}
-              onPageChange={setPage}
-              onRowClick={handleEdit}
-            />
-          )}
+          {/* Left grid header */}
+          <div className="mx-5 mt-4 rounded-t-xl bg-[#4A5568] px-4 py-2.5">
+            <h2 className="text-sm font-semibold text-white">코드유형 목록</h2>
+          </div>
+
+          <div className="px-5 pb-5">
+            {error ? (
+              <div className="flex items-center gap-3 rounded-xl bg-red-50 p-5 text-sm text-red-600">
+                <AlertCircle className="h-5 w-5 shrink-0" />
+                데이터를 불러오는 중 오류가 발생했습니다.
+              </div>
+            ) : (
+              <Table
+                columns={leftColumns}
+                data={leftPagedData}
+                isLoading={isLoading}
+                page={leftPage}
+                totalPages={leftTotalPages}
+                total={groupRows.length}
+                onPageChange={setLeftPage}
+                onRowClick={(row) => handleGroupClick(row.groupCode)}
+                emptyMessage="코드유형이 없습니다."
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Right panel: 기초코드 목록 */}
+        <div className="rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+          {/* Right action buttons */}
+          <div className="flex items-center justify-end gap-2 px-5 pt-5">
+            <Button variant="danger" size="sm" onClick={() => addToast({ type: "info", message: "저장되었습니다." })}>
+              저장
+            </Button>
+            <Button size="sm" onClick={handleCreateRight}>
+              신규
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => {
+              if (rightPagedData.length > 0) {
+                handleDeleteClick(rightPagedData[0]);
+              } else {
+                addToast({ type: "warning", message: "삭제할 항목을 선택해주세요." });
+              }
+            }}>
+              삭제
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => addToast({ type: "info", message: "엑셀 다운로드" })}
+              className="!bg-[#22C55E] !text-white !border-[#22C55E] hover:!bg-[#16A34A]"
+            >
+              엑셀
+            </Button>
+          </div>
+
+          {/* Right grid header */}
+          <div className="mx-5 mt-4 rounded-t-xl bg-[#4A5568] px-4 py-2.5">
+            <h2 className="text-sm font-semibold text-white">기초코드 목록</h2>
+          </div>
+
+          <div className="px-5 pb-5">
+            {!selectedGroup ? (
+              <div className="py-16 text-center text-sm text-[#8B95A1]">
+                좌측에서 코드유형을 선택해주세요.
+              </div>
+            ) : (
+              <Table
+                columns={rightColumns}
+                data={rightPagedData}
+                isLoading={isLoading}
+                page={rightPage}
+                totalPages={rightTotalPages}
+                total={rightCodes.length}
+                onPageChange={setRightPage}
+                onRowClick={handleEditRight}
+                emptyMessage="기초코드가 없습니다."
+              />
+            )}
+          </div>
         </div>
       </div>
 
+      {/* Create/Edit form for left (code type) */}
       <CommonCodeFormModal
         isOpen={isFormOpen}
         onClose={() => setIsFormOpen(false)}
+        code={editingCode}
+        defaultGroupCode=""
+      />
+
+      {/* Create/Edit form for right (basic code) */}
+      <CommonCodeFormModal
+        isOpen={isRightFormOpen}
+        onClose={() => setIsRightFormOpen(false)}
         code={editingCode}
         defaultGroupCode={selectedGroup}
       />

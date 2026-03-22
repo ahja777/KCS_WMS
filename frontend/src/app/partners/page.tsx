@@ -1,32 +1,43 @@
 "use client";
 
-import { useState } from "react";
-import { useDebounce } from "@/hooks/useDebounce";
-import { Plus, Search, AlertCircle, Trash2, Download } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, AlertCircle, Trash2, Download, RotateCcw } from "lucide-react";
 import Table, { type Column } from "@/components/ui/Table";
-import Badge from "@/components/ui/Badge";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import { downloadExcel } from "@/lib/export";
-import { usePartners, useDeletePartner } from "@/hooks/useApi";
+import { usePartners, useCreatePartner, useUpdatePartner, useDeletePartner } from "@/hooks/useApi";
 import { useToastStore } from "@/stores/toast.store";
+import { useDebounce } from "@/hooks/useDebounce";
+import { formatDate } from "@/lib/utils";
 import type { Partner } from "@/types";
-import PartnerFormModal from "@/components/partners/PartnerFormModal";
 
-const typeFilters = [
-  { value: "", label: "전체" },
-  { value: "SUPPLIER", label: "공급처" },
-  { value: "CUSTOMER", label: "고객사" },
-  { value: "CARRIER", label: "운송사" },
-];
+const inputBase =
+  "w-full rounded-xl border-0 bg-[#F7F8FA] px-4 py-3 text-sm text-[#191F28] placeholder-[#B0B8C1] outline-none transition-all focus:border focus:border-[#3182F6] focus:bg-white focus:ring-2 focus:ring-[#3182F6]/20";
+const selectBase =
+  "w-full rounded-xl border-0 bg-[#F7F8FA] px-4 py-3 text-sm text-[#191F28] outline-none transition-all focus:border focus:border-[#3182F6] focus:bg-white focus:ring-2 focus:ring-[#3182F6]/20 appearance-none";
 
 export default function PartnersPage() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search);
-  const [typeFilter, setTypeFilter] = useState("");
   const [page, setPage] = useState(1);
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingPartner, setEditingPartner] = useState<Partner | undefined>();
+  const [selectedPartner, setSelectedPartner] = useState<Partner | null>(null);
   const [deletingPartner, setDeletingPartner] = useState<Partner | undefined>();
+  const [isNew, setIsNew] = useState(false);
+
+  // Form state
+  const [form, setForm] = useState({
+    code: "",
+    name: "",
+    type: "CUSTOMER" as string,
+    contactName: "",
+    contactPhone: "",
+    contactEmail: "",
+    country: "",
+    city: "",
+    address: "",
+    notes: "",
+    isActive: true,
+  });
 
   const addToast = useToastStore((s) => s.addToast);
 
@@ -34,35 +45,68 @@ export default function PartnersPage() {
     page,
     limit: 20,
     ...(debouncedSearch ? { search: debouncedSearch } : {}),
-    ...(typeFilter ? { type: typeFilter } : {}),
   });
 
+  const createMutation = useCreatePartner();
+  const updateMutation = useUpdatePartner();
   const deleteMutation = useDeletePartner();
 
   const partners = response?.data ?? [];
   const total = response?.total ?? 0;
   const totalPages = response?.totalPages ?? 1;
 
-  const handleCreate = () => {
-    setEditingPartner(undefined);
-    setIsFormOpen(true);
+  useEffect(() => {
+    if (selectedPartner && !isNew) {
+      setForm({
+        code: selectedPartner.code,
+        name: selectedPartner.name,
+        type: selectedPartner.type,
+        contactName: selectedPartner.contactName ?? "",
+        contactPhone: selectedPartner.contactPhone ?? "",
+        contactEmail: selectedPartner.contactEmail ?? "",
+        country: selectedPartner.country ?? "",
+        city: selectedPartner.city ?? "",
+        address: selectedPartner.address ?? "",
+        notes: selectedPartner.notes ?? "",
+        isActive: selectedPartner.isActive,
+      });
+    }
+  }, [selectedPartner, isNew]);
+
+  const handleNew = () => {
+    setIsNew(true);
+    setSelectedPartner(null);
+    setForm({
+      code: "", name: "", type: "CUSTOMER", contactName: "", contactPhone: "",
+      contactEmail: "", country: "", city: "", address: "", notes: "", isActive: true,
+    });
   };
 
-  const handleEdit = (partner: Partner) => {
-    setEditingPartner(partner);
-    setIsFormOpen(true);
-  };
-
-  const handleDeleteClick = (e: React.MouseEvent, partner: Partner) => {
-    e.stopPropagation();
-    setDeletingPartner(partner);
+  const handleSave = async () => {
+    if (!form.code || !form.name) {
+      addToast({ type: "error", message: "화주코드와 화주명은 필수입니다." });
+      return;
+    }
+    try {
+      if (isNew) {
+        await createMutation.mutateAsync(form as any);
+        addToast({ type: "success", message: "화주가 등록되었습니다." });
+      } else if (selectedPartner) {
+        await updateMutation.mutateAsync({ id: selectedPartner.id, payload: form as any });
+        addToast({ type: "success", message: "화주가 수정되었습니다." });
+      }
+      setIsNew(false);
+    } catch {
+      addToast({ type: "error", message: "오류가 발생했습니다." });
+    }
   };
 
   const handleDeleteConfirm = async () => {
     if (!deletingPartner) return;
     try {
       await deleteMutation.mutateAsync(deletingPartner.id);
-      addToast({ type: "success", message: `"${deletingPartner.name}" 파트너가 삭제되었습니다.` });
+      addToast({ type: "success", message: `"${deletingPartner.name}" 화주가 삭제되었습니다.` });
+      if (selectedPartner?.id === deletingPartner.id) setSelectedPartner(null);
     } catch {
       addToast({ type: "error", message: "삭제 중 오류가 발생했습니다." });
     } finally {
@@ -70,146 +114,180 @@ export default function PartnersPage() {
     }
   };
 
-  const handleFormSuccess = () => {
-    // queries are auto-invalidated by the mutation hooks
-  };
-
-  const columns: Column<Partner>[] = [
-    { key: "code", header: "파트너 코드", sortable: true },
-    { key: "name", header: "파트너명", sortable: true },
+  const leftColumns: Column<Partner>[] = [
+    { key: "code", header: "코드", sortable: true },
+    { key: "name", header: "화주명", sortable: true },
     {
-      key: "type",
-      header: "유형",
-      render: (row) => <Badge status={row.type} />,
-    },
-    { key: "country", header: "국가", sortable: true },
-    { key: "contactName", header: "담당자" },
-    { key: "contactPhone", header: "연락처" },
-    { key: "contactEmail", header: "이메일" },
-    {
-      key: "isActive",
-      header: "상태",
-      render: (row) => (
-        <span className="inline-flex items-center gap-1.5">
-          <span
-            className={`h-2 w-2 rounded-full ${
-              row.isActive ? "bg-[#00C853]" : "bg-[#8B95A1]"
-            }`}
-          />
-          <span className={`text-sm ${row.isActive ? "text-[#191F28]" : "text-[#8B95A1]"}`}>
-            {row.isActive ? "활성" : "비활성"}
-          </span>
-        </span>
-      ),
+      key: "createdAt",
+      header: "생성일",
+      render: (row) => <span className="text-xs text-[#8B95A1]">{formatDate(row.createdAt, "yyyy-MM-dd")}</span>,
     },
     {
-      key: "actions",
-      header: "",
-      render: (row) => (
-        <button
-          onClick={(e) => handleDeleteClick(e, row)}
-          className="rounded-lg p-1.5 text-[#B0B8C1] transition-colors hover:bg-red-50 hover:text-red-500"
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
-      ),
+      key: "createdBy",
+      header: "생성자",
+      render: () => <span className="text-xs text-[#8B95A1]">-</span>,
     },
   ];
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-[#191F28]">파트너 관리</h1>
-        <div className="flex gap-3">
-          <button
-            onClick={() => {
-              const params = typeFilter ? `?type=${typeFilter}` : '';
-              downloadExcel(`/export/partners${params}`, `partners_${new Date().toISOString().slice(0,10).replace(/-/g,'')}.xlsx`);
-            }}
-            className="flex items-center gap-2 rounded-xl border border-[#E5E8EB] bg-white px-5 py-2.5 text-sm font-semibold text-[#4E5968] transition-colors hover:bg-[#F7F8FA]"
-          >
-            <Download className="h-4 w-4" />
-            엑셀 다운로드
-          </button>
-          <button
-            onClick={handleCreate}
-            className="flex items-center gap-2 rounded-xl bg-[#3182F6] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#1B64DA]"
-          >
-            <Plus className="h-4 w-4" />
-            파트너 등록
-          </button>
-        </div>
-      </div>
-
-      <div className="rounded-2xl bg-white p-7 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-        {/* Search + Type pill filter */}
-        <div className="mb-6 flex flex-wrap items-center gap-4">
-          <div className="relative max-w-md flex-1">
-            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B95A1]" />
-            <input
-              type="text"
-              placeholder="파트너 코드, 이름, 국가 검색..."
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-              className="w-full rounded-xl border-0 bg-[#F7F8FA] py-3 pl-11 pr-4 text-sm text-[#191F28] placeholder-[#8B95A1] outline-none transition-colors focus:bg-[#F2F4F6] focus:ring-2 focus:ring-[#3182F6]/20"
-            />
-          </div>
-          {/* Pill tabs for type filter */}
-          <div className="flex gap-2">
-            {typeFilters.map((tf) => (
-              <button
-                key={tf.value}
-                onClick={() => {
-                  setTypeFilter(tf.value);
-                  setPage(1);
-                }}
-                className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-                  typeFilter === tf.value
-                    ? "bg-[#191F28] text-white"
-                    : "bg-[#F2F4F6] text-[#4E5968] hover:bg-[#E5E8EB]"
-                }`}
-              >
-                {tf.label}
+    <div className="space-y-6">
+      {/* Search bar */}
+      <div className="rounded-2xl bg-white p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+        <div className="flex items-end gap-4">
+          <div className="min-w-[200px]">
+            <label className="mb-1 block text-sm font-medium text-[#4E5968]">화주</label>
+            <div className="flex gap-1">
+              <input type="text" placeholder="화주 검색" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }} className={`flex-1 ${inputBase}`} />
+              <button className="rounded-lg bg-[#F2F4F6] px-3 py-2 text-[#4E5968] hover:bg-[#E5E8EB]">
+                <Search className="h-4 w-4" />
               </button>
-            ))}
+            </div>
+          </div>
+          <button className="flex h-[46px] items-center rounded-xl bg-[#F2F4F6] px-3 text-[#4E5968] hover:bg-[#E5E8EB]">
+            <RotateCcw className="h-4 w-4" />
+          </button>
+          <button onClick={() => setPage(1)} className="flex h-[46px] items-center gap-2 rounded-xl bg-[#3182F6] px-6 text-sm font-semibold text-white hover:bg-[#1B64DA]">
+            <Search className="h-4 w-4" />
+            조회
+          </button>
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="flex justify-end gap-2">
+        <button onClick={handleSave} className="rounded-xl bg-[#F04452] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#D63341]">저장</button>
+        <button onClick={handleNew} className="rounded-xl bg-[#3182F6] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#1B64DA]">신규</button>
+        <button onClick={() => selectedPartner && setDeletingPartner(selectedPartner)} className="rounded-xl bg-[#8B95A1] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#6B7684]">삭제</button>
+        <button onClick={() => downloadExcel("/export/partners", "partners.xlsx")} className="rounded-xl bg-[#1FC47D] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#17A86B]">엑셀</button>
+      </div>
+
+      {/* Main content: left grid + right form */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
+        {/* Left: Partner List */}
+        <div className="lg:col-span-2">
+          <div className="rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+            <div className="rounded-t-2xl bg-[#4A5568] px-4 py-2">
+              <h2 className="text-sm font-bold text-white">화주목록</h2>
+            </div>
+            <div className="p-4">
+              {error ? (
+                <div className="flex items-center gap-3 rounded-xl bg-red-50 p-5 text-sm text-red-600">
+                  <AlertCircle className="h-5 w-5 shrink-0" />
+                  데이터를 불러오는 중 오류가 발생했습니다.
+                </div>
+              ) : (
+                <Table
+                  columns={leftColumns}
+                  data={partners}
+                  isLoading={isLoading}
+                  page={page}
+                  totalPages={totalPages}
+                  total={total}
+                  onPageChange={setPage}
+                  onRowClick={(row) => { setSelectedPartner(row); setIsNew(false); }}
+                  emptyMessage="화주 데이터가 없습니다."
+                />
+              )}
+            </div>
           </div>
         </div>
 
-        {error ? (
-          <div className="flex items-center gap-3 rounded-xl bg-red-50 p-5 text-sm text-red-600">
-            <AlertCircle className="h-5 w-5 shrink-0" />
-            데이터를 불러오는 중 오류가 발생했습니다.
+        {/* Right: Detail Form */}
+        <div className="lg:col-span-3">
+          <div className="rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+            <div className="rounded-t-2xl bg-[#4A5568] px-4 py-2">
+              <h2 className="text-sm font-bold text-white">화주정보</h2>
+            </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-red-500">* 화주코드</label>
+                  <input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} className={inputBase} disabled={!isNew && !!selectedPartner} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-red-500">* 화주명</label>
+                  <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputBase} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[#4E5968]">상호</label>
+                  <input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className={inputBase} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[#4E5968]">사업자등록번호</label>
+                  <input value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} className={inputBase} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[#4E5968]">대표자명</label>
+                  <input value={form.contactName} onChange={(e) => setForm({ ...form, contactName: e.target.value })} className={inputBase} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[#4E5968]">팩스번호</label>
+                  <input className={inputBase} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[#4E5968]">사업장전화</label>
+                  <input value={form.contactPhone} onChange={(e) => setForm({ ...form, contactPhone: e.target.value })} className={inputBase} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[#4E5968]">우편번호</label>
+                  <input className={inputBase} />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="mb-1 block text-sm font-medium text-[#4E5968]">사업장주소</label>
+                  <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className={inputBase} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[#4E5968]">업태</label>
+                  <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className={selectBase}>
+                    <option value="">선택</option>
+                    <option value="SUPPLIER">공급처</option>
+                    <option value="CUSTOMER">고객사</option>
+                    <option value="CARRIER">운송사</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[#4E5968]">업종</label>
+                  <select className={selectBase}>
+                    <option value="">선택</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[#4E5968]">홈페이지주소</label>
+                  <input className={inputBase} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[#4E5968]">출고통제</label>
+                  <select className={selectBase}>
+                    <option value="">선택</option>
+                    <option value="Y">Y</option>
+                    <option value="N">N</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[#4E5968]">담당자이메일</label>
+                  <input value={form.contactEmail} onChange={(e) => setForm({ ...form, contactEmail: e.target.value })} className={inputBase} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[#4E5968]">신용등급</label>
+                  <select className={selectBase}>
+                    <option value="">선택</option>
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                    <option value="C">C</option>
+                  </select>
+                </div>
+              </div>
+            </div>
           </div>
-        ) : (
-          <Table
-            columns={columns}
-            data={partners}
-            isLoading={isLoading}
-            page={page}
-            totalPages={totalPages}
-            total={total}
-            onPageChange={setPage}
-            onRowClick={handleEdit}
-          />
-        )}
+        </div>
       </div>
-
-      <PartnerFormModal
-        isOpen={isFormOpen}
-        onClose={() => setIsFormOpen(false)}
-        partner={editingPartner}
-        onSuccess={handleFormSuccess}
-      />
 
       <ConfirmModal
         isOpen={!!deletingPartner}
         onClose={() => setDeletingPartner(undefined)}
         onConfirm={handleDeleteConfirm}
-        title="파트너 삭제"
-        message={`"${deletingPartner?.name}" 파트너를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`}
+        title="화주 삭제"
+        message={`"${deletingPartner?.name}" 화주를 삭제하시겠습니까?`}
         confirmText="삭제"
         isLoading={deleteMutation.isPending}
       />

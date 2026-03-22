@@ -1,0 +1,132 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: '배포 환경'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  NODE_VERSION: '20'
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ${{ github.repository }}
+
+jobs:
+  # ─────────────────────────────────────────
+  # CI 통과 확인
+  # ─────────────────────────────────────────
+  ci-check:
+    name: CI Check
+    uses: ./.github/workflows/ci.yml
+
+  # ─────────────────────────────────────────
+  # Docker 이미지 빌드 & 푸시
+  # ─────────────────────────────────────────
+  build-backend-image:
+    name: Build Backend Image
+    needs: ci-check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/backend
+          tags: |
+            type=sha,prefix=
+            type=ref,event=branch
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  build-frontend-image:
+    name: Build Frontend Image
+    needs: ci-check
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/metadata-action@v5
+        id: meta
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/frontend
+          tags: |
+            type=sha,prefix=
+            type=ref,event=branch
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+  # ─────────────────────────────────────────
+  # 배포
+  # ─────────────────────────────────────────
+  deploy-staging:
+    name: Deploy to Staging
+    needs: [build-backend-image, build-frontend-image]
+    if: github.event.inputs.environment != 'production'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to staging server
+        run: |
+          echo "🚀 Staging 배포 시작"
+          echo "TODO: SSH 또는 kubectl 등으로 실제 배포 명령 추가"
+          # 예시:
+          # ssh ${{ secrets.STAGING_HOST }} "cd /app && docker compose pull && docker compose up -d"
+
+  deploy-production:
+    name: Deploy to Production
+    needs: [build-backend-image, build-frontend-image]
+    if: github.event.inputs.environment == 'production'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to production server
+        run: |
+          echo "🚀 Production 배포 시작"
+          echo "TODO: SSH 또는 kubectl 등으로 실제 배포 명령 추가"
+          # 예시:
+          # ssh ${{ secrets.PROD_HOST }} "cd /app && docker compose pull && docker compose up -d"

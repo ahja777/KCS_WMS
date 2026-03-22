@@ -24,6 +24,7 @@ interface TableProps<T> {
   onSort?: (key: string, order: "asc" | "desc") => void;
   onRowClick?: (row: T) => void;
   emptyMessage?: string;
+  activeRowId?: string;
 }
 
 export default function Table<T extends object>({
@@ -37,6 +38,7 @@ export default function Table<T extends object>({
   onSort,
   onRowClick,
   emptyMessage = "데이터가 없습니다.",
+  activeRowId,
 }: TableProps<T>) {
   const [sortKey, setSortKey] = useState<string>("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
@@ -99,12 +101,16 @@ export default function Table<T extends object>({
                 </td>
               </tr>
             ) : (
-              data.map((row, idx) => (
+              data.map((row, idx) => {
+                const rowId = (row as Record<string, unknown>).id as string;
+                const isActive = activeRowId != null && rowId === activeRowId;
+                return (
                 <tr
-                  key={(row as Record<string, unknown>).id as string ?? idx}
+                  key={rowId ?? idx}
                   className={cn(
                     "border-b border-[#F2F4F6] transition-colors duration-200 hover:bg-[#F7F8FA]",
-                    onRowClick && "cursor-pointer"
+                    onRowClick && "cursor-pointer",
+                    isActive && "bg-[#EBF5FF] hover:bg-[#EBF5FF]"
                   )}
                   onClick={() => onRowClick?.(row)}
                 >
@@ -119,7 +125,8 @@ export default function Table<T extends object>({
                     </td>
                   ))}
                 </tr>
-              ))
+                );
+              })
             )}
           </tbody>
         </table>

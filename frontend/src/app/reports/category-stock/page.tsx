@@ -1,32 +1,13 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import Link from "next/link";
-import {
-  ArrowLeft,
-  Package,
-  Layers,
-  AlertCircle,
-} from "lucide-react";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
-} from "recharts";
+import { ArrowLeft, Search, Download, AlertCircle } from "lucide-react";
 import Table, { type Column } from "@/components/ui/Table";
+import Button from "@/components/ui/Button";
 import { formatNumber } from "@/lib/utils";
 import { useWarehouses, useInventoryList } from "@/hooks/useApi";
-
-const CHART_COLORS = {
-  totalQty: "#3182F6",
-  availableQty: "#1FC47D",
-  reservedQty: "#FF8B00",
-};
+import { downloadExcel } from "@/lib/export";
 
 const CATEGORY_LABELS: Record<string, string> = {
   GENERAL: "일반",
@@ -38,27 +19,20 @@ const CATEGORY_LABELS: Record<string, string> = {
   OVERSIZED: "대형화물",
 };
 
-const CATEGORY_COLORS: Record<string, string> = {
-  GENERAL: "#3182F6",
-  ELECTRONICS: "#7B61FF",
-  CLOTHING: "#FF8B00",
-  FOOD: "#1FC47D",
-  FRAGILE: "#F04452",
-  HAZARDOUS: "#E5A100",
-  OVERSIZED: "#8B95A1",
-};
-
 interface CategoryRow {
+  id: string;
   category: string;
   categoryLabel: string;
-  itemCount: number;
-  totalQty: number;
-  availableQty: number;
-  reservedQty: number;
+  warehouseName: string;
+  usageArea: number;
+  usageRate: number;
+  stockQty: number;
 }
 
 export default function CategoryStockPage() {
   const [warehouseId, setWarehouseId] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("");
+  const [page, setPage] = useState(1);
 
   const { data: warehouseResponse } = useWarehouses({ limit: 100 });
   const warehouses = warehouseResponse?.data ?? [];
@@ -70,273 +44,178 @@ export default function CategoryStockPage() {
 
   const inventoryItems = inventoryResponse?.data ?? [];
 
-  // Group by category
+  // Group by category + warehouse
   const categoryData = useMemo(() => {
     const map = new Map<
       string,
-      { items: Set<string>; totalQty: number; availableQty: number; reservedQty: number }
+      { category: string; warehouseName: string; items: Set<string>; totalQty: number }
     >();
 
     inventoryItems.forEach((inv) => {
       const cat = inv.item?.category ?? "GENERAL";
-      const existing = map.get(cat);
+      const whName = inv.warehouse?.name ?? "-";
+      const key = `${cat}_${whName}`;
+      const existing = map.get(key);
       if (existing) {
         existing.items.add(inv.itemId);
         existing.totalQty += inv.quantity;
-        existing.availableQty += inv.availableQty;
-        existing.reservedQty += inv.reservedQty;
       } else {
-        map.set(cat, {
+        map.set(key, {
+          category: cat,
+          warehouseName: whName,
           items: new Set([inv.itemId]),
           totalQty: inv.quantity,
-          availableQty: inv.availableQty,
-          reservedQty: inv.reservedQty,
         });
       }
     });
 
+    const totalQtyAll = inventoryItems.reduce((s, i) => s + i.quantity, 0);
+
     const rows: CategoryRow[] = [];
     map.forEach((val, key) => {
+      if (categoryFilter && val.category !== categoryFilter) return;
       rows.push({
-        category: key,
-        categoryLabel: CATEGORY_LABELS[key] ?? key,
-        itemCount: val.items.size,
-        totalQty: val.totalQty,
-        availableQty: val.availableQty,
-        reservedQty: val.reservedQty,
+        id: key,
+        category: val.category,
+        categoryLabel: CATEGORY_LABELS[val.category] ?? val.category,
+        warehouseName: val.warehouseName,
+        usageArea: val.items.size * 10, // estimated area per item type
+        usageRate: totalQtyAll > 0 ? Math.round((val.totalQty / totalQtyAll) * 100) : 0,
+        stockQty: val.totalQty,
       });
     });
 
-    return rows.sort((a, b) => b.totalQty - a.totalQty);
-  }, [inventoryItems]);
+    return rows.sort((a, b) => b.stockQty - a.stockQty);
+  }, [inventoryItems, categoryFilter]);
 
-  const totalItems = useMemo(
-    () => categoryData.reduce((s, c) => s + c.itemCount, 0),
-    [categoryData]
-  );
-  const totalQty = useMemo(
-    () => categoryData.reduce((s, c) => s + c.totalQty, 0),
-    [categoryData]
-  );
+  const pageSize = 20;
+  const totalPages = Math.max(1, Math.ceil(categoryData.length / pageSize));
+  const pagedRows = categoryData.slice((page - 1) * pageSize, page * pageSize);
+
+  const handleSearch = useCallback(() => {
+    setPage(1);
+  }, []);
+
+  const handleExcel = useCallback(() => {
+    const params = new URLSearchParams();
+    if (warehouseId) params.set("warehouseId", warehouseId);
+    const qs = params.toString();
+    downloadExcel(`/export/inventory${qs ? `?${qs}` : ""}`, "제품군별창고사용현황.xlsx");
+  }, [warehouseId]);
 
   const columns: Column<CategoryRow>[] = [
     {
-      key: "category",
-      header: "카테고리",
+      key: "categoryLabel",
+      header: "제품군",
+      sortable: true,
+      render: (row) => (
+        <span className="inline-flex items-center rounded-full bg-[#E8F3FF] px-3 py-1 text-xs font-semibold text-[#3182F6]">
+          {row.categoryLabel}
+        </span>
+      ),
+    },
+    {
+      key: "warehouseName",
+      header: "창고",
+      render: (row) => <span className="text-sm text-[#191F28]">{row.warehouseName}</span>,
+    },
+    {
+      key: "usageArea",
+      header: "사용면적",
+      render: (row) => <span className="text-sm text-[#4E5968]">{formatNumber(row.usageArea)} m2</span>,
+    },
+    {
+      key: "usageRate",
+      header: "사용률",
+      sortable: true,
       render: (row) => (
         <div className="flex items-center gap-2">
-          <span
-            className="inline-block h-3 w-3 rounded-full"
-            style={{ backgroundColor: CATEGORY_COLORS[row.category] ?? "#8B95A1" }}
-          />
-          <span className="text-sm font-medium text-[#191F28]">{row.categoryLabel}</span>
+          <div className="h-2 w-20 overflow-hidden rounded-full bg-[#F2F4F6]">
+            <div
+              className="h-full rounded-full bg-[#3182F6]"
+              style={{ width: `${Math.min(row.usageRate, 100)}%` }}
+            />
+          </div>
+          <span className="text-sm font-semibold text-[#191F28]">{row.usageRate}%</span>
         </div>
       ),
     },
     {
-      key: "itemCount",
-      header: "품목수",
+      key: "stockQty",
+      header: "재고수량",
       sortable: true,
-      render: (row) => (
-        <span className="text-sm font-semibold text-[#191F28]">{formatNumber(row.itemCount)}</span>
-      ),
-    },
-    {
-      key: "totalQty",
-      header: "총수량",
-      sortable: true,
-      render: (row) => (
-        <span className="text-sm font-bold text-[#191F28]">{formatNumber(row.totalQty)}</span>
-      ),
-    },
-    {
-      key: "availableQty",
-      header: "가용수량",
-      render: (row) => (
-        <span className="text-sm font-semibold text-[#1FC47D]">{formatNumber(row.availableQty)}</span>
-      ),
-    },
-    {
-      key: "reservedQty",
-      header: "예약수량",
-      render: (row) =>
-        row.reservedQty > 0 ? (
-          <span className="text-sm font-semibold text-[#FF8B00]">{formatNumber(row.reservedQty)}</span>
-        ) : (
-          <span className="text-sm text-[#8B95A1]">0</span>
-        ),
+      render: (row) => <span className="text-sm font-bold text-[#191F28]">{formatNumber(row.stockQty)}</span>,
     },
   ];
 
+  // Unique category list for filter
+  const categoryOptions = useMemo(() => {
+    const cats = new Set(inventoryItems.map((i) => i.item?.category ?? "GENERAL"));
+    return Array.from(cats).map((c) => ({ value: c, label: CATEGORY_LABELS[c] ?? c }));
+  }, [inventoryItems]);
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
-        <Link
-          href="/reports"
-          className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#4E5968] shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-colors hover:bg-[#F2F4F6]"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Link>
-        <h1 className="text-2xl font-bold text-[#191F28]">제품군별 창고사용현황</h1>
-        <span className="rounded-full bg-[#F2F4F6] px-3 py-1 text-xs font-medium text-[#8B95A1]">
-          WMSTG060
-        </span>
-      </div>
-
-      {/* Warehouse selector */}
-      <div className="rounded-2xl bg-white p-7 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-        <label className="mb-2 block text-sm font-medium text-[#4E5968]">창고 선택</label>
-        <select
-          value={warehouseId}
-          onChange={(e) => setWarehouseId(e.target.value)}
-          className="w-full max-w-sm rounded-xl border-0 bg-[#F7F8FA] px-4 py-3 text-sm text-[#191F28] outline-none transition-all focus:bg-[#F2F4F6] focus:ring-2 focus:ring-[#3182F6]/20"
-        >
-          <option value="">전체 창고</option>
-          {warehouses.map((w) => (
-            <option key={w.id} value={w.id}>
-              {w.name} ({w.code})
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-3">
-        <div className="rounded-2xl bg-white p-7 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-[#8B95A1]">카테고리수</p>
-              <p className="mt-2 text-3xl font-bold text-[#191F28]">
-                {isLoading ? (
-                  <span className="inline-block h-9 w-24 animate-pulse rounded-xl bg-[#F2F4F6]" />
-                ) : (
-                  formatNumber(categoryData.length)
-                )}
-              </p>
-            </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#E8F3FF]">
-              <Layers className="h-6 w-6 text-[#3182F6]" />
-            </div>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Link
+            href="/reports"
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-[#4E5968] shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-colors hover:bg-[#F2F4F6]"
+          >
+            <ArrowLeft className="h-5 w-5" />
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold text-[#191F28]">제품군별창고사용현황</h1>
+            <p className="text-sm text-[#8B95A1]">리포트 &gt; 제품군별창고사용현황</p>
           </div>
         </div>
-        <div className="rounded-2xl bg-white p-7 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-[#8B95A1]">총 품목수</p>
-              <p className="mt-2 text-3xl font-bold text-[#191F28]">
-                {isLoading ? (
-                  <span className="inline-block h-9 w-24 animate-pulse rounded-xl bg-[#F2F4F6]" />
-                ) : (
-                  formatNumber(totalItems)
-                )}
-              </p>
-            </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#E8FAF0]">
-              <Package className="h-6 w-6 text-[#1FC47D]" />
-            </div>
-          </div>
-        </div>
-        <div className="rounded-2xl bg-white p-7 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-          <div className="flex items-start justify-between">
-            <div>
-              <p className="text-sm text-[#8B95A1]">총 재고수량</p>
-              <p className="mt-2 text-3xl font-bold text-[#FF8B00]">
-                {isLoading ? (
-                  <span className="inline-block h-9 w-24 animate-pulse rounded-xl bg-[#F2F4F6]" />
-                ) : (
-                  formatNumber(totalQty)
-                )}
-              </p>
-            </div>
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#FFF4E6]">
-              <Package className="h-6 w-6 text-[#FF8B00]" />
-            </div>
-          </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={handleExcel}>
+            <Download className="h-4 w-4" />
+            엑셀
+          </Button>
         </div>
       </div>
 
-      {/* Category summary cards */}
-      {categoryData.length > 0 && (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {categoryData.map((cat) => (
-            <div
-              key={cat.category}
-              className="rounded-2xl bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)]"
+      {/* Search Filters */}
+      <div className="rounded-2xl bg-white p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+        <div className="flex flex-wrap items-end gap-4">
+          <div className="min-w-[180px] flex-1">
+            <label className="mb-2 block text-sm font-medium text-[#4E5968]">창고</label>
+            <select
+              value={warehouseId}
+              onChange={(e) => { setWarehouseId(e.target.value); setPage(1); }}
+              className="w-full rounded-xl border-0 bg-[#F7F8FA] px-4 py-3 text-sm text-[#191F28] outline-none focus:ring-2 focus:ring-[#3182F6]/20"
             >
-              <div className="mb-3 flex items-center gap-2">
-                <span
-                  className="inline-block h-3 w-3 rounded-full"
-                  style={{ backgroundColor: CATEGORY_COLORS[cat.category] ?? "#8B95A1" }}
-                />
-                <span className="text-sm font-semibold text-[#191F28]">{cat.categoryLabel}</span>
-              </div>
-              <p className="text-2xl font-bold text-[#191F28]">{formatNumber(cat.totalQty)}</p>
-              <p className="mt-1 text-xs text-[#8B95A1]">
-                품목 {cat.itemCount}개 / 가용 {formatNumber(cat.availableQty)}
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Bar Chart */}
-      {categoryData.length > 0 && (
-        <div className="rounded-2xl bg-white p-7 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-          <h2 className="mb-6 text-lg font-bold text-[#191F28]">카테고리별 재고 현황</h2>
-          <div className="h-[400px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={categoryData}
-                margin={{ top: 5, right: 30, left: 20, bottom: 60 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#F2F4F6" />
-                <XAxis
-                  dataKey="categoryLabel"
-                  tick={{ fontSize: 12, fill: "#6B7684" }}
-                  angle={-35}
-                  textAnchor="end"
-                  height={80}
-                />
-                <YAxis tick={{ fontSize: 12, fill: "#6B7684" }} />
-                <Tooltip
-                  contentStyle={{
-                    borderRadius: "12px",
-                    border: "none",
-                    boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
-                    fontSize: "13px",
-                  }}
-                  formatter={(value: number, name: string) => {
-                    const labels: Record<string, string> = {
-                      totalQty: "총 수량",
-                      availableQty: "가용 수량",
-                      reservedQty: "예약 수량",
-                    };
-                    return [formatNumber(value), labels[name] ?? name];
-                  }}
-                />
-                <Legend
-                  formatter={(value: string) => {
-                    const labels: Record<string, string> = {
-                      totalQty: "총 수량",
-                      availableQty: "가용 수량",
-                      reservedQty: "예약 수량",
-                    };
-                    return labels[value] ?? value;
-                  }}
-                />
-                <Bar dataKey="totalQty" fill={CHART_COLORS.totalQty} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="availableQty" fill={CHART_COLORS.availableQty} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="reservedQty" fill={CHART_COLORS.reservedQty} radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+              <option value="">전체 창고</option>
+              {warehouses.map((w) => (
+                <option key={w.id} value={w.id}>{w.name} ({w.code})</option>
+              ))}
+            </select>
           </div>
+          <div className="min-w-[180px] flex-1">
+            <label className="mb-2 block text-sm font-medium text-[#4E5968]">제품군</label>
+            <select
+              value={categoryFilter}
+              onChange={(e) => { setCategoryFilter(e.target.value); setPage(1); }}
+              className="w-full rounded-xl border-0 bg-[#F7F8FA] px-4 py-3 text-sm text-[#191F28] outline-none focus:ring-2 focus:ring-[#3182F6]/20"
+            >
+              <option value="">전체</option>
+              {categoryOptions.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+          <Button size="sm" onClick={handleSearch}>
+            <Search className="h-4 w-4" />
+            조회
+          </Button>
         </div>
-      )}
+      </div>
 
       {/* Table */}
-      <div className="rounded-2xl bg-white p-7 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-        <h2 className="mb-6 text-lg font-bold text-[#191F28]">카테고리별 상세</h2>
+      <div className="rounded-2xl bg-white p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
         {error ? (
           <div className="flex items-center gap-3 rounded-xl bg-red-50 p-5 text-sm text-red-600">
             <AlertCircle className="h-5 w-5 shrink-0" />
@@ -345,8 +224,12 @@ export default function CategoryStockPage() {
         ) : (
           <Table
             columns={columns}
-            data={categoryData}
+            data={pagedRows}
             isLoading={isLoading}
+            page={page}
+            totalPages={totalPages}
+            total={categoryData.length}
+            onPageChange={setPage}
             emptyMessage="재고 데이터가 없습니다."
           />
         )}

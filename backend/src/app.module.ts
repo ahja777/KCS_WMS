@@ -16,6 +16,7 @@ import { MasterModule } from './master/master.module';
 import { SettlementModule } from './settlement/settlement.module';
 import { DispatchModule } from './dispatch/dispatch.module';
 import { WorkOrderModule } from './work-order/work-order.module';
+import { InventoryExtModule } from './inventory-ext/inventory-ext.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { WorkOrderModule } from './work-order/work-order.module';
     SettlementModule,
     DispatchModule,
     WorkOrderModule,
+    InventoryExtModule,
   ],
 })
 export class AppModule {}

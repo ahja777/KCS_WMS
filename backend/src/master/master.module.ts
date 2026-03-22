@@ -9,6 +9,10 @@ import { ItemGroupController } from './item-group.controller';
 import { ItemGroupService } from './item-group.service';
 import { UomController } from './uom.controller';
 import { UomService } from './uom.service';
+import { ContainerController } from './container.controller';
+import { ContainerService } from './container.service';
+import { ContainerGroupController } from './container-group.controller';
+import { ContainerGroupService } from './container-group.service';
 
 @Module({
   controllers: [
@@ -17,6 +21,8 @@ import { UomService } from './uom.service';
     DockController,
     ItemGroupController,
     UomController,
+    ContainerController,
+    ContainerGroupController,
   ],
   providers: [
     CommonCodeService,
@@ -24,6 +30,8 @@ import { UomService } from './uom.service';
     DockService,
     ItemGroupService,
     UomService,
+    ContainerService,
+    ContainerGroupService,
   ],
   exports: [
     CommonCodeService,
@@ -31,6 +39,8 @@ import { UomService } from './uom.service';
     DockService,
     ItemGroupService,
     UomService,
+    ContainerService,
+    ContainerGroupService,
   ],
 })
 export class MasterModule {}
