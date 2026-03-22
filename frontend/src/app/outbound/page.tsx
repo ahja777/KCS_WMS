@@ -168,8 +168,7 @@ export default function OutboundPage() {
       addToast({ type: "warning", message: "삭제할 주문을 선택해주세요." });
       return;
     }
-    addToast({ type: "info", message: `${selectedIds.size}건 삭제 처리되었습니다.` });
-    setSelectedIds(new Set());
+    addToast({ type: "info", message: "삭제 기능은 준비중입니다." });
   };
 
   // Compute master row summaries

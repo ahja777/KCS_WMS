@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
   Plus,
   Search,
@@ -25,6 +25,8 @@ import {
   useToggleSync,
 } from "@/hooks/useChannels";
 import ChannelFormModal from "@/components/channels/ChannelFormModal";
+import ConfirmModal from "@/components/ui/ConfirmModal";
+import { useToastStore } from "@/stores/toast.store";
 import type { SalesChannel, ChannelPlatform } from "@/types/channel";
 import { PLATFORM_LABELS, PLATFORM_COLORS } from "@/types/channel";
 
@@ -57,6 +59,8 @@ export default function ChannelsPage() {
   const [page, setPage] = useState(1);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingChannel, setEditingChannel] = useState<SalesChannel | undefined>();
+  const [deletingChannel, setDeletingChannel] = useState<SalesChannel | undefined>();
+  const addToast = useToastStore((s) => s.addToast);
 
   const {
     data: response,
@@ -89,13 +93,20 @@ export default function ChannelsPage() {
     setIsFormOpen(true);
   };
 
-  const handleDelete = async (e: React.MouseEvent, ch: SalesChannel) => {
+  const handleDeleteClick = (e: React.MouseEvent, ch: SalesChannel) => {
     e.stopPropagation();
-    if (!confirm(`"${ch.name}" 채널을 삭제하시겠습니까?`)) return;
+    setDeletingChannel(ch);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingChannel) return;
     try {
-      await deleteMutation.mutateAsync(ch.id);
+      await deleteMutation.mutateAsync(deletingChannel.id);
+      addToast({ type: "success", message: "채널이 삭제되었습니다." });
     } catch {
-      alert("삭제 중 오류가 발생했습니다.");
+      addToast({ type: "error", message: "삭제 중 오류가 발생했습니다." });
+    } finally {
+      setDeletingChannel(undefined);
     }
   };
 
@@ -103,14 +114,15 @@ export default function ChannelsPage() {
     e.stopPropagation();
     try {
       const result = await testMutation.mutateAsync(ch.id);
-      alert(
-        result.connected
+      addToast({
+        type: result.connected ? "success" : "error",
+        message: result.connected
           ? `${PLATFORM_LABELS[ch.platform]} 연결 성공!`
-          : `연결 실패. API 인증 정보를 확인해주세요.`
-      );
+          : `연결 실패. API 인증 정보를 확인해주세요.`,
+      });
       refetch();
     } catch {
-      alert("연결 테스트 중 오류가 발생했습니다.");
+      addToast({ type: "error", message: "연결 테스트 중 오류가 발생했습니다." });
     }
   };
 
@@ -120,12 +132,13 @@ export default function ChannelsPage() {
       const result = await syncOrdersMutation.mutateAsync({
         channelId: ch.id,
       });
-      alert(
-        `주문 동기화 완료: ${result.recordCount}건 동기화, ${result.errorCount}건 오류`
-      );
+      addToast({
+        type: "success",
+        message: `주문 동기화 완료: ${result.recordCount}건 동기화, ${result.errorCount}건 오류`,
+      });
       refetch();
     } catch {
-      alert("주문 동기화 중 오류가 발생했습니다.");
+      addToast({ type: "error", message: "주문 동기화 중 오류가 발생했습니다." });
     }
   };
 
@@ -133,11 +146,12 @@ export default function ChannelsPage() {
     e.stopPropagation();
     try {
       const result = await syncInventoryMutation.mutateAsync(ch.id);
-      alert(
-        `재고 동기화 완료: ${result.success}건 성공, ${result.failed}건 실패`
-      );
+      addToast({
+        type: "success",
+        message: `재고 동기화 완료: ${result.success}건 성공, ${result.failed}건 실패`,
+      });
     } catch {
-      alert("재고 동기화 중 오류가 발생했습니다.");
+      addToast({ type: "error", message: "재고 동기화 중 오류가 발생했습니다." });
     }
   };
 
@@ -242,7 +256,7 @@ export default function ChannelsPage() {
             <Package className="h-4 w-4" />
           </button>
           <button
-            onClick={(e) => handleDelete(e, row)}
+            onClick={(e) => handleDeleteClick(e, row)}
             title="삭제"
             className="rounded-lg p-1.5 text-[#B0B8C1] hover:bg-red-50 hover:text-red-500"
           >
@@ -367,6 +381,16 @@ export default function ChannelsPage() {
         onClose={() => setIsFormOpen(false)}
         channel={editingChannel}
         onSuccess={() => refetch()}
+      />
+
+      <ConfirmModal
+        isOpen={!!deletingChannel}
+        onClose={() => setDeletingChannel(undefined)}
+        onConfirm={handleDeleteConfirm}
+        title="채널 삭제"
+        message={`"${deletingChannel?.name}" 채널을 삭제하시겠습니까?`}
+        confirmText="삭제"
+        isLoading={deleteMutation.isPending}
       />
     </div>
   );

@@ -8,6 +8,7 @@ import {
   Param,
   Query,
   UseGuards,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { WarehouseService } from './warehouse.service';
@@ -39,7 +40,7 @@ export class WarehouseController {
 
   @Get(':id')
   @ApiOperation({ summary: '창고 상세 조회' })
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.warehouseService.findWarehouseById(id);
   }
 
@@ -51,13 +52,13 @@ export class WarehouseController {
 
   @Put(':id')
   @ApiOperation({ summary: '창고 수정' })
-  update(@Param('id') id: string, @Body() dto: UpdateWarehouseDto) {
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateWarehouseDto) {
     return this.warehouseService.updateWarehouse(id, dto);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: '창고 삭제' })
-  remove(@Param('id') id: string) {
+  remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.warehouseService.deleteWarehouse(id);
   }
 

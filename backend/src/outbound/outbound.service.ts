@@ -68,22 +68,31 @@ export class OutboundService {
     const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
     const todayPrefix = `${prefix}-${dateStr}`;
 
-    const lastOrder = await this.prisma.outboundOrder.findFirst({
-      where: { orderNumber: { startsWith: todayPrefix } },
-      orderBy: { orderNumber: 'desc' },
-      select: { orderNumber: true },
-    });
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const lastOrder = await this.prisma.outboundOrder.findFirst({
+        where: { orderNumber: { startsWith: todayPrefix } },
+        orderBy: { orderNumber: 'desc' },
+        select: { orderNumber: true },
+      });
 
-    let nextSeq = 1;
-    if (lastOrder) {
-      const parts = lastOrder.orderNumber.split('-');
-      const lastSeq = parseInt(parts[parts.length - 1], 10);
-      if (!isNaN(lastSeq)) {
-        nextSeq = lastSeq + 1;
+      let nextSeq = 1;
+      if (lastOrder) {
+        const parts = lastOrder.orderNumber.split('-');
+        const lastSeq = parseInt(parts[parts.length - 1], 10);
+        if (!isNaN(lastSeq)) {
+          nextSeq = lastSeq + 1;
+        }
       }
+
+      const candidate = `${todayPrefix}-${String(nextSeq + attempt).padStart(4, '0')}`;
+      const exists = await this.prisma.outboundOrder.findUnique({
+        where: { orderNumber: candidate },
+        select: { id: true },
+      });
+      if (!exists) return candidate;
     }
 
-    return `${todayPrefix}-${String(nextSeq).padStart(4, '0')}`;
+    return `${todayPrefix}-${Date.now().toString(36).toUpperCase()}`;
   }
 
   async create(dto: CreateOutboundOrderDto) {
@@ -229,11 +238,11 @@ export class OutboundService {
       });
 
       for (const pickItem of dto.items) {
-        const orderItem = await tx.outboundOrderItem.findUnique({
-          where: { id: pickItem.outboundOrderItemId },
+        const orderItem = await tx.outboundOrderItem.findFirst({
+          where: { id: pickItem.outboundOrderItemId, outboundOrderId: id },
         });
         if (!orderItem) {
-          throw new NotFoundException(`주문 항목 ${pickItem.outboundOrderItemId}을(를) 찾을 수 없습니다`);
+          throw new NotFoundException(`해당 주문에 속하지 않는 항목입니다: ${pickItem.outboundOrderItemId}`);
         }
 
         const newPickedQty = orderItem.pickedQty + pickItem.pickedQty;

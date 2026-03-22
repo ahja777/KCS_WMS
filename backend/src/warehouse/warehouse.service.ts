@@ -124,6 +124,12 @@ export class WarehouseService {
 
   async deleteZone(warehouseId: string, zoneId: string) {
     await this.findZoneById(warehouseId, zoneId);
+    const inventoryCount = await this.prisma.inventory.count({
+      where: { location: { zoneId } },
+    });
+    if (inventoryCount > 0) {
+      throw new BadRequestException(`해당 구역에 재고가 ${inventoryCount}건 존재하여 삭제할 수 없습니다`);
+    }
     return this.prisma.zone.delete({ where: { id: zoneId } });
   }
 
@@ -159,6 +165,12 @@ export class WarehouseService {
     const zone = await this.findZoneById(warehouseId, zoneId);
     const location = zone.locations?.find((l) => l.id === locationId);
     if (!location) throw new NotFoundException('로케이션을 찾을 수 없습니다');
+    const inventoryCount = await this.prisma.inventory.count({
+      where: { locationId },
+    });
+    if (inventoryCount > 0) {
+      throw new BadRequestException(`해당 로케이션에 재고가 ${inventoryCount}건 존재하여 삭제할 수 없습니다`);
+    }
     return this.prisma.location.delete({ where: { id: locationId } });
   }
 }

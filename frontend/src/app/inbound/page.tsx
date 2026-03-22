@@ -237,7 +237,7 @@ export default function InboundPage() {
         totalExpectedQty,
         totalReceivedQty,
         urgent: false, // placeholder - not in current type
-        blNumber: (order as any).blNumber ?? "-",
+        blNumber: ((order as unknown as Record<string, unknown>).blNumber as string) ?? "-",
       };
     });
   }, [orders]);

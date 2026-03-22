@@ -5,6 +5,7 @@ import {
   IsUUID,
   IsDateString,
   IsArray,
+  ArrayMinSize,
   ValidateNested,
   IsInt,
   Min,
@@ -53,6 +54,7 @@ export class CreateInboundOrderDto {
 
   @ApiProperty({ type: [CreateInboundOrderItemDto] })
   @IsArray()
+  @ArrayMinSize(1, { message: '최소 1개 이상의 품목이 필요합니다' })
   @ValidateNested({ each: true })
   @Type(() => CreateInboundOrderItemDto)
   items: CreateInboundOrderItemDto[];

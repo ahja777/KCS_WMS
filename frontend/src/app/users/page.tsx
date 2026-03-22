@@ -185,6 +185,7 @@ export default function UsersPage() {
       addToast({ type: "warning", message: "삭제할 사용자를 선택해주세요." });
       return;
     }
+    if (!confirm(`"${selectedUser.name}" 사용자를 삭제하시겠습니까?`)) return;
     try {
       await deleteMutation.mutateAsync(selectedUser.id);
       addToast({ type: "success", message: "사용자가 삭제되었습니다." });

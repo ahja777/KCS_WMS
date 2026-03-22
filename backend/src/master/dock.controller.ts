@@ -8,6 +8,7 @@ import {
   Param,
   Query,
   UseGuards,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { DockService } from './dock.service';
@@ -34,7 +35,7 @@ export class DockController {
 
   @Get(':id')
   @ApiOperation({ summary: '도크 상세 조회' })
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.dockService.findById(id);
   }
 
@@ -46,13 +47,13 @@ export class DockController {
 
   @Put(':id')
   @ApiOperation({ summary: '도크 수정' })
-  update(@Param('id') id: string, @Body() dto: UpdateDockDto) {
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateDockDto) {
     return this.dockService.update(id, dto);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: '도크 삭제' })
-  remove(@Param('id') id: string) {
+  remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.dockService.delete(id);
   }
 }

@@ -9,6 +9,7 @@ import {
   Query,
   UseGuards,
   Request,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
@@ -32,7 +33,9 @@ export class AuthController {
   }
 
   @Post('register')
-  @ApiOperation({ summary: '회원가입' })
+  @ApiOperation({ summary: '회원가입 (관리자 전용)' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
   async register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
   }
@@ -58,7 +61,7 @@ export class AuthController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
-  async resetPassword(@Param('id') id: string, @Request() req: any) {
+  async resetPassword(@Param('id', ParseUUIDPipe) id: string, @Request() req: any) {
     return this.authService.resetPassword(id, { id: req.user.id, role: req.user.role });
   }
 
@@ -79,7 +82,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN', 'MANAGER')
   async updateUser(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateUserDto,
     @Request() req: any,
   ) {
@@ -94,7 +97,7 @@ export class AuthController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
-  async deleteUser(@Param('id') id: string, @Request() req: any) {
+  async deleteUser(@Param('id', ParseUUIDPipe) id: string, @Request() req: any) {
     return this.authService.deleteUser(id, req.user.id);
   }
 }

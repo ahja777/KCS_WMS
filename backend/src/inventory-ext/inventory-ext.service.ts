@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaginationDto, PaginatedResult } from '../common/dto/pagination.dto';
 import {
@@ -90,10 +90,17 @@ export class InventoryExtService {
   }
 
   async completeStockTransfer(id: string) {
+    const transfer = await this.prisma.stockTransfer.findUnique({ where: { id } });
+    if (!transfer) throw new NotFoundException('재고이동 내역을 찾을 수 없습니다');
+    if (transfer.status === 'COMPLETED') throw new BadRequestException('이미 완료된 재고이동입니다');
+    if (transfer.status === 'CANCELLED') throw new BadRequestException('취소된 재고이동은 완료할 수 없습니다');
     return this.prisma.stockTransfer.update({ where: { id }, data: { status: 'COMPLETED', workDateTime: new Date() } });
   }
 
   async deleteStockTransfer(id: string) {
+    const transfer = await this.prisma.stockTransfer.findUnique({ where: { id } });
+    if (!transfer) throw new NotFoundException('재고이동 내역을 찾을 수 없습니다');
+    if (transfer.status === 'COMPLETED') throw new BadRequestException('완료된 재고이동은 삭제할 수 없습니다');
     return this.prisma.stockTransfer.delete({ where: { id } });
   }
 
@@ -115,6 +122,10 @@ export class InventoryExtService {
       where: { id },
       data: { status: 'CLOSED', closedBy: userId, closedAt: new Date() },
     });
+  }
+
+  async deletePeriodClose(id: string) {
+    return this.prisma.periodClose.delete({ where: { id } });
   }
 
   // === 물류용기재고 ===

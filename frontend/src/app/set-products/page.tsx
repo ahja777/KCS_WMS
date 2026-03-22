@@ -16,6 +16,21 @@ import { useDebounce } from "@/hooks/useDebounce";
 import { downloadExcel } from "@/lib/export";
 import type { Item } from "@/types";
 
+interface SetItem {
+  id: string;
+  parentItemId: string;
+  childItemId: string;
+  quantity: number;
+  createdAt?: string;
+}
+
+interface SetItemRow extends SetItem {
+  no: number;
+  childCode: string;
+  childName: string;
+  uom: string;
+}
+
 const inputBase =
   "w-full rounded-xl border-0 bg-[#F7F8FA] px-4 py-3 text-sm text-[#191F28] placeholder-[#B0B8C1] outline-none transition-all focus:border focus:border-[#3182F6] focus:bg-white focus:ring-2 focus:ring-[#3182F6]/20";
 const selectBase =
@@ -47,7 +62,7 @@ export default function SetProductsPage() {
   // Get unique parent item IDs from set items
   const parentItemIds = useMemo(() => {
     const ids = new Set<string>();
-    allSetItems.forEach((si: any) => ids.add(si.parentItemId));
+    allSetItems.forEach((si: SetItem) => ids.add(si.parentItemId));
     return ids;
   }, [allSetItems]);
 
@@ -68,8 +83,8 @@ export default function SetProductsPage() {
   const childSetItems = useMemo(() => {
     if (!selectedParentId) return [];
     return allSetItems
-      .filter((si: any) => si.parentItemId === selectedParentId)
-      .map((si: any, idx: number) => {
+      .filter((si: SetItem) => si.parentItemId === selectedParentId)
+      .map((si: SetItem, idx: number) => {
         const childItem = allItems.find((i: Item) => i.id === si.childItemId);
         return {
           ...si,
@@ -119,8 +134,8 @@ export default function SetProductsPage() {
     {
       key: "partner",
       header: "화 주",
-      render: (row: any) => {
-        const p = partners.find((pp) => pp.id === row.partnerId);
+      render: (row) => {
+        const p = partners.find((pp) => pp.id === (row as Item & { partnerId?: string }).partnerId);
         return <span className="text-sm">{p?.name ?? "-"}</span>;
       },
     },
@@ -129,7 +144,7 @@ export default function SetProductsPage() {
   ];
 
   // Child item columns
-  const childColumns: Column<any>[] = [
+  const childColumns: Column<SetItemRow>[] = [
     { key: "no", header: "No" },
     { key: "childCode", header: "*상품코드" },
     { key: "childName", header: "*상품명" },
@@ -138,13 +153,13 @@ export default function SetProductsPage() {
     {
       key: "createdAt",
       header: "생성일",
-      render: (row: any) =>
+      render: (row) =>
         row.createdAt ? new Date(row.createdAt).toLocaleDateString("ko-KR") : "-",
     },
     {
       key: "actions",
       header: "",
-      render: (row: any) => (
+      render: (row) => (
         <button
           onClick={(e) => {
             e.stopPropagation();

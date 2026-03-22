@@ -37,14 +37,17 @@ export default function ExpiryAlertsPage() {
     return inventoryItems
       .map((inv, idx) => {
         const item = allItems.find((i) => i.id === inv.itemId) ?? inv.item;
-        const warehouse = warehouses.find((w) => w.id === inv.warehouseId);
         // Simulate expiry days based on minStock ratio
         const expiryDays = item?.minStock
           ? -Math.round(((item.minStock - inv.quantity) / (item.minStock || 1)) * 365)
-          : -Math.round(Math.random() * 2000);
+          : -Math.round(((idx * 137 + 42) % 2000));
+        const warehouse = warehouses.find((w) => w.id === inv.warehouseId);
+        const partnerForRow = partners.length > 0
+          ? partners[idx % partners.length]
+          : undefined;
         return {
           no: idx + 1,
-          partnerName: partners.find((p) => inv.warehouseId)?.name ?? "한텍",
+          partnerName: partnerForRow?.name ?? "한텍",
           locationCode: inv.locationCode ?? "-",
           itemCode: item?.code ?? "-",
           itemName: item?.name ?? "-",

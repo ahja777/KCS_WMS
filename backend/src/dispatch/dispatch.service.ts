@@ -80,8 +80,15 @@ export class DispatchService {
     if (dto.dispatchDate) updateData.dispatchDate = new Date(dto.dispatchDate);
 
     if (items) {
-      await this.prisma.dispatchItem.deleteMany({ where: { dispatchId: id } });
-      updateData.items = { create: items };
+      return this.prisma.$transaction(async (tx) => {
+        await tx.dispatchItem.deleteMany({ where: { dispatchId: id } });
+        updateData.items = { create: items };
+        return tx.dispatch.update({
+          where: { id },
+          data: updateData,
+          include: { items: true },
+        });
+      });
     }
 
     return this.prisma.dispatch.update({

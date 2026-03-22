@@ -20,6 +20,12 @@ import { downloadExcel } from "@/lib/export";
 import { formatDate } from "@/lib/utils";
 import type { ContainerGroup } from "@/types";
 
+interface ContainerGroupRow extends ContainerGroup {
+  workerIp?: string;
+  createdBy?: string;
+  updatedBy?: string;
+}
+
 const inputBase =
   "w-full rounded-xl border-0 bg-[#F7F8FA] px-4 py-3 text-sm text-[#191F28] placeholder-[#B0B8C1] outline-none transition-all focus:border focus:border-[#3182F6] focus:bg-white focus:ring-2 focus:ring-[#3182F6]/20";
 
@@ -54,7 +60,7 @@ export default function ContainerGroupsPage() {
 
   const deleteMutation = useDeleteContainerGroup();
 
-  const groups = response?.data ?? [];
+  const groups = (response?.data ?? []) as ContainerGroupRow[];
   const total = response?.total ?? 0;
   const totalPages = response?.totalPages ?? 1;
 
@@ -111,7 +117,7 @@ export default function ContainerGroupsPage() {
     }
   };
 
-  const columns: Column<ContainerGroup>[] = [
+  const columns: Column<ContainerGroupRow>[] = [
     {
       key: "select",
       header: "",
@@ -141,7 +147,7 @@ export default function ContainerGroupsPage() {
     {
       key: "workerIp",
       header: "작업자IP",
-      render: (row) => <span className="text-sm text-[#4E5968]">{(row as any).workerIp ?? "-"}</span>,
+      render: (row) => <span className="text-sm text-[#4E5968]">{row.workerIp ?? "-"}</span>,
     },
     {
       key: "createdAt",
@@ -151,7 +157,7 @@ export default function ContainerGroupsPage() {
     {
       key: "createdBy",
       header: "등록자번호",
-      render: (row) => <span className="text-sm text-[#4E5968]">{(row as any).createdBy ?? "-"}</span>,
+      render: (row) => <span className="text-sm text-[#4E5968]">{row.createdBy ?? "-"}</span>,
     },
     {
       key: "updatedAt",
@@ -161,7 +167,7 @@ export default function ContainerGroupsPage() {
     {
       key: "updatedBy",
       header: "수정자번호",
-      render: (row) => <span className="text-sm text-[#4E5968]">{(row as any).updatedBy ?? "-"}</span>,
+      render: (row) => <span className="text-sm text-[#4E5968]">{row.updatedBy ?? "-"}</span>,
     },
   ];
 
@@ -297,11 +303,11 @@ export default function ContainerGroupsPage() {
                         <td className="px-5 py-4 text-sm text-[#4E5968]">{row.groupName}</td>
                         <td className="px-5 py-4 text-sm text-[#4E5968]">{row.centerId ?? "-"}</td>
                         <td className="px-5 py-4 text-sm text-[#4E5968]">{row.zoneId ?? "-"}</td>
-                        <td className="px-5 py-4 text-sm text-[#4E5968]">{(row as any).workerIp ?? "-"}</td>
+                        <td className="px-5 py-4 text-sm text-[#4E5968]">{row.workerIp ?? "-"}</td>
                         <td className="px-5 py-4 text-sm text-[#4E5968]">{formatDate(row.createdAt)}</td>
-                        <td className="px-5 py-4 text-sm text-[#4E5968]">{(row as any).createdBy ?? "-"}</td>
+                        <td className="px-5 py-4 text-sm text-[#4E5968]">{row.createdBy ?? "-"}</td>
                         <td className="px-5 py-4 text-sm text-[#4E5968]">{formatDate(row.updatedAt)}</td>
-                        <td className="px-5 py-4 text-sm text-[#4E5968]">{(row as any).updatedBy ?? "-"}</td>
+                        <td className="px-5 py-4 text-sm text-[#4E5968]">{row.updatedBy ?? "-"}</td>
                       </tr>
                     ))
                   )}

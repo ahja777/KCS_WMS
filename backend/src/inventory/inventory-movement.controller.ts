@@ -6,6 +6,7 @@ import {
   Param,
   Query,
   UseGuards,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { InventoryMovementService } from './inventory-movement.service';
@@ -34,7 +35,7 @@ export class InventoryMovementController {
 
   @Get(':id')
   @ApiOperation({ summary: '재고이동 상세 조회' })
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.movementService.findById(id);
   }
 
@@ -46,13 +47,13 @@ export class InventoryMovementController {
 
   @Post(':id/start')
   @ApiOperation({ summary: '재고이동 시작 (IN_PROGRESS)' })
-  start(@Param('id') id: string) {
+  start(@Param('id', ParseUUIDPipe) id: string) {
     return this.movementService.start(id);
   }
 
   @Post(':id/complete')
   @ApiOperation({ summary: '재고이동 완료 (COMPLETED)' })
-  complete(@Param('id') id: string) {
+  complete(@Param('id', ParseUUIDPipe) id: string) {
     return this.movementService.complete(id);
   }
 }

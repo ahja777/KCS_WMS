@@ -9,7 +9,7 @@ import { usePartners, useCreatePartner, useUpdatePartner, useDeletePartner } fro
 import { useToastStore } from "@/stores/toast.store";
 import { useDebounce } from "@/hooks/useDebounce";
 import { formatDate } from "@/lib/utils";
-import type { Partner } from "@/types";
+import type { Partner, PartnerType } from "@/types";
 
 const inputBase =
   "w-full rounded-xl border-0 bg-[#F7F8FA] px-4 py-3 text-sm text-[#191F28] placeholder-[#B0B8C1] outline-none transition-all focus:border focus:border-[#3182F6] focus:bg-white focus:ring-2 focus:ring-[#3182F6]/20";
@@ -105,11 +105,12 @@ export default function PartnersPage() {
       return;
     }
     try {
+      const payload = { ...form, type: form.type as PartnerType };
       if (isNew) {
-        await createMutation.mutateAsync(form as any);
+        await createMutation.mutateAsync(payload);
         addToast({ type: "success", message: "화주가 등록되었습니다." });
       } else if (selectedPartner) {
-        await updateMutation.mutateAsync({ id: selectedPartner.id, payload: form as any });
+        await updateMutation.mutateAsync({ id: selectedPartner.id, payload });
         addToast({ type: "success", message: "화주가 수정되었습니다." });
       }
       setIsNew(false);

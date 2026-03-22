@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { Search, Plus, Trash2, Download, AlertCircle } from "lucide-react";
 import Table, { type Column } from "@/components/ui/Table";
 import ConfirmModal from "@/components/ui/ConfirmModal";
@@ -55,12 +55,9 @@ interface ProductRow {
   isDirty?: boolean;
 }
 
-let keyCounter = 0;
-function nextKey() {
-  return `_new_${++keyCounter}`;
-}
-
 export default function PartnerProductsPage() {
+  const keyCounterRef = useRef(0);
+  const nextKey = () => `_new_${++keyCounterRef.current}`;
   const [partnerSearch, setPartnerSearch] = useState("");
   const [traderNameSearch, setTraderNameSearch] = useState("");
   const debouncedPartnerSearch = useDebounce(partnerSearch);

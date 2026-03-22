@@ -6,6 +6,7 @@ import {
   Param,
   Query,
   UseGuards,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { WorkOrderService } from './work-order.service';
@@ -36,7 +37,7 @@ export class WorkOrderController {
 
   @Get(':id')
   @ApiOperation({ summary: '작업지시서 상세 조회' })
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.workOrderService.findById(id);
   }
 
@@ -48,19 +49,19 @@ export class WorkOrderController {
 
   @Post(':id/assign')
   @ApiOperation({ summary: '작업지시서 배정 (ASSIGNED)' })
-  assign(@Param('id') id: string, @Body('assignedTo') assignedTo?: string) {
+  assign(@Param('id', ParseUUIDPipe) id: string, @Body('assignedTo') assignedTo?: string) {
     return this.workOrderService.assign(id, assignedTo);
   }
 
   @Post(':id/start')
   @ApiOperation({ summary: '작업지시서 시작 (IN_PROGRESS)' })
-  start(@Param('id') id: string) {
+  start(@Param('id', ParseUUIDPipe) id: string) {
     return this.workOrderService.start(id);
   }
 
   @Post(':id/complete')
   @ApiOperation({ summary: '작업지시서 완료 (COMPLETED)' })
-  complete(@Param('id') id: string) {
+  complete(@Param('id', ParseUUIDPipe) id: string) {
     return this.workOrderService.complete(id);
   }
 }

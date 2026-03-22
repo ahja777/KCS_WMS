@@ -70,22 +70,33 @@ export class InboundService {
     const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
     const todayPrefix = `${prefix}-${dateStr}`;
 
-    const lastOrder = await this.prisma.inboundOrder.findFirst({
-      where: { orderNumber: { startsWith: todayPrefix } },
-      orderBy: { orderNumber: 'desc' },
-      select: { orderNumber: true },
-    });
+    // 재시도로 race condition 방지
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const lastOrder = await this.prisma.inboundOrder.findFirst({
+        where: { orderNumber: { startsWith: todayPrefix } },
+        orderBy: { orderNumber: 'desc' },
+        select: { orderNumber: true },
+      });
 
-    let nextSeq = 1;
-    if (lastOrder) {
-      const parts = lastOrder.orderNumber.split('-');
-      const lastSeq = parseInt(parts[parts.length - 1], 10);
-      if (!isNaN(lastSeq)) {
-        nextSeq = lastSeq + 1;
+      let nextSeq = 1;
+      if (lastOrder) {
+        const parts = lastOrder.orderNumber.split('-');
+        const lastSeq = parseInt(parts[parts.length - 1], 10);
+        if (!isNaN(lastSeq)) {
+          nextSeq = lastSeq + 1;
+        }
       }
+
+      const candidate = `${todayPrefix}-${String(nextSeq + attempt).padStart(4, '0')}`;
+      const exists = await this.prisma.inboundOrder.findUnique({
+        where: { orderNumber: candidate },
+        select: { id: true },
+      });
+      if (!exists) return candidate;
     }
 
-    return `${todayPrefix}-${String(nextSeq).padStart(4, '0')}`;
+    // fallback: timestamp 기반
+    return `${todayPrefix}-${Date.now().toString(36).toUpperCase()}`;
   }
 
   async create(dto: CreateInboundOrderDto) {
@@ -213,12 +224,12 @@ export class InboundService {
 
       // Process each received item
       for (const receiveItem of dto.items) {
-        const orderItem = await tx.inboundOrderItem.findUnique({
-          where: { id: receiveItem.inboundOrderItemId },
+        const orderItem = await tx.inboundOrderItem.findFirst({
+          where: { id: receiveItem.inboundOrderItemId, inboundOrderId: id },
           include: { item: true },
         });
         if (!orderItem) {
-          throw new NotFoundException(`주문 항목 ${receiveItem.inboundOrderItemId}을(를) 찾을 수 없습니다`);
+          throw new NotFoundException(`해당 주문에 속하지 않는 항목입니다: ${receiveItem.inboundOrderItemId}`);
         }
 
         // Warn if over-receiving (receive more than expected)

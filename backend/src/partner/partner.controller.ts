@@ -8,6 +8,7 @@ import {
   Param,
   Query,
   UseGuards,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { PartnerService } from './partner.service';
@@ -31,7 +32,7 @@ export class PartnerController {
 
   @Get(':id')
   @ApiOperation({ summary: '거래처 상세 조회' })
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.partnerService.findById(id);
   }
 
@@ -43,13 +44,13 @@ export class PartnerController {
 
   @Put(':id')
   @ApiOperation({ summary: '거래처 수정' })
-  update(@Param('id') id: string, @Body() dto: UpdatePartnerDto) {
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdatePartnerDto) {
     return this.partnerService.update(id, dto);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: '거래처 삭제' })
-  remove(@Param('id') id: string) {
+  remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.partnerService.delete(id);
   }
 }

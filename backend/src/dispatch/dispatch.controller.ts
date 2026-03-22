@@ -8,6 +8,7 @@ import {
   Param,
   Query,
   UseGuards,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { DispatchService } from './dispatch.service';
@@ -38,7 +39,7 @@ export class DispatchController {
 
   @Get(':id')
   @ApiOperation({ summary: '배차 상세 조회' })
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.dispatchService.findById(id);
   }
 
@@ -50,25 +51,25 @@ export class DispatchController {
 
   @Put(':id')
   @ApiOperation({ summary: '배차 수정' })
-  update(@Param('id') id: string, @Body() dto: UpdateDispatchDto) {
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateDispatchDto) {
     return this.dispatchService.update(id, dto);
   }
 
   @Post(':id/start')
   @ApiOperation({ summary: '배차 시작 (IN_PROGRESS)' })
-  start(@Param('id') id: string) {
+  start(@Param('id', ParseUUIDPipe) id: string) {
     return this.dispatchService.start(id);
   }
 
   @Post(':id/complete')
   @ApiOperation({ summary: '배차 완료 (COMPLETED)' })
-  complete(@Param('id') id: string) {
+  complete(@Param('id', ParseUUIDPipe) id: string) {
     return this.dispatchService.complete(id);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: '배차 삭제' })
-  remove(@Param('id') id: string) {
+  remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.dispatchService.delete(id);
   }
 }

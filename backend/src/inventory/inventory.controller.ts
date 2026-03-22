@@ -6,6 +6,7 @@ import {
   Param,
   Query,
   UseGuards,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { InventoryService } from './inventory.service';
@@ -91,7 +92,7 @@ export class InventoryController {
   @Post('cycle-counts/:id/complete')
   @ApiOperation({ summary: '순환 실사 완료' })
   completeCycleCount(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: CompleteCycleCountDto,
   ) {
     return this.inventoryService.completeCycleCount(id, dto);

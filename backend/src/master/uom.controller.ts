@@ -8,6 +8,7 @@ import {
   Param,
   Query,
   UseGuards,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { UomService } from './uom.service';
@@ -30,7 +31,7 @@ export class UomController {
 
   @Get(':id')
   @ApiOperation({ summary: 'UOM 상세 조회' })
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.uomService.findById(id);
   }
 
@@ -42,25 +43,25 @@ export class UomController {
 
   @Put(':id')
   @ApiOperation({ summary: 'UOM 수정' })
-  update(@Param('id') id: string, @Body() dto: UpdateUomMasterDto) {
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateUomMasterDto) {
     return this.uomService.update(id, dto);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'UOM 삭제' })
-  remove(@Param('id') id: string) {
+  remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.uomService.delete(id);
   }
 
   @Get(':id/conversions')
   @ApiOperation({ summary: 'UOM 환산 목록 조회' })
-  findConversions(@Param('id') id: string) {
+  findConversions(@Param('id', ParseUUIDPipe) id: string) {
     return this.uomService.findConversions(id);
   }
 
   @Post(':id/conversions')
   @ApiOperation({ summary: 'UOM 환산 등록' })
-  createConversion(@Param('id') id: string, @Body() dto: CreateUomConversionDto) {
+  createConversion(@Param('id', ParseUUIDPipe) id: string, @Body() dto: CreateUomConversionDto) {
     return this.uomService.createConversion(id, dto);
   }
 }

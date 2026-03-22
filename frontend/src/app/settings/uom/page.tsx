@@ -1,9 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
+import { useState } from "react";
 import { Search, AlertCircle } from "lucide-react";
 import Table, { type Column } from "@/components/ui/Table";
 import ConfirmModal from "@/components/ui/ConfirmModal";
@@ -211,7 +208,7 @@ export default function UomPage() {
           value={getRowValue(row, "code")}
           onChange={(e) => handleCellEdit(row.id, "code", e.target.value)}
           onClick={(e) => e.stopPropagation()}
-          disabled={!row.isNew && !editedRows.has(row.id) && false}
+          disabled={!row.isNew && !editedRows.has(row.id)}
           className={cellInput}
           placeholder="UOM코드"
         />

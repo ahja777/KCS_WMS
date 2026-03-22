@@ -18,7 +18,7 @@ import {
 } from "@/hooks/useApi";
 import { useToastStore } from "@/stores/toast.store";
 import { usePermission } from "@/hooks/usePermission";
-import type { Item } from "@/types";
+import type { Item, ItemGroup } from "@/types";
 
 const itemSchema = z.object({
   code: z.string().min(1, "상품코드를 입력해주세요"),
@@ -257,7 +257,7 @@ export default function ItemsPage() {
       header: "상품군",
       sortable: true,
       render: (row) => {
-        const group = itemGroups.find((g: any) => g.id === row.itemGroupId);
+        const group = itemGroups.find((g: ItemGroup) => g.id === row.itemGroupId);
         return group?.name ?? "-";
       },
     },
@@ -475,7 +475,7 @@ export default function ItemsPage() {
                         <label className={labelClass}>상품군</label>
                         <select {...register("itemGroupId")} className={selectBase}>
                           <option value="">선택</option>
-                          {itemGroups.map((g: any) => (
+                          {itemGroups.map((g: ItemGroup) => (
                             <option key={g.id} value={g.id}>
                               {g.name}
                             </option>

@@ -8,6 +8,7 @@ import {
   Param,
   Query,
   UseGuards,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { InboundService } from './inbound.service';
@@ -42,7 +43,7 @@ export class InboundController {
 
   @Get(':id')
   @ApiOperation({ summary: '입고 주문 상세 조회' })
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.inboundService.findById(id);
   }
 
@@ -54,37 +55,37 @@ export class InboundController {
 
   @Put(':id')
   @ApiOperation({ summary: '입고 주문 수정' })
-  update(@Param('id') id: string, @Body() dto: UpdateInboundOrderDto) {
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateInboundOrderDto) {
     return this.inboundService.update(id, dto);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: '입고 주문 삭제' })
-  remove(@Param('id') id: string) {
+  remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.inboundService.delete(id);
   }
 
   @Post(':id/confirm')
   @ApiOperation({ summary: '입고 주문 확정' })
-  confirm(@Param('id') id: string) {
+  confirm(@Param('id', ParseUUIDPipe) id: string) {
     return this.inboundService.confirm(id);
   }
 
   @Post(':id/arrive')
   @ApiOperation({ summary: '입고 도착 처리' })
-  markArrived(@Param('id') id: string) {
+  markArrived(@Param('id', ParseUUIDPipe) id: string) {
     return this.inboundService.markArrived(id);
   }
 
   @Post(':id/receive')
   @ApiOperation({ summary: '입고 검수/입고 처리' })
-  receive(@Param('id') id: string, @Body() dto: ReceiveInboundDto) {
+  receive(@Param('id', ParseUUIDPipe) id: string, @Body() dto: ReceiveInboundDto) {
     return this.inboundService.receive(id, dto);
   }
 
   @Post(':id/cancel')
   @ApiOperation({ summary: '입고 주문 취소' })
-  cancel(@Param('id') id: string) {
+  cancel(@Param('id', ParseUUIDPipe) id: string) {
     return this.inboundService.cancel(id);
   }
 }

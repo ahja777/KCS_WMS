@@ -193,14 +193,15 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { id: targetUserId } });
     if (!user) throw new NotFoundException('사용자를 찾을 수 없습니다');
 
-    const tempPassword = 'Reset1234!';
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$';
+    const tempPassword = Array.from({ length: 12 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
     const hashedPassword = await bcrypt.hash(tempPassword, 10);
     await this.prisma.user.update({
       where: { id: targetUserId },
       data: { password: hashedPassword },
     });
 
-    return { message: '비밀번호가 초기화되었습니다', tempPassword };
+    return { message: '비밀번호가 초기화되었습니다. 사용자에게 임시 비밀번호를 안전하게 전달해주세요.', tempPassword };
   }
 
   async deleteUser(id: string, currentUserId: string) {

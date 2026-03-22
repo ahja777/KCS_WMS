@@ -318,6 +318,13 @@ export default function Sidebar() {
     }, 150);
   };
 
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    };
+  }, []);
+
   // Clear flyout when sidebar expands
   useEffect(() => {
     if (!sidebarCollapsed) {

@@ -5,8 +5,10 @@ import {
   IsUUID,
   IsDateString,
   IsArray,
+  ArrayMinSize,
   ValidateNested,
   IsInt,
+  IsNumber,
   Min,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
@@ -59,6 +61,7 @@ export class CreateOutboundOrderDto {
 
   @ApiProperty({ type: [CreateOutboundOrderItemDto] })
   @IsArray()
+  @ArrayMinSize(1, { message: '최소 1개 이상의 품목이 필요합니다' })
   @ValidateNested({ each: true })
   @Type(() => CreateOutboundOrderItemDto)
   items: CreateOutboundOrderItemDto[];
@@ -123,6 +126,8 @@ export class ShipOutboundDto {
 
   @ApiPropertyOptional()
   @IsOptional()
+  @IsNumber()
+  @Min(0)
   weight?: number;
 
   @ApiPropertyOptional()

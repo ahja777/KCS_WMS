@@ -8,6 +8,7 @@ import {
   Param,
   Query,
   UseGuards,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { CommonCodeService } from './common-code.service';
@@ -34,7 +35,7 @@ export class CommonCodeController {
 
   @Get(':id')
   @ApiOperation({ summary: '공통코드 상세 조회' })
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.commonCodeService.findById(id);
   }
 
@@ -46,13 +47,13 @@ export class CommonCodeController {
 
   @Put(':id')
   @ApiOperation({ summary: '공통코드 수정' })
-  update(@Param('id') id: string, @Body() dto: UpdateCommonCodeDto) {
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateCommonCodeDto) {
     return this.commonCodeService.update(id, dto);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: '공통코드 삭제' })
-  remove(@Param('id') id: string) {
+  remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.commonCodeService.delete(id);
   }
 }

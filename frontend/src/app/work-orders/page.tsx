@@ -168,6 +168,8 @@ export default function WorkOrdersPage() {
     }
   };
 
+  const esc = (s: unknown) => String(s ?? "-").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+
   const handlePrint = () => {
     if (!selectedId || !detail) {
       addToast({ type: "warning", message: "인쇄할 작업을 선택해주세요." });
@@ -182,8 +184,8 @@ export default function WorkOrdersPage() {
         (item: WorkOrderItem, idx: number) => `
         <tr>
           <td style="border:1px solid #ddd;padding:8px;text-align:center">${idx + 1}</td>
-          <td style="border:1px solid #ddd;padding:8px">${item.item?.code ?? item.itemId}</td>
-          <td style="border:1px solid #ddd;padding:8px">${item.item?.name ?? "-"}</td>
+          <td style="border:1px solid #ddd;padding:8px">${esc(item.item?.code ?? item.itemId)}</td>
+          <td style="border:1px solid #ddd;padding:8px">${esc(item.item?.name)}</td>
           <td style="border:1px solid #ddd;padding:8px;text-align:right">${item.quantity}</td>
           <td style="border:1px solid #ddd;padding:8px">${item.locationCode ?? "-"}</td>
           <td style="border:1px solid #ddd;padding:8px">-</td>
@@ -198,8 +200,8 @@ export default function WorkOrdersPage() {
         <body style="font-family:sans-serif;padding:40px">
           <h1 style="text-align:center;margin-bottom:30px">${title}</h1>
           <table style="width:100%;margin-bottom:20px">
-            <tr><td><strong>작업번호:</strong> ${detail.orderNumber}</td><td><strong>창고:</strong> ${detail.warehouse?.name ?? "-"}</td></tr>
-            <tr><td><strong>담당자:</strong> ${detail.assignee || "-"}</td><td><strong>생성일:</strong> ${formatDate(detail.createdAt)}</td></tr>
+            <tr><td><strong>작업번호:</strong> ${esc(detail.orderNumber)}</td><td><strong>창고:</strong> ${esc(detail.warehouse?.name)}</td></tr>
+            <tr><td><strong>담당자:</strong> ${esc(detail.assignee)}</td><td><strong>생성일:</strong> ${esc(formatDate(detail.createdAt))}</td></tr>
           </table>
           <table style="width:100%;border-collapse:collapse">
             <thead>

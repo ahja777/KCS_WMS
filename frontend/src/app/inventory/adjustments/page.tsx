@@ -8,6 +8,7 @@ import Modal from "@/components/ui/Modal";
 import { formatNumber, formatDateTime } from "@/lib/utils";
 import { useWarehouses, useStockAdjustments, useCreateAdjustment } from "@/hooks/useApi";
 import { useToastStore } from "@/stores/toast.store";
+import { useAuthStore } from "@/stores/auth.store";
 import InventoryTabNav from "@/components/inventory/InventoryTabNav";
 import type { StockAdjustment } from "@/types";
 
@@ -167,6 +168,7 @@ function AdjustmentForm({ onClose, onSuccess }: { onClose: () => void; onSuccess
   const [adjustQty, setAdjustQty] = useState(0);
   const [reason, setReason] = useState("");
 
+  const user = useAuthStore((s) => s.user);
   const createMutation = useCreateAdjustment();
   const { data: warehouseResponse } = useWarehouses({ limit: 100 });
   const warehouses = warehouseResponse?.data ?? [];
@@ -180,7 +182,7 @@ function AdjustmentForm({ onClose, onSuccess }: { onClose: () => void; onSuccess
         itemCode: product,
         quantity: qty,
         reason: reason || "CORRECTION",
-        adjustedBy: "admin",
+        adjustedBy: user?.name ?? user?.email ?? "admin",
         notes: reason,
       });
       onSuccess();

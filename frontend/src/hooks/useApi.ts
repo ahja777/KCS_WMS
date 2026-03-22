@@ -887,14 +887,14 @@ export const useUpdateWorkPolicy = () => useUpdate<any>("work-policies");
 export const useDeleteWorkPolicy = () => useDelete("work-policies");
 
 // ===== Helpdesk (TMSYS130) =====
-export const useHelpdesks = (params?: QueryParams) => useList<Helpdesk>("helpdesks", params);
-export const useHelpdesk = (id?: string) => useDetail<Helpdesk>("helpdesks", id);
-export const useCreateHelpdesk = () => useCreate<Helpdesk>("helpdesks");
-export const useUpdateHelpdesk = () => useUpdate<Helpdesk>("helpdesks");
+export const useHelpdesks = (params?: QueryParams) => useList<any>("helpdesks", params);
+export const useHelpdesk = (id?: string) => useDetail<any>("helpdesks", id);
+export const useCreateHelpdesk = () => useCreate<any>("helpdesks");
+export const useUpdateHelpdesk = () => useUpdate<any>("helpdesks");
 export const useDeleteHelpdesk = () => useDelete("helpdesks");
 
 // ===== SettlementRate (WMSAC010: 정산단가관리) =====
-export const useSettlementRates = (params?: QueryParams) => useList<SettlementRate>("settlement-rates", params);
-export const useCreateSettlementRate = () => useCreate<SettlementRate>("settlement-rates");
-export const useUpdateSettlementRate = () => useUpdate<SettlementRate>("settlement-rates");
+export const useSettlementRates = (params?: QueryParams) => useList<any>("settlement-rates", params);
+export const useCreateSettlementRate = () => useCreate<any>("settlement-rates");
+export const useUpdateSettlementRate = () => useUpdate<any>("settlement-rates");
 export const useDeleteSettlementRate = () => useDelete("settlement-rates");

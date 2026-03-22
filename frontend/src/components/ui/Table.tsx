@@ -82,7 +82,7 @@ export default function Table<T extends object>({
           <thead className="bg-[#F7F8FA]">
             <tr>
               {columns.map((col) => {
-                const isSortable = col.sortable !== false && col.key !== "actions" && col.key !== "checked";
+                const isSortable = col.sortable === true;
                 const isActive = sortKey === col.key;
                 return (
                 <th

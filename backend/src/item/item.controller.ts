@@ -9,6 +9,7 @@ import {
   Param,
   Query,
   UseGuards,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { ItemService } from './item.service';
@@ -31,7 +32,7 @@ export class ItemController {
 
   @Get(':id')
   @ApiOperation({ summary: '품목 상세 조회' })
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.itemService.findById(id);
   }
 
@@ -43,19 +44,19 @@ export class ItemController {
 
   @Put(':id')
   @ApiOperation({ summary: '품목 수정 (전체)' })
-  update(@Param('id') id: string, @Body() dto: UpdateItemDto) {
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateItemDto) {
     return this.itemService.update(id, dto);
   }
 
   @Patch(':id')
   @ApiOperation({ summary: '품목 수정 (부분)' })
-  partialUpdate(@Param('id') id: string, @Body() dto: UpdateItemDto) {
+  partialUpdate(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateItemDto) {
     return this.itemService.update(id, dto);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: '품목 삭제' })
-  remove(@Param('id') id: string) {
+  remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.itemService.delete(id);
   }
 }

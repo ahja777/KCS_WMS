@@ -1,19 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Info, Monitor, Database, Check } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4100/api";
 
 export default function SettingsPage() {
   const [cacheCleared, setCacheCleared] = useState(false);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
 
   const handleClearCache = () => {
     if (typeof window !== "undefined") {
+      if (!window.confirm("캐시를 초기화하면 HelpDesk 데이터 등이 삭제됩니다. 계속하시겠습니까?")) return;
       localStorage.clear();
       sessionStorage.clear();
       setCacheCleared(true);
-      setTimeout(() => setCacheCleared(false), 3000);
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => setCacheCleared(false), 3000);
     }
   };
 

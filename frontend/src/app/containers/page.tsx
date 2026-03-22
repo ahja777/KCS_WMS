@@ -15,7 +15,7 @@ import {
 import { useToastStore } from "@/stores/toast.store";
 import { useDebounce } from "@/hooks/useDebounce";
 import { downloadExcel } from "@/lib/export";
-import type { Container } from "@/types";
+import type { Container, ContainerGroup } from "@/types";
 
 const inputBase =
   "w-full rounded border-0 bg-[#F7F8FA] px-3 py-2 text-sm text-[#191F28] placeholder-[#B0B8C1] outline-none transition-all focus:border focus:border-[#3182F6] focus:bg-white focus:ring-1 focus:ring-[#3182F6]/20";
@@ -121,35 +121,35 @@ export default function ContainersPage() {
   };
 
   const handleSave = async () => {
-    const payload: Record<string, unknown> = {
+    const payload: Partial<Container> = {
       containerCode: form.containerCode,
       containerName: form.containerName,
-      containerGroupId: form.containerGroupId || null,
-      weight: form.weight ? Number(form.weight) : null,
-      size: form.size || null,
-      notes: form.notes || null,
-      optimalStock: form.optimalStock ? Number(form.optimalStock) : null,
-      stockUnit: form.stockUnit || null,
+      containerGroupId: form.containerGroupId || undefined,
+      weight: form.weight ? Number(form.weight) : undefined,
+      size: form.size || undefined,
+      notes: form.notes || undefined,
+      optimalStock: form.optimalStock ? Number(form.optimalStock) : undefined,
+      stockUnit: form.stockUnit || undefined,
       isActive: form.isActive,
-      shelfLife: form.shelfLife ? Number(form.shelfLife) : null,
-      optimalStockDays: form.optimalStockDays ? Number(form.optimalStockDays) : null,
-      expiryDays: form.expiryDays ? Number(form.expiryDays) : null,
-      inboundWarehouseCode: form.inboundWarehouseCode || null,
-      inboundZone: form.inboundZone || null,
-      unitPrice: form.unitPrice ? Number(form.unitPrice) : null,
-      assetType: form.assetType || null,
-      tagPrefix: form.tagPrefix || null,
-      companyEpcCode: form.companyEpcCode || null,
-      barcode: form.barcode || null,
-      weightToleranceKg: form.weightToleranceKg ? Number(form.weightToleranceKg) : null,
+      shelfLife: form.shelfLife ? Number(form.shelfLife) : undefined,
+      optimalStockDays: form.optimalStockDays ? Number(form.optimalStockDays) : undefined,
+      expiryDays: form.expiryDays ? Number(form.expiryDays) : undefined,
+      inboundWarehouseCode: form.inboundWarehouseCode || undefined,
+      inboundZone: form.inboundZone || undefined,
+      unitPrice: form.unitPrice ? Number(form.unitPrice) : undefined,
+      assetType: form.assetType || undefined,
+      tagPrefix: form.tagPrefix || undefined,
+      companyEpcCode: form.companyEpcCode || undefined,
+      barcode: form.barcode || undefined,
+      weightToleranceKg: form.weightToleranceKg ? Number(form.weightToleranceKg) : undefined,
     };
 
     try {
       if (isNew) {
-        await createMutation.mutateAsync(payload as any);
+        await createMutation.mutateAsync(payload);
         addToast({ type: "success", message: "물류용기가 등록되었습니다." });
       } else if (selectedContainer) {
-        await updateMutation.mutateAsync({ id: selectedContainer.id, payload: payload as any });
+        await updateMutation.mutateAsync({ id: selectedContainer.id, payload });
         addToast({ type: "success", message: "물류용기가 수정되었습니다." });
       }
       setIsNew(false);
@@ -222,7 +222,7 @@ export default function ContainersPage() {
             <label className={labelClass}>용기군</label>
             <select value={groupFilter} onChange={(e) => { setGroupFilter(e.target.value); setPage(1); }} className={selectBase}>
               <option value="">전체</option>
-              {containerGroups.map((g: any) => (
+              {containerGroups.map((g: ContainerGroup) => (
                 <option key={g.id} value={g.groupCode}>{g.groupName}</option>
               ))}
             </select>
@@ -294,7 +294,7 @@ export default function ContainersPage() {
                 <label className={labelClass}>용기군</label>
                 <select value={form.containerGroupId} onChange={(e) => updateField("containerGroupId", e.target.value)} className={selectBase}>
                   <option value="">선택</option>
-                  {containerGroups.map((g: any) => (
+                  {containerGroups.map((g: ContainerGroup) => (
                     <option key={g.id} value={g.id}>{g.groupName}</option>
                   ))}
                 </select>

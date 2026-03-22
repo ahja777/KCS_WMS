@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { useToastStore } from "@/stores/toast.store";
 
 // --- Types ---
 type PolicyStatus = "mandatory" | "optional" | "excluded" | "offline";
@@ -408,6 +409,7 @@ function FlowArrow({
 
 // --- Main Page ---
 export default function WorkPolicyPage() {
+  const addToast = useToastStore((s) => s.addToast);
   const [activeTab, setActiveTab] = useState<TabKey>("inbound");
   const [pltManagement, setPltManagement] = useState("Y");
   const [tabData, setTabData] = useState<Record<TabKey, FlowNode[]>>(() => {
@@ -434,8 +436,7 @@ export default function WorkPolicyPage() {
   }, [activeTab]);
 
   const handleSave = () => {
-    // Frontend-only: show a simple alert
-    alert("작업정책이 저장되었습니다.");
+    addToast({ type: "success", message: "작업정책이 저장되었습니다." });
   };
 
   // Compute SVG viewBox dimensions

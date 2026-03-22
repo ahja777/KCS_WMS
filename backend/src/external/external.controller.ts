@@ -7,8 +7,11 @@ import {
   Body,
   Param,
   Query,
+  ParseUUIDPipe,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { ChannelService } from './services/channel.service';
 import { ChannelSyncService } from './services/channel-sync.service';
 import {
@@ -20,6 +23,8 @@ import {
 } from './dto/channel.dto';
 
 @ApiTags('External Channels')
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
 @Controller('channels')
 export class ExternalController {
   constructor(
@@ -47,7 +52,7 @@ export class ExternalController {
 
   @Get(':id')
   @ApiOperation({ summary: '판매채널 상세 조회' })
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.channelService.findOne(id);
   }
 
@@ -59,13 +64,13 @@ export class ExternalController {
 
   @Put(':id')
   @ApiOperation({ summary: '판매채널 수정' })
-  update(@Param('id') id: string, @Body() dto: UpdateChannelDto) {
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateChannelDto) {
     return this.channelService.update(id, dto);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: '판매채널 삭제' })
-  remove(@Param('id') id: string) {
+  remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.channelService.remove(id);
   }
 
@@ -73,7 +78,7 @@ export class ExternalController {
 
   @Post(':id/test')
   @ApiOperation({ summary: '채널 연결 테스트' })
-  testConnection(@Param('id') id: string) {
+  testConnection(@Param('id', ParseUUIDPipe) id: string) {
     return this.channelService.testConnection(id);
   }
 
@@ -81,7 +86,7 @@ export class ExternalController {
 
   @Post(':id/sync/toggle')
   @ApiOperation({ summary: '자동 동기화 ON/OFF' })
-  toggleSync(@Param('id') id: string, @Body('enabled') enabled: boolean) {
+  toggleSync(@Param('id', ParseUUIDPipe) id: string, @Body('enabled') enabled: boolean) {
     return this.channelService.toggleSync(id, enabled);
   }
 
@@ -89,14 +94,14 @@ export class ExternalController {
 
   @Post(':id/sync/orders')
   @ApiOperation({ summary: '주문 수동 동기화' })
-  syncOrders(@Param('id') id: string, @Body() dto: SyncOrdersDto) {
+  syncOrders(@Param('id', ParseUUIDPipe) id: string, @Body() dto: SyncOrdersDto) {
     return this.syncService.syncOrders(id, dto.fromDate, dto.toDate);
   }
 
   @Get(':id/orders')
   @ApiOperation({ summary: '채널별 주문 목록 조회' })
   getChannelOrders(
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
     @Query('status') status?: string,
@@ -144,7 +149,7 @@ export class ExternalController {
 
   @Post(':id/sync/inventory')
   @ApiOperation({ summary: '재고 동기화 (WMS → 채널)' })
-  syncInventory(@Param('id') id: string) {
+  syncInventory(@Param('id', ParseUUIDPipe) id: string) {
     return this.syncService.syncInventory(id);
   }
 
@@ -152,13 +157,13 @@ export class ExternalController {
 
   @Get(':id/products')
   @ApiOperation({ summary: '채널 연결 상품 조회' })
-  getLinkedProducts(@Param('id') id: string) {
+  getLinkedProducts(@Param('id', ParseUUIDPipe) id: string) {
     return this.syncService.getLinkedProducts(id);
   }
 
   @Post(':id/products/link')
   @ApiOperation({ summary: '상품 매핑 (WMS ↔ 채널)' })
-  linkProduct(@Param('id') id: string, @Body() dto: LinkProductDto) {
+  linkProduct(@Param('id', ParseUUIDPipe) id: string, @Body() dto: LinkProductDto) {
     return this.syncService.linkProduct(
       id,
       dto.itemId,
@@ -169,13 +174,13 @@ export class ExternalController {
 
   @Delete(':id/products/:itemId')
   @ApiOperation({ summary: '상품 매핑 해제' })
-  unlinkProduct(@Param('id') id: string, @Param('itemId') itemId: string) {
+  unlinkProduct(@Param('id', ParseUUIDPipe) id: string, @Param('itemId') itemId: string) {
     return this.syncService.unlinkProduct(id, itemId);
   }
 
   @Get(':id/products/fetch')
   @ApiOperation({ summary: '플랫폼 상품 목록 가져오기' })
-  fetchChannelProducts(@Param('id') id: string) {
+  fetchChannelProducts(@Param('id', ParseUUIDPipe) id: string) {
     return this.syncService.fetchChannelProducts(id);
   }
 
@@ -183,7 +188,7 @@ export class ExternalController {
 
   @Get(':id/sync/logs')
   @ApiOperation({ summary: '동기화 로그 조회' })
-  getSyncLogs(@Param('id') id: string, @Query('limit') limit?: string) {
+  getSyncLogs(@Param('id', ParseUUIDPipe) id: string, @Query('limit') limit?: string) {
     return this.channelService.getSyncLogs(id, limit ? parseInt(limit, 10) : undefined);
   }
 }

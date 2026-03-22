@@ -7,7 +7,7 @@ import Table, { type Column } from "@/components/ui/Table";
 import Button from "@/components/ui/Button";
 import ItemSearchPopup from "@/components/ui/ItemSearchPopup";
 import { formatNumber } from "@/lib/utils";
-import { useWarehouses, useInventoryList, usePartners, useItems } from "@/hooks/useApi";
+import { useWarehouses, useInventoryList, usePartners } from "@/hooks/useApi";
 import { downloadExcel } from "@/lib/export";
 import type { Item } from "@/types";
 

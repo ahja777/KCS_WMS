@@ -85,14 +85,21 @@ export class SettlementService {
     if (dto.periodEnd) updateData.periodEnd = new Date(dto.periodEnd);
 
     if (details) {
-      // 기존 상세 삭제 후 재생성
-      await this.prisma.settlementDetail.deleteMany({ where: { settlementId: id } });
-      updateData.details = {
-        create: details.map((d) => ({
-          ...d,
-          workDate: new Date(d.workDate),
-        })),
-      };
+      // 트랜잭션으로 기존 상세 삭제 후 재생성
+      return this.prisma.$transaction(async (tx) => {
+        await tx.settlementDetail.deleteMany({ where: { settlementId: id } });
+        updateData.details = {
+          create: details.map((d) => ({
+            ...d,
+            workDate: new Date(d.workDate),
+          })),
+        };
+        return tx.settlement.update({
+          where: { id },
+          data: updateData,
+          include: { details: true },
+        });
+      });
     }
 
     return this.prisma.settlement.update({

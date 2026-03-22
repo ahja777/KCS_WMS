@@ -8,6 +8,7 @@ import {
   Param,
   Query,
   UseGuards,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { SettlementService } from './settlement.service';
@@ -38,7 +39,7 @@ export class SettlementController {
 
   @Get(':id')
   @ApiOperation({ summary: '정산 상세 조회' })
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.settlementService.findById(id);
   }
 
@@ -50,19 +51,19 @@ export class SettlementController {
 
   @Put(':id')
   @ApiOperation({ summary: '정산 수정' })
-  update(@Param('id') id: string, @Body() dto: UpdateSettlementDto) {
+  update(@Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateSettlementDto) {
     return this.settlementService.update(id, dto);
   }
 
   @Post(':id/confirm')
   @ApiOperation({ summary: '정산 확정' })
-  confirm(@Param('id') id: string) {
+  confirm(@Param('id', ParseUUIDPipe) id: string) {
     return this.settlementService.confirm(id);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: '정산 삭제' })
-  remove(@Param('id') id: string) {
+  remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.settlementService.delete(id);
   }
 }
