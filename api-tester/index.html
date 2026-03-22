@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KCS WMS API Tester</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#0d1117;--panel:#161b22;--border:#30363d;--text:#c9d1d9;--text2:#8b949e;--blue:#58a6ff;--green:#3fb950;--red:#f85149;--orange:#d29922;--purple:#bc8cff;--input:#0d1117;--hover:#1f2937}
+body{font-family:'SF Mono','Fira Code',monospace;background:var(--bg);color:var(--text);display:flex;height:100vh;overflow:hidden;font-size:13px}
+.sidebar{width:280px;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.sidebar-header{padding:16px;border-bottom:1px solid var(--border)}
+.sidebar-header h1{font-size:16px;color:var(--blue);font-weight:700}
+.sidebar-header p{font-size:11px;color:var(--text2);margin-top:4px}
+.token-bar{padding:8px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px}
+.token-bar .dot{width:8px;height:8px;border-radius:50%;background:var(--red)}
+.token-bar .dot.ok{background:var(--green)}
+.token-bar span{font-size:11px;color:var(--text2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.api-list{flex:1;overflow-y:auto;padding:8px}
+.api-group{margin-bottom:4px}
+.api-group-title{padding:6px 12px;font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;border-radius:6px}
+.api-group-title:hover{background:var(--hover)}
+.api-group-title .arrow{transition:transform .2s}
+.api-group.collapsed .arrow{transform:rotate(-90deg)}
+.api-group.collapsed .api-items{display:none}
+.api-item{padding:5px 12px;cursor:pointer;border-radius:6px;display:flex;align-items:center;gap:8px;margin:1px 0}
+.api-item:hover{background:var(--hover)}
+.api-item.active{background:#1f6feb22;border-left:2px solid var(--blue)}
+.method{font-size:10px;font-weight:700;min-width:36px;text-align:center}
+.method.GET{color:var(--green)}.method.POST{color:var(--blue)}.method.PUT{color:var(--orange)}.method.DELETE{color:var(--red)}.method.PATCH{color:var(--purple)}
+.api-item .path{color:var(--text);font-size:12px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.toolbar{padding:12px 20px;border-bottom:1px solid var(--border);display:flex;gap:10px;align-items:center;background:var(--panel)}
+.toolbar select,.toolbar input,.toolbar button{font-family:inherit;font-size:13px;border:1px solid var(--border);border-radius:6px;background:var(--input);color:var(--text);outline:none}
+.toolbar select{padding:8px 12px;width:90px;color:var(--green);font-weight:700}
+.toolbar input{padding:8px 12px;flex:1}
+.toolbar input:focus{border-color:var(--blue)}
+.btn{padding:8px 20px;cursor:pointer;border-radius:6px;font-weight:700;border:none;transition:opacity .2s}
+.btn:hover{opacity:0.85}
+.btn-primary{background:var(--blue);color:#000}
+.btn-green{background:var(--green);color:#000}
+.btn-orange{background:var(--orange);color:#000}
+.btn-red{background:var(--red);color:#000}
+.content{flex:1;display:flex;overflow:hidden}
+.req-panel,.res-panel{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.req-panel{border-right:1px solid var(--border)}
+.panel-header{padding:8px 16px;background:var(--panel);border-bottom:1px solid var(--border);font-size:12px;font-weight:700;color:var(--text2);display:flex;align-items:center;justify-content:space-between}
+.panel-body{flex:1;overflow:auto;padding:12px 16px}
+textarea{width:100%;height:100%;background:transparent;border:none;color:var(--text);font-family:inherit;font-size:13px;resize:none;outline:none;line-height:1.6}
+.res-status{font-size:12px;font-weight:700;padding:2px 8px;border-radius:4px}
+.res-status.s2{background:#3fb95033;color:var(--green)}
+.res-status.s4{background:#f8514933;color:var(--red)}
+.res-status.s5{background:#f8514933;color:var(--red)}
+pre{white-space:pre-wrap;word-break:break-word;font-size:12px;line-height:1.6;color:var(--text)}
+.workflow-bar{padding:8px 20px;border-top:1px solid var(--border);background:var(--panel);display:flex;gap:8px;align-items:center}
+.workflow-bar span{font-size:11px;color:var(--text2)}
+.timer{font-size:11px;color:var(--text2);margin-left:auto}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sidebar-header">
+    <h1>KCS WMS API Tester</h1>
+    <p>http://localhost:4100/api</p>
+  </div>
+  <div class="token-bar">
+    <div class="dot" id="authDot"></div>
+    <span id="authLabel">Not authenticated</span>
+  </div>
+  <div class="api-list" id="apiList"></div>
+</div>
+
+<div class="main">
+  <div class="toolbar">
+    <select id="method">
+      <option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option>
+    </select>
+    <input id="url" placeholder="/api/..." value="/api/auth/login">
+    <button class="btn btn-primary" onclick="sendRequest()">Send</button>
+    <span class="timer" id="timer"></span>
+  </div>
+  <div class="content">
+    <div class="req-panel">
+      <div class="panel-header">
+        <span>Request Body (JSON)</span>
+        <button class="btn btn-green" style="padding:4px 10px;font-size:11px" onclick="formatBody()">Format</button>
+      </div>
+      <div class="panel-body">
+        <textarea id="body" spellcheck="false">{"email":"admin@test.com","password":"Test1234"}</textarea>
+      </div>
+    </div>
+    <div class="res-panel">
+      <div class="panel-header">
+        <span>Response</span>
+        <span class="res-status" id="resStatus"></span>
+      </div>
+      <div class="panel-body">
+        <pre id="resBody">Click "Send" to make a request...</pre>
+      </div>
+    </div>
+  </div>
+  <div class="workflow-bar">
+    <span>Workflows:</span>
+    <button class="btn btn-green" style="padding:4px 12px;font-size:11px" onclick="runInboundWorkflow()">Inbound Full Flow</button>
+    <button class="btn btn-orange" style="padding:4px 12px;font-size:11px" onclick="runOutboundWorkflow()">Outbound Full Flow</button>
+    <button class="btn btn-primary" style="padding:4px 12px;font-size:11px" onclick="runQuickSetup()">Quick Setup (Login + Master Data)</button>
+  </div>
+</div>
+
+<script>
+const BASE = 'http://localhost:4100';
+let token = localStorage.getItem('wms_token') || '';
+
+const API_MAP = [
+  { group: 'Auth', items: [
+    { m:'POST', p:'/api/auth/register', b:{email:'admin@test.com',password:'Test1234',name:'Admin User'} },
+    { m:'POST', p:'/api/auth/login', b:{email:'admin@test.com',password:'Test1234'} },
+    { m:'GET', p:'/api/auth/profile' },
+    { m:'POST', p:'/api/auth/change-password', b:{currentPassword:'Test1234',newPassword:'Test5678'} },
+    { m:'GET', p:'/api/auth/users' },
+  ]},
+  { group: 'Warehouses', items: [
+    { m:'GET', p:'/api/warehouses' },
+    { m:'POST', p:'/api/warehouses', b:{code:'WH-001',name:'서울 물류센터',country:'KR',city:'Seoul',address:'강남구 테헤란로 1'} },
+    { m:'GET', p:'/api/warehouses/:id' },
+    { m:'PUT', p:'/api/warehouses/:id', b:{name:'Updated Warehouse'} },
+    { m:'DELETE', p:'/api/warehouses/:id' },
+    { m:'GET', p:'/api/warehouses/:warehouseId/zones' },
+    { m:'POST', p:'/api/warehouses/:warehouseId/zones', b:{code:'Z-STORAGE',name:'보관구역',type:'STORAGE'} },
+    { m:'POST', p:'/api/warehouses/:warehouseId/zones/:zoneId/locations', b:{code:'A-01-01-01',aisle:'A',rack:'01',level:'01',bin:'01'} },
+  ]},
+  { group: 'Items', items: [
+    { m:'GET', p:'/api/items' },
+    { m:'POST', p:'/api/items', b:{code:'SKU-001',name:'테스트 상품',category:'GENERAL',uom:'EA',weight:1.5,minStock:10} },
+    { m:'GET', p:'/api/items/:id' },
+    { m:'PUT', p:'/api/items/:id', b:{name:'Updated Item'} },
+    { m:'DELETE', p:'/api/items/:id' },
+  ]},
+  { group: 'Partners', items: [
+    { m:'GET', p:'/api/partners' },
+    { m:'POST', p:'/api/partners', b:{code:'PTR-001',name:'테스트 공급사',type:'SUPPLIER',contactName:'홍길동'} },
+    { m:'GET', p:'/api/partners/:id' },
+    { m:'PUT', p:'/api/partners/:id', b:{contactName:'Updated Contact'} },
+    { m:'DELETE', p:'/api/partners/:id' },
+  ]},
+  { group: 'Inbound', items: [
+    { m:'GET', p:'/api/inbound' },
+    { m:'POST', p:'/api/inbound', b:{orderNumber:'IN-001',partnerId:'<partnerId>',warehouseId:'<warehouseId>',expectedDate:new Date(Date.now()+86400000).toISOString().slice(0,10),items:[{itemId:'<itemId>',expectedQty:100}]} },
+    { m:'GET', p:'/api/inbound/:id' },
+    { m:'POST', p:'/api/inbound/:id/confirm' },
+    { m:'POST', p:'/api/inbound/:id/arrive' },
+    { m:'POST', p:'/api/inbound/:id/receive', b:{receivedBy:'tester',items:[{inboundOrderItemId:'<itemId>',receivedQty:100}]} },
+    { m:'POST', p:'/api/inbound/:id/cancel' },
+  ]},
+  { group: 'Outbound', items: [
+    { m:'GET', p:'/api/outbound' },
+    { m:'POST', p:'/api/outbound', b:{orderNumber:'OUT-001',partnerId:'<partnerId>',warehouseId:'<warehouseId>',items:[{itemId:'<itemId>',orderedQty:10}]} },
+    { m:'GET', p:'/api/outbound/:id' },
+    { m:'POST', p:'/api/outbound/:id/confirm' },
+    { m:'POST', p:'/api/outbound/:id/pick', b:{pickedBy:'tester',items:[{outboundOrderItemId:'<itemId>',pickedQty:10}]} },
+    { m:'POST', p:'/api/outbound/:id/ship', b:{shippedBy:'tester',carrier:'CJ대한통운',trackingNumber:'TRK-001'} },
+    { m:'POST', p:'/api/outbound/:id/deliver' },
+    { m:'POST', p:'/api/outbound/:id/cancel' },
+  ]},
+  { group: 'Inventory', items: [
+    { m:'GET', p:'/api/inventory/stock' },
+    { m:'GET', p:'/api/inventory/stock?warehouseId=<warehouseId>' },
+    { m:'GET', p:'/api/inventory/transactions' },
+    { m:'GET', p:'/api/inventory/adjustments' },
+    { m:'POST', p:'/api/inventory/adjustments', b:{warehouseId:'<warehouseId>',itemCode:'SKU-001',adjustQty:5,reason:'FOUND',performedBy:'tester'} },
+    { m:'POST', p:'/api/inventory/transfer', b:{warehouseId:'<warehouseId>',itemCode:'SKU-001',fromLocationCode:'A-01-01-01',toLocationCode:'A-01-01-02',quantity:5,performedBy:'tester'} },
+    { m:'GET', p:'/api/inventory/cycle-counts' },
+    { m:'POST', p:'/api/inventory/cycle-counts', b:{warehouseId:'<warehouseId>',itemCode:'SKU-001',systemQty:100} },
+  ]},
+  { group: 'Dashboard', items: [
+    { m:'GET', p:'/api/dashboard/statistics' },
+  ]},
+  { group: 'Export (Excel)', items: [
+    { m:'GET', p:'/api/export/items' },
+    { m:'GET', p:'/api/export/inventory' },
+    { m:'GET', p:'/api/export/inbound' },
+    { m:'GET', p:'/api/export/outbound' },
+    { m:'GET', p:'/api/export/partners' },
+    { m:'GET', p:'/api/export/warehouses' },
+    { m:'GET', p:'/api/export/channel-orders' },
+  ]},
+  { group: 'Channels (External)', items: [
+    { m:'GET', p:'/api/channels' },
+    { m:'POST', p:'/api/channels', b:{name:'쿠팡 메인',platform:'COUPANG',warehouseId:'<warehouseId>',credentials:{vendorId:'test',accessKey:'test',secretKey:'test'},syncInterval:30} },
+    { m:'GET', p:'/api/channels/:id' },
+    { m:'PUT', p:'/api/channels/:id', b:{syncInterval:60} },
+    { m:'POST', p:'/api/channels/:id/test' },
+    { m:'POST', p:'/api/channels/:id/sync/orders', b:{} },
+    { m:'POST', p:'/api/channels/:id/sync/inventory' },
+    { m:'GET', p:'/api/channels/:id/orders' },
+    { m:'GET', p:'/api/channels/orders/all' },
+    { m:'GET', p:'/api/channels/:id/products' },
+    { m:'GET', p:'/api/channels/:id/sync/logs' },
+    { m:'DELETE', p:'/api/channels/:id' },
+  ]},
+];
+
+// Render sidebar
+function renderSidebar() {
+  const list = document.getElementById('apiList');
+  list.innerHTML = '';
+  API_MAP.forEach(g => {
+    const div = document.createElement('div');
+    div.className = 'api-group';
+    div.innerHTML = `<div class="api-group-title" onclick="this.parentElement.classList.toggle('collapsed')">
+      <span>${g.group}</span><span class="arrow">▾</span>
+    </div><div class="api-items"></div>`;
+    const items = div.querySelector('.api-items');
+    g.items.forEach(api => {
+      const el = document.createElement('div');
+      el.className = 'api-item';
+      el.innerHTML = `<span class="method ${api.m}">${api.m}</span><span class="path">${api.p}</span>`;
+      el.onclick = () => selectApi(api);
+      items.appendChild(el);
+    });
+    list.appendChild(div);
+  });
+}
+
+function selectApi(api) {
+  document.getElementById('method').value = api.m;
+  document.getElementById('url').value = api.p;
+  document.getElementById('body').value = api.b ? JSON.stringify(api.b, null, 2) : '';
+  document.querySelectorAll('.api-item').forEach(el => el.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+}
+
+function formatBody() {
+  const ta = document.getElementById('body');
+  try { ta.value = JSON.stringify(JSON.parse(ta.value), null, 2); } catch {}
+}
+
+function updateAuthUI() {
+  const dot = document.getElementById('authDot');
+  const label = document.getElementById('authLabel');
+  if (token) {
+    dot.classList.add('ok');
+    label.textContent = 'Token: ' + token.slice(0, 20) + '...';
+  } else {
+    dot.classList.remove('ok');
+    label.textContent = 'Not authenticated';
+  }
+}
+
+async function sendRequest() {
+  const method = document.getElementById('method').value;
+  const url = document.getElementById('url').value;
+  const bodyStr = document.getElementById('body').value;
+  const resStatus = document.getElementById('resStatus');
+  const resBody = document.getElementById('resBody');
+  const timerEl = document.getElementById('timer');
+
+  // Excel export handling
+  if (url.includes('/export/')) {
+    return downloadExcel(url);
+  }
+
+  const opts = {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+  };
+  if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+  if (['POST','PUT','PATCH'].includes(method) && bodyStr.trim()) {
+    opts.body = bodyStr;
+  }
+
+  const start = performance.now();
+  try {
+    const res = await fetch(BASE + url, opts);
+    const elapsed = Math.round(performance.now() - start);
+    timerEl.textContent = elapsed + 'ms';
+
+    const statusClass = res.status < 300 ? 's2' : res.status < 500 ? 's4' : 's5';
+    resStatus.className = 'res-status ' + statusClass;
+    resStatus.textContent = res.status + ' ' + res.statusText;
+
+    const text = await res.text();
+    try {
+      const json = JSON.parse(text);
+      resBody.textContent = JSON.stringify(json, null, 2);
+
+      // Auto-save token on login
+      if (url.includes('/auth/login') && json.data?.accessToken) {
+        token = json.data.accessToken;
+        localStorage.setItem('wms_token', token);
+        updateAuthUI();
+      }
+    } catch {
+      resBody.textContent = text;
+    }
+  } catch (err) {
+    resStatus.className = 'res-status s5';
+    resStatus.textContent = 'ERROR';
+    resBody.textContent = 'Network error: ' + err.message + '\n\nMake sure the backend is running at ' + BASE;
+    timerEl.textContent = '';
+  }
+}
+
+async function downloadExcel(url) {
+  const resBody = document.getElementById('resBody');
+  const resStatus = document.getElementById('resStatus');
+  try {
+    const res = await fetch(BASE + url, {
+      headers: token ? { Authorization: 'Bearer ' + token } : {},
+    });
+    if (!res.ok) {
+      resStatus.className = 'res-status s4';
+      resStatus.textContent = res.status + '';
+      resBody.textContent = await res.text();
+      return;
+    }
+    const blob = await res.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = url.split('/').pop() + '_' + new Date().toISOString().slice(0,10) + '.xlsx';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    resStatus.className = 'res-status s2';
+    resStatus.textContent = '200 OK';
+    resBody.textContent = 'Excel file downloaded: ' + a.download;
+  } catch (err) {
+    resBody.textContent = 'Download error: ' + err.message;
+  }
+}
+
+// ── Workflow helpers ──
+async function apiCall(method, path, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(BASE + path, opts);
+  const json = await res.json();
+  return { status: res.status, data: json.data, raw: json };
+}
+
+function log(msg) {
+  const pre = document.getElementById('resBody');
+  pre.textContent += '\n' + msg;
+}
+
+async function runQuickSetup() {
+  const resBody = document.getElementById('resBody');
+  resBody.textContent = '=== Quick Setup ===';
+
+  try {
+    log('1. Register admin user...');
+    await apiCall('POST', '/api/auth/register', { email: 'admin@test.com', password: 'Test1234', name: 'Admin' });
+
+    log('2. Login...');
+    const loginRes = await apiCall('POST', '/api/auth/login', { email: 'admin@test.com', password: 'Test1234' });
+    if (loginRes.data?.accessToken) {
+      token = loginRes.data.accessToken;
+      localStorage.setItem('wms_token', token);
+      updateAuthUI();
+      log('   Token saved!');
+    }
+
+    log('3. Create warehouse...');
+    const wh = await apiCall('POST', '/api/warehouses', { code: 'WH-MAIN', name: '서울 메인 창고', country: 'KR', city: 'Seoul', address: '강남구' });
+    const whId = wh.data?.id;
+    log('   Warehouse ID: ' + whId);
+
+    log('4. Create zone...');
+    const zone = await apiCall('POST', `/api/warehouses/${whId}/zones`, { code: 'Z-01', name: '보관구역', type: 'STORAGE' });
+    const zoneId = zone.data?.id;
+
+    log('5. Create location...');
+    await apiCall('POST', `/api/warehouses/${whId}/zones/${zoneId}/locations`, { code: 'A-01-01-01', aisle: 'A', rack: '01', level: '01', bin: '01' });
+
+    log('6. Create item...');
+    const item = await apiCall('POST', '/api/items', { code: 'SKU-001', name: '테스트 상품 A', category: 'GENERAL', uom: 'EA', weight: 1.5, minStock: 10 });
+    log('   Item ID: ' + item.data?.id);
+
+    log('7. Create partner (Supplier)...');
+    const ptr = await apiCall('POST', '/api/partners', { code: 'PTR-SUP-01', name: '테스트 공급사', type: 'SUPPLIER' });
+    log('   Partner ID: ' + ptr.data?.id);
+
+    log('8. Create partner (Customer)...');
+    await apiCall('POST', '/api/partners', { code: 'PTR-CUS-01', name: '테스트 고객사', type: 'CUSTOMER' });
+
+    log('\n=== Quick Setup Complete! ===');
+    log('Warehouse: ' + whId);
+    log('Item: ' + item.data?.id);
+    log('Partner: ' + ptr.data?.id);
+  } catch (err) {
+    log('ERROR: ' + err.message);
+  }
+}
+
+async function runInboundWorkflow() {
+  const resBody = document.getElementById('resBody');
+  resBody.textContent = '=== Inbound Full Workflow ===';
+
+  try {
+    // Get IDs
+    log('1. Fetching master data...');
+    const whs = await apiCall('GET', '/api/warehouses?limit=1');
+    const items = await apiCall('GET', '/api/items?limit=1');
+    const ptrs = await apiCall('GET', '/api/partners?type=SUPPLIER&limit=1');
+
+    const whId = whs.data?.data?.[0]?.id;
+    const itemId = items.data?.data?.[0]?.id;
+    const ptrId = ptrs.data?.data?.[0]?.id;
+
+    if (!whId || !itemId || !ptrId) {
+      log('ERROR: Master data not found. Run "Quick Setup" first!');
+      return;
+    }
+
+    log(`   Warehouse: ${whId}`);
+    log(`   Item: ${itemId}`);
+    log(`   Partner: ${ptrId}`);
+
+    const orderNum = 'IN-' + Date.now().toString(36);
+
+    log('\n2. Create inbound order (DRAFT)...');
+    const created = await apiCall('POST', '/api/inbound', {
+      orderNumber: orderNum, partnerId: ptrId, warehouseId: whId,
+      expectedDate: new Date(Date.now() + 86400000).toISOString().slice(0, 10),
+      items: [{ itemId, expectedQty: 100 }],
+    });
+    const orderId = created.data?.id;
+    log('   Order ID: ' + orderId + ' | Status: ' + created.data?.status);
+
+    log('\n3. Confirm (DRAFT → CONFIRMED)...');
+    const confirmed = await apiCall('POST', `/api/inbound/${orderId}/confirm`);
+    log('   Status: ' + confirmed.data?.status);
+
+    log('\n4. Arrive (CONFIRMED → ARRIVED)...');
+    const arrived = await apiCall('POST', `/api/inbound/${orderId}/arrive`);
+    log('   Status: ' + arrived.data?.status);
+
+    log('\n5. Get order detail for item IDs...');
+    const detail = await apiCall('GET', `/api/inbound/${orderId}`);
+    const inbItemId = detail.data?.items?.[0]?.id;
+    log('   Inbound Item ID: ' + inbItemId);
+
+    log('\n6. Receive (ARRIVED → COMPLETED)...');
+    const received = await apiCall('POST', `/api/inbound/${orderId}/receive`, {
+      receivedBy: 'api-tester',
+      items: [{ inboundOrderItemId: inbItemId, receivedQty: 100 }],
+    });
+    log('   Status: ' + received.data?.status);
+
+    log('\n7. Check inventory...');
+    const stock = await apiCall('GET', `/api/inventory/stock?warehouseId=${whId}`);
+    const inv = stock.data?.data?.find(s => s.itemId === itemId);
+    log('   Item stock: ' + (inv ? `qty=${inv.quantity}, available=${inv.availableQty}` : 'not found'));
+
+    log('\n=== Inbound Workflow Complete! ===');
+  } catch (err) {
+    log('\nERROR: ' + err.message);
+  }
+}
+
+async function runOutboundWorkflow() {
+  const resBody = document.getElementById('resBody');
+  resBody.textContent = '=== Outbound Full Workflow ===';
+
+  try {
+    log('1. Fetching master data...');
+    const whs = await apiCall('GET', '/api/warehouses?limit=1');
+    const items = await apiCall('GET', '/api/items?limit=1');
+    const ptrs = await apiCall('GET', '/api/partners?type=CUSTOMER&limit=1');
+
+    const whId = whs.data?.data?.[0]?.id;
+    const itemId = items.data?.data?.[0]?.id;
+    let ptrId = ptrs.data?.data?.[0]?.id;
+
+    if (!ptrId) {
+      const supPtrs = await apiCall('GET', '/api/partners?limit=1');
+      ptrId = supPtrs.data?.data?.[0]?.id;
+    }
+
+    if (!whId || !itemId || !ptrId) {
+      log('ERROR: Master data not found. Run "Quick Setup" + "Inbound Flow" first!');
+      return;
+    }
+
+    const orderNum = 'OUT-' + Date.now().toString(36);
+
+    log('\n2. Create outbound order (DRAFT)...');
+    const created = await apiCall('POST', '/api/outbound', {
+      orderNumber: orderNum, partnerId: ptrId, warehouseId: whId,
+      items: [{ itemId, orderedQty: 10 }],
+    });
+    const orderId = created.data?.id;
+    log('   Order ID: ' + orderId + ' | Status: ' + created.data?.status);
+
+    log('\n3. Confirm (DRAFT → CONFIRMED, reserve inventory)...');
+    const confirmed = await apiCall('POST', `/api/outbound/${orderId}/confirm`);
+    log('   Status: ' + (confirmed.status === 200 ? confirmed.data?.status : 'FAILED (' + confirmed.status + ')'));
+
+    if (confirmed.status !== 200) {
+      log('   Confirm failed! Check inventory.');
+      return;
+    }
+
+    log('\n4. Get order detail...');
+    const detail = await apiCall('GET', `/api/outbound/${orderId}`);
+    const outItemId = detail.data?.items?.[0]?.id;
+
+    log('\n5. Pick...');
+    const picked = await apiCall('POST', `/api/outbound/${orderId}/pick`, {
+      pickedBy: 'api-tester',
+      items: [{ outboundOrderItemId: outItemId, pickedQty: 10 }],
+    });
+    log('   Status: ' + picked.data?.status);
+
+    log('\n6. Ship...');
+    const shipped = await apiCall('POST', `/api/outbound/${orderId}/ship`, {
+      shippedBy: 'api-tester', carrier: 'CJ대한통운', trackingNumber: 'TRK-' + Date.now().toString(36),
+    });
+    log('   Status: ' + shipped.data?.status);
+
+    log('\n7. Deliver...');
+    const delivered = await apiCall('POST', `/api/outbound/${orderId}/deliver`);
+    log('   Status: ' + delivered.data?.status);
+
+    log('\n8. Check inventory...');
+    const stock = await apiCall('GET', `/api/inventory/stock?warehouseId=${whId}`);
+    const inv = stock.data?.data?.find(s => s.itemId === itemId);
+    log('   Item stock: ' + (inv ? `qty=${inv.quantity}, available=${inv.availableQty}` : 'not found'));
+
+    log('\n=== Outbound Workflow Complete! ===');
+  } catch (err) {
+    log('\nERROR: ' + err.message);
+  }
+}
+
+// ── Init ──
+renderSidebar();
+updateAuthUI();
+
+// Enter key sends request
+document.getElementById('url').addEventListener('keydown', e => { if (e.key === 'Enter') sendRequest(); });
+</script>
+</body>
+</html>

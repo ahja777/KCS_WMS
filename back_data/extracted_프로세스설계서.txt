@@ -1,0 +1,1469 @@
+====================================================================================================
+FILE: ULN_WNS_DE_05(프로세스설계서)_v1.0.pptx
+Total Slides: 16
+Slide Dimensions: 10.8" x 7.5"
+====================================================================================================
+
+
+################################################################################
+# SLIDE 1
+# Layout: 빈 화면
+################################################################################
+
+[Shape: Rectangle 11 | Type: AUTO_SHAPE (1) | Pos: (6.4", 3.6") | Size: (3.7" x 0.4")]
+  ULN_WNS_DE_05
+
+[Shape: Rectangle 12 | Type: AUTO_SHAPE (1) | Pos: (9.2", 4.0") | Size: (0.8" x 0.3")]
+  Ver 1.0
+
+[Shape: Rectangle 303 | Type: AUTO_SHAPE (1) | Pos: (5.9", 1.7") | Size: (4.3" x 0.4")]
+  글로벌 웹기반 WMS 시스템 개발
+
+[TABLE: Group 16 | Rows: 1 | Cols: 1]
+프로세스설계서
+-------
+
+[Shape: Rectangle 15 | Type: AUTO_SHAPE (1) | Pos: (6.1", 4.5") | Size: (4.1" x 0.7")]
+  단      계 : 설계
+  관리부서 : 유로지스넷 SM팀
+
+
+################################################################################
+# SLIDE 2
+# Layout: 빈 화면
+################################################################################
+
+[Shape: Rectangle 392 | Type: AUTO_SHAPE (1) | Pos: (4.9", 0.7") | Size: (1.4" x 0.4")]
+  개 정 이 력
+
+[TABLE: Group 65 | Rows: 10 | Cols: 4]
+버전  | 작성일        | 변경내용           | 작성자
+---------------------------------------
+0.5 | 2015-06-22 | 최초 작성          | 김원태
+1.0 | 2015-07-08 | 2차 추가분 설계내용 반영 | 김원태
+    |            |                |    
+    |            |                |    
+    |            |                |    
+    |            |                |    
+    |            |                |    
+    |            |                |    
+    |            |                |    
+
+
+################################################################################
+# SLIDE 3
+# Layout: 1_제목 슬라이드
+################################################################################
+
+[Shape: 제목 2 | Type: TEXT_BOX (17) | Pos: (0.5", 0.4") | Size: (9.7" x 0.5")]
+  입고프로세스 – 입고등록(PK_WMSOP020.SP_INSERT_ORDER)
+
+[Shape: TextBox 216 | Type: TEXT_BOX (17) | Pos: (0.4", 1.3") | Size: (2.1" x 4.3")]
+  - 마감확인
+  : 요청일과 마감일자를 비교
+  (마감관리 메뉴필요여부)
+  주문상세 등록
+  : 상품별 주문상세 정보등록
+  유효기간, 무게 정보 반영
+  - 유통기간 수정
+  : 주문등록 시 유효기간 정보가 있으면 해당 값으로 상품 유효기간(WMSMS091. EXPIRY_DATE) 업데이트.
+  - 작업상태지정
+  : 주문의 승인여부, 주문상세의 작업상태, 입차수량, 입하수량, 입고LOC지정수량 등의 정보를 기반으로 현재 작업상태를 갱신
+
+[Shape: 순서도: 수행의 시작/종료 124 | Type: AUTO_SHAPE (1) | Pos: (4.1", 1.2") | Size: (1.1" x 0.4")]
+  입고등록
+  시작
+
+[Shape: 순서도: 처리 128 | Type: AUTO_SHAPE (1) | Pos: (4.2", 3.2") | Size: (1.0" x 0.4")]
+  주문상세
+  등록
+
+[Shape: 순서도: 처리 130 | Type: AUTO_SHAPE (1) | Pos: (4.2", 3.8") | Size: (1.0" x 0.3")]
+  유통기간
+  수정
+
+[Shape: 순서도: 처리 317 | Type: AUTO_SHAPE (1) | Pos: (4.2", 5.0") | Size: (1.0" x 0.4")]
+  배차정보
+  등록
+
+[Shape: 순서도: 처리 115 | Type: AUTO_SHAPE (1) | Pos: (4.2", 1.8") | Size: (1.0" x 0.3")]
+  마감확인
+
+[Shape: 순서도: 처리 116 | Type: AUTO_SHAPE (1) | Pos: (4.2", 2.3") | Size: (1.0" x 0.4")]
+  주문(마스터)
+  등록
+
+[Shape: 순서도: 처리 123 | Type: AUTO_SHAPE (1) | Pos: (3.0", 2.9") | Size: (3.9" x 0.2")]
+  상품ID.FIRST .. 상품ID.LAST
+
+[Shape: 순서도: 처리 170 | Type: AUTO_SHAPE (1) | Pos: (4.2", 4.4") | Size: (1.0" x 0.3")]
+  컨테이너
+  정보 등록
+
+[Shape: 순서도: 처리 221 | Type: AUTO_SHAPE (1) | Pos: (4.2", 5.6") | Size: (1.0" x 0.4")]
+  작업상태
+  지정
+
+[Shape: 순서도: 처리 292 | Type: AUTO_SHAPE (1) | Pos: (8.4", 3.1") | Size: (1.0" x 0.4")]
+  마감정보
+  취득
+
+[Shape: 순서도: 판단 334 | Type: AUTO_SHAPE (1) | Pos: (8.1", 3.8") | Size: (1.5" x 0.4")]
+  마감일자비교
+
+[Shape: 순서도: 처리 340 | Type: AUTO_SHAPE (1) | Pos: (9.4", 4.4") | Size: (0.8" x 0.3")]
+  에러처리
+
+[Shape: 순서도: 수행의 시작/종료 374 | Type: AUTO_SHAPE (1) | Pos: (8.4", 1.7") | Size: (1.1" x 0.3")]
+  마감확인
+  시작
+
+[Shape: 순서도: 수행의 시작/종료 375 | Type: AUTO_SHAPE (1) | Pos: (8.4", 4.9") | Size: (1.1" x 0.3")]
+  마감확인
+  끝
+
+[Shape: 순서도: 판단 383 | Type: AUTO_SHAPE (1) | Pos: (8.1", 2.3") | Size: (1.5" x 0.4")]
+  주문일자
+  LOOP
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (9.5", 2.3") | Size: (0.9" x 0.2")]
+  LOOP END
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (8.9", 2.7") | Size: (0.9" x 0.2")]
+  LOOP
+
+[Shape: TextBox 436 | Type: TEXT_BOX (17) | Pos: (6.5", 5.5") | Size: (3.9" x 1.3")]
+  <입고>
+  1. WORK_STAT가 NULL이면 <주문입력상태:100>가 됨
+  2. WORK_STAT가 주문입력상태이고 , APPROVE_YN이 'Y'면 <승인상태:190>
+  3. WORK_STAT가 주문입력상태이고 , APPROVE_YN이 'X'이면 <주문입력상태:100>
+  4. WORK_STAT가 배차상태이고 , V_IN_CAR_QTY = V_IN_ORD_QTY 이면 <입차확인:400>
+  5. GRN_QTY >0 이면 <입하확정:490>
+  6. GRN_BARCODE_QTY > 0 이면 <바코드발행:495>
+  7. WORK_STAT >= 주문등록(100) 이고 IN_LOC_QTY > 0 이면  <로케이션지정:500>
+  8. WORK_STAT가 로케이션지정 상태이고 IN_LOC_QTY가 0이면 <로케이션지정취소:510>
+  9. 간편출고 입고완료 수량이 있으면 <입고완료:990>
+  9. 입고완료 수량이 있으면 <입고완료:990>
+  10. 입고완료 후 <바코드발행:995>
+
+[Shape: 순서도: 수행의 시작/종료 341 | Type: AUTO_SHAPE (1) | Pos: (4.2", 6.4") | Size: (1.1" x 0.3")]
+  입고등록
+  끝
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (7.6", 4.2") | Size: (1.4" x 0.2")]
+  주문일자 > 마감일자
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (9.1", 3.7") | Size: (1.5" x 0.2")]
+  주문일자 <= 마감일자
+
+[Shape: TextBox 87 | Type: TEXT_BOX (17) | Pos: (3.2", 3.2") | Size: (1.0" x 0.4")]
+  유효기간, 무게정보반영
+
+
+################################################################################
+# SLIDE 4
+# Layout: 1_제목 슬라이드
+################################################################################
+
+[Shape: 제목 2 | Type: TEXT_BOX (17) | Pos: (0.5", 0.4") | Size: (9.7" x 0.5")]
+  입고프로세스 – 승인(PK_WMSOP010.SP_APPROVE_ORDER)
+
+[Shape: TextBox 216 | Type: TEXT_BOX (17) | Pos: (0.4", 1.3") | Size: (2.1" x 5.5")]
+  - 생산자 로트 확인
+  : 센터별 정책적용에 따라 주문정보의 생산자 로트 존재유무 확인
+  - 제조일자 확인
+  : LOC별 정책적용에 따라 주문정보의 제조일자 존재유무 확인
+  - 유효기간확인
+  - 작업상태지정
+  : 주문의 승인여부, 주문상세의 작업상태, 입차수량, 입하수량, 입고LOC지정수량 등의 정보를 기반으로 현재 작업상태를 갱신
+  - UOM입력오류 확인
+  : 주문정보상세의 입고주문UOMID 의 정합성 확인
+  재고관리 공통모듈
+  :  주문정보를 논리재고 정보에 반영 (*실제처리 안함)
+
+[Shape: 순서도: 수행의 시작/종료 124 | Type: AUTO_SHAPE (1) | Pos: (6.0", 1.2") | Size: (1.1" x 0.4")]
+  승인
+  시작
+
+[Shape: 순서도: 처리 130 | Type: AUTO_SHAPE (1) | Pos: (6.0", 3.7") | Size: (1.0" x 0.3")]
+  주문승인
+  UPDATE
+
+[Shape: 순서도: 수행의 시작/종료 341 | Type: AUTO_SHAPE (1) | Pos: (6.0", 6.5") | Size: (1.1" x 0.3")]
+  승인
+  끝
+
+[Shape: 순서도: 처리 87 | Type: AUTO_SHAPE (1) | Pos: (3.6", 1.8") | Size: (5.9" x 0.2")]
+  주문ID.FIRST .. 주문ID.LAST
+
+[Shape: 순서도: 처리 89 | Type: AUTO_SHAPE (1) | Pos: (3.7", 2.1") | Size: (5.6" x 0.2")]
+  주문SEQ.FIRST .. 주문SEQ.LAST
+
+[Shape: 순서도: 처리 97 | Type: AUTO_SHAPE (1) | Pos: (3.7", 4.2") | Size: (5.6" x 0.2")]
+  주문SEQ.FIRST .. 주문SEQ.LAST
+
+[Shape: 순서도: 판단 100 | Type: AUTO_SHAPE (1) | Pos: (5.6", 5.1") | Size: (1.9" x 0.4")]
+  UOM입력오류확인
+
+[Shape: 순서도: 처리 101 | Type: AUTO_SHAPE (1) | Pos: (8.2", 5.2") | Size: (0.8" x 0.3")]
+  에러처리
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (3.7", 5.2") | Size: (1.5" x 0.2")]
+  주문, 주문상세, UOM
+
+[Shape: 순서도: 처리 187 | Type: AUTO_SHAPE (1) | Pos: (6.1", 5.7") | Size: (1.0" x 0.4")]
+  재고관리
+  공통모듈
+
+[Shape: 순서도: 처리 233 | Type: AUTO_SHAPE (1) | Pos: (6.1", 4.5") | Size: (1.0" x 0.4")]
+  작업상태
+  지정
+
+[Shape: TextBox 71 | Type: TEXT_BOX (17) | Pos: (4.3", 3.2") | Size: (1.0" x 0.2")]
+  유효기간
+
+[Shape: 순서도: 판단 74 | Type: AUTO_SHAPE (1) | Pos: (5.6", 2.5") | Size: (1.9" x 0.2")]
+  생산자로트확인
+
+[Shape: 순서도: 판단 77 | Type: AUTO_SHAPE (1) | Pos: (5.6", 2.8") | Size: (1.9" x 0.2")]
+  제조일자확인
+
+[Shape: 순서도: 판단 78 | Type: AUTO_SHAPE (1) | Pos: (5.6", 3.1") | Size: (1.9" x 0.2")]
+  유효기간확인
+
+[Shape: 순서도: 처리 99 | Type: AUTO_SHAPE (1) | Pos: (8.2", 3.3") | Size: (0.8" x 0.3")]
+  에러처리
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (7.3", 5.1") | Size: (1.1" x 0.2")]
+  UOM오류
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (6.1", 5.4") | Size: (1.1" x 0.2")]
+  정상
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (6.1", 2.6") | Size: (0.5" x 0.2")]
+  정상
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (6.1", 2.9") | Size: (0.5" x 0.2")]
+  정상
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (7.3", 3.0") | Size: (0.5" x 0.2")]
+  오류
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (7.3", 2.7") | Size: (0.5" x 0.2")]
+  오류
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (7.3", 2.3") | Size: (0.5" x 0.2")]
+  오류
+
+
+################################################################################
+# SLIDE 5
+# Layout: 1_제목 슬라이드
+################################################################################
+
+[Shape: 제목 2 | Type: TEXT_BOX (17) | Pos: (0.5", 0.4") | Size: (9.7" x 0.5")]
+  입고프로세스 – 배차(PK_WMSOP000. SP_SAVE_DSP)
+
+[Shape: TextBox 216 | Type: TEXT_BOX (17) | Pos: (0.4", 1.3") | Size: (2.1" x 4.2")]
+  - 사전 확인
+  : 센터별 정책적용 설정에 따라 이하 처리 및 값 확인, 미존재시 에러처리.
+  생산자로트
+  제조일자
+  유효기간확인
+  입하승인
+  유효기간확인
+  -
+  - 작업상태지정
+  : 주문의 승인여부, 주문상세의 작업상태, 입차수량, 입하수량, 입고LOC지정수량 등의 정보를 기반으로 현재 작업상태를 갱신
+
+[Shape: 순서도: 수행의 시작/종료 124 | Type: AUTO_SHAPE (1) | Pos: (4.3", 1.2") | Size: (1.1" x 0.4")]
+  배차
+  시작
+
+[Shape: 순서도: 수행의 시작/종료 341 | Type: AUTO_SHAPE (1) | Pos: (4.3", 6.4") | Size: (1.1" x 0.3")]
+  배차
+  끝
+
+[Shape: 순서도: 처리 74 | Type: AUTO_SHAPE (1) | Pos: (7.4", 1.4") | Size: (2.9" x 0.2")]
+  배차ID.FIRST .. 배차ID.LAST
+
+[Shape: 순서도: 처리 95 | Type: AUTO_SHAPE (1) | Pos: (7.8", 3.5") | Size: (1.0" x 0.2")]
+  차량등록
+
+[Shape: 순서도: 판단 121 | Type: AUTO_SHAPE (1) | Pos: (7.5", 2.3") | Size: (1.5" x 0.4")]
+  차량지정확인
+
+[Shape: 순서도: 처리 142 | Type: AUTO_SHAPE (1) | Pos: (7.8", 5.9") | Size: (1.0" x 0.4")]
+  배차주문
+  저장
+
+[Shape: 순서도: 처리 158 | Type: AUTO_SHAPE (1) | Pos: (4.4", 1.9") | Size: (1.0" x 0.4")]
+  배차입력
+
+[Shape: 순서도: 판단 203 | Type: AUTO_SHAPE (1) | Pos: (7.5", 2.9") | Size: (1.5" x 0.4")]
+  차량등록
+  여부확인
+
+[Shape: 순서도: 처리 230 | Type: AUTO_SHAPE (1) | Pos: (7.8", 5.2") | Size: (1.0" x 0.3")]
+  차량등록
+
+[Shape: 순서도: 판단 248 | Type: AUTO_SHAPE (1) | Pos: (7.5", 4.0") | Size: (1.5" x 0.4")]
+  배차지정확인
+
+[Shape: 순서도: 판단 252 | Type: AUTO_SHAPE (1) | Pos: (7.5", 4.6") | Size: (1.5" x 0.4")]
+  차량등록
+  여부확인
+
+[Shape: 순서도: 처리 282 | Type: AUTO_SHAPE (1) | Pos: (3.0", 2.6") | Size: (3.8" x 0.2")]
+  주문ID.FIRST .. 주문ID.LAST
+
+[Shape: 순서도: 처리 291 | Type: AUTO_SHAPE (1) | Pos: (4.4", 3.4") | Size: (1.0" x 0.4")]
+  배차확정
+  여부저장
+
+[Shape: 순서도: 처리 292 | Type: AUTO_SHAPE (1) | Pos: (4.4", 2.9") | Size: (1.0" x 0.3")]
+  주문상태
+  변경
+
+[Shape: 순서도: 처리 322 | Type: AUTO_SHAPE (1) | Pos: (3.0", 4.3") | Size: (3.8" x 0.2")]
+  주문ID.FIRST .. 주문ID.LAST
+
+[Shape: 순서도: 처리 324 | Type: AUTO_SHAPE (1) | Pos: (4.4", 4.7") | Size: (1.0" x 0.4")]
+  배차수량
+  저장
+
+[Shape: 순서도: 처리 353 | Type: AUTO_SHAPE (1) | Pos: (4.4", 5.3") | Size: (1.0" x 0.4")]
+  작업상태
+  지정
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (5.6", 5.4") | Size: (1.0" x 0.2")]
+  주문, 주문상세
+
+[Shape: TextBox 100 | Type: TEXT_BOX (17) | Pos: (6.8", 1.7") | Size: (1.1" x 0.6")]
+  입하승인 확인
+  생산자로트 확인
+  제조일자 확인
+  유효기간확인
+
+[Shape: 순서도: 판단 101 | Type: AUTO_SHAPE (1) | Pos: (7.7", 1.7") | Size: (1.1" x 0.4")]
+  사전체크
+
+[Shape: 순서도: 처리 108 | Type: AUTO_SHAPE (1) | Pos: (9.2", 1.8") | Size: (1.0" x 0.3")]
+  에러처리
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (8.9", 2.3") | Size: (0.7" x 0.2")]
+  지정
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (8.9", 2.8") | Size: (0.7" x 0.2")]
+  응록
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (9.0", 4.0") | Size: (0.7" x 0.2")]
+  지정
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (9.0", 4.6") | Size: (0.7" x 0.2")]
+  등록
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (7.7", 5.0") | Size: (1.0" x 0.2")]
+  미등록
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (7.7", 4.4") | Size: (1.0" x 0.2")]
+  미지정
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (7.7", 3.2") | Size: (1.0" x 0.2")]
+  미등록
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (7.7", 2.6") | Size: (1.0" x 0.2")]
+  미지정
+
+
+################################################################################
+# SLIDE 6
+# Layout: 1_제목 슬라이드
+################################################################################
+
+[Shape: 제목 2 | Type: TEXT_BOX (17) | Pos: (0.5", 0.4") | Size: (9.7" x 0.5")]
+  입고프로세스 – 입차승인(PK_WMSOP000.SP_CONFIRM_CAR_IN)
+
+[Shape: TextBox 216 | Type: TEXT_BOX (17) | Pos: (0.4", 1.3") | Size: (2.1" x 3.1")]
+  - 입차정보 저장
+  : 배차정보.입차확인정보,
+  주문상세.입차수량 UPDATE
+  - 작업상태지정
+  : 주문의 승인여부, 주문상세의 작업상태, 입차수량, 입하수량, 입고LOC지정수량 등의 정보를 기반으로 현재 작업상태를 갱신
+
+[Shape: 순서도: 수행의 시작/종료 124 | Type: AUTO_SHAPE (1) | Pos: (5.9", 1.3") | Size: (1.1" x 0.4")]
+  입차승인
+  시작
+
+[Shape: 순서도: 수행의 시작/종료 341 | Type: AUTO_SHAPE (1) | Pos: (5.9", 5.5") | Size: (1.1" x 0.3")]
+  입차승인
+  끝
+
+[Shape: 순서도: 처리 322 | Type: AUTO_SHAPE (1) | Pos: (4.1", 2.5") | Size: (4.7" x 0.2")]
+  주문ID.FIRST .. 주문ID.LAST
+
+[Shape: 순서도: 처리 324 | Type: AUTO_SHAPE (1) | Pos: (6.0", 3.0") | Size: (1.0" x 0.4")]
+  입차정보
+  저장
+
+[Shape: 순서도: 처리 353 | Type: AUTO_SHAPE (1) | Pos: (6.0", 3.9") | Size: (1.0" x 0.4")]
+  작업상태
+  지정
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (7.6", 4.0") | Size: (1.0" x 0.2")]
+  주문, 주문상세
+
+
+################################################################################
+# SLIDE 7
+# Layout: 1_제목 슬라이드
+################################################################################
+
+[Shape: 제목 2 | Type: TEXT_BOX (17) | Pos: (0.5", 0.4") | Size: (9.7" x 0.5")]
+  입고프로세스 – DOCK지정(PK_WMSOP000.SP_SET_DOCK)
+
+[Shape: TextBox 216 | Type: TEXT_BOX (17) | Pos: (0.4", 1.3") | Size: (2.1" x 1.9")]
+  - 차량정보 저장
+  : 도크.차량 UPDATE
+
+[Shape: 순서도: 수행의 시작/종료 124 | Type: AUTO_SHAPE (1) | Pos: (5.9", 1.5") | Size: (1.1" x 0.4")]
+  DOCK지정
+  시작
+
+[Shape: 순서도: 수행의 시작/종료 341 | Type: AUTO_SHAPE (1) | Pos: (5.9", 5.4") | Size: (1.1" x 0.3")]
+  DOCK지정
+  끝
+
+[Shape: 순서도: 처리 322 | Type: AUTO_SHAPE (1) | Pos: (4.1", 2.5") | Size: (4.7" x 0.2")]
+  입력도크번호.FIRST .. 입력도크번호.LAST
+
+[Shape: 순서도: 처리 353 | Type: AUTO_SHAPE (1) | Pos: (6.0", 3.3") | Size: (1.0" x 0.6")]
+  차량정보
+  저장
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (7.6", 3.4") | Size: (1.0" x 0.2")]
+  도크
+
+
+################################################################################
+# SLIDE 8
+# Layout: 1_제목 슬라이드
+################################################################################
+
+[Shape: 제목 2 | Type: TEXT_BOX (17) | Pos: (0.5", 0.4") | Size: (9.7" x 0.5")]
+  입고프로세스 – 작업지시서(PK_WMSOP020.SP_PRINT_GRN)
+
+[Shape: TextBox 216 | Type: TEXT_BOX (17) | Pos: (0.4", 1.3") | Size: (2.1" x 4.2")]
+  - 사전 확인
+  : 센터별 정책적용 설정에 따라 이하 처리 및 값 확인, 미존재시 에러처리.
+  생산자로트
+  제조일자
+  유효기간확인
+  주문승인
+  배차
+  입차
+  - 작업지시서발행 저장
+  : 주문상세.GRN리스트발행여부 UPDATE
+  - 작업상태지정
+  : 주문의 승인여부, 주문상세의 작업상태, 입차수량, 입하수량, 입고LOC지정수량 등의 정보를 기반으로 현재 작업상태를 갱신
+
+[Shape: 순서도: 수행의 시작/종료 124 | Type: AUTO_SHAPE (1) | Pos: (5.7", 1.3") | Size: (1.1" x 0.4")]
+  작업지시서
+  발행 시작
+
+[Shape: 순서도: 수행의 시작/종료 341 | Type: AUTO_SHAPE (1) | Pos: (5.7", 5.5") | Size: (1.1" x 0.3")]
+  작업지시서 발행 끝
+
+[Shape: 순서도: 처리 353 | Type: AUTO_SHAPE (1) | Pos: (5.7", 3.3") | Size: (1.0" x 0.6")]
+  작업지시서 발행 저장
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (7.7", 3.4") | Size: (1.0" x 0.2")]
+  주문상세
+
+[Shape: TextBox 20 | Type: TEXT_BOX (17) | Pos: (4.4", 2.2") | Size: (1.2" x 0.9")]
+  입차확인
+  배차확인
+  주문승인확인
+  생산자로트 확인
+  제조일자 확인
+  유효기간확인
+
+[Shape: 순서도: 처리 22 | Type: AUTO_SHAPE (1) | Pos: (5.7", 4.3") | Size: (1.0" x 0.4")]
+  작업상태
+  지정
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (7.7", 4.4") | Size: (1.0" x 0.2")]
+  주문, 주문상세
+
+[Shape: 순서도: 판단 42 | Type: AUTO_SHAPE (1) | Pos: (5.7", 2.4") | Size: (1.1" x 0.4")]
+  사전체크
+
+[Shape: 순서도: 처리 43 | Type: AUTO_SHAPE (1) | Pos: (7.4", 2.4") | Size: (1.0" x 0.3")]
+  에러처리
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (6.8", 2.4") | Size: (0.7" x 0.2")]
+  오류
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (5.8", 2.8") | Size: (0.7" x 0.2")]
+  정상
+
+
+################################################################################
+# SLIDE 9
+# Layout: 1_제목 슬라이드
+################################################################################
+
+[Shape: 제목 2 | Type: TEXT_BOX (17) | Pos: (0.5", 0.4") | Size: (9.7" x 0.5")]
+  입고프로세스 – 입하확정(PK_WMSOP020.SP_CONFIRM_GRN)
+
+[Shape: TextBox 216 | Type: TEXT_BOX (17) | Pos: (0.4", 1.2") | Size: (2.1" x 5.6")]
+  - 사전체크
+  : 센터별 정책적용 설정에 따라 주문정보의 이하 값 확인.
+  생산자로트
+  제조일자
+  유효기간확인
+  무게정보확인
+  주문승인
+  배차
+  입차
+  입하작업지시서발행
+  QC통과(유효기간검수, 무게정보검수 추가)
+  - 작업정보등록
+  : 해당 주문정보가 작업테이블에 기등록여부 확인 후 작업 및 작업상세에 등록
+  - 내부LOT유무
+  : 입력 LOT번호가 있을경우, 입력LOT번호로 처리
+  - 작업수량UPDATE
+  : 작업상태 =‘완료’, 확인수량 UPDATE
+  입출고처리
+  창고, 상품 정보취득 : 창고ID 및 상품 정보조회(고객사, 유효기간일수)
+  입출고반영 : 재고 삭제 및 기존 재고 존재 시 수량 갱신, 미존재시 신규등록
+  할당처리 : 할당테이블의 할당수량(ALOC_QTY) 및 재고수량(STOCK_QTY)이 모두 0인 경우 DELETE
+  물류용기재고반영로직 추가필요
+  - 주문상세수정
+  : 주문상세.입하수량 UPDATE
+
+[Shape: 순서도: 수행의 시작/종료 124 | Type: AUTO_SHAPE (1) | Pos: (4.3", 1.2") | Size: (1.1" x 0.4")]
+  입하확정
+  시작
+
+[Shape: 순서도: 판단 125 | Type: AUTO_SHAPE (1) | Pos: (4.3", 2.0") | Size: (1.1" x 0.4")]
+  사전체크
+
+[Shape: 순서도: 처리 126 | Type: AUTO_SHAPE (1) | Pos: (5.8", 2.0") | Size: (1.0" x 0.3")]
+  에러처리
+
+[Shape: 순서도: 처리 128 | Type: AUTO_SHAPE (1) | Pos: (4.3", 2.5") | Size: (1.0" x 0.4")]
+  작업정보
+  등록
+
+[Shape: 순서도: 처리 163 | Type: AUTO_SHAPE (1) | Pos: (4.3", 3.6") | Size: (1.0" x 0.3")]
+  내부LOT
+  등록
+
+[Shape: 순서도: 처리 317 | Type: AUTO_SHAPE (1) | Pos: (4.3", 5.5") | Size: (1.0" x 0.3")]
+  주문상세
+  수정
+
+[Shape: 순서도: 수행의 시작/종료 341 | Type: AUTO_SHAPE (1) | Pos: (4.3", 6.5") | Size: (1.1" x 0.3")]
+  입하확정
+  끝
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (5.6", 3.1") | Size: (1.1" x 0.2")]
+  내부LOT 존재
+
+[Shape: 순서도: 처리 202 | Type: AUTO_SHAPE (1) | Pos: (7.2", 3.5") | Size: (3.1" x 0.1")]
+  작업ID.FIRST .. 작업ID.LAST
+
+[Shape: 순서도: 처리 204 | Type: AUTO_SHAPE (1) | Pos: (7.4", 3.7") | Size: (2.7" x 0.1")]
+  작업SEQ.FIRST .. 작업SEQ.LAST
+
+[Shape: 순서도: 처리 205 | Type: AUTO_SHAPE (1) | Pos: (7.7", 3.8") | Size: (1.0" x 0.1")]
+  마감확인
+
+[Shape: 순서도: 처리 214 | Type: AUTO_SHAPE (1) | Pos: (7.7", 6.1") | Size: (1.0" x 0.1")]
+  수불등록
+
+[Shape: 순서도: 처리 215 | Type: AUTO_SHAPE (1) | Pos: (7.7", 5.8") | Size: (1.0" x 0.2")]
+  입출고이력등록
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (9.0", 6.1") | Size: (1.2" x 0.2")]
+  수불이력
+
+[Shape: 순서도: 처리 250 | Type: AUTO_SHAPE (1) | Pos: (7.7", 5.5") | Size: (1.0" x 0.1")]
+  할당처리
+
+[Shape: 순서도: 처리 259 | Type: AUTO_SHAPE (1) | Pos: (7.7", 5.2") | Size: (1.0" x 0.1")]
+  입출고 반영
+
+[Shape: 순서도: 판단 266 | Type: AUTO_SHAPE (1) | Pos: (7.6", 4.9") | Size: (1.2" x 0.3")]
+  재고확인
+
+[Shape: 순서도: 처리 267 | Type: AUTO_SHAPE (1) | Pos: (9.2", 4.9") | Size: (0.9" x 0.2")]
+  에러처리
+
+[Shape: 순서도: 처리 277 | Type: AUTO_SHAPE (1) | Pos: (7.7", 4.5") | Size: (1.0" x 0.2")]
+  현재고 취득 및 수량계산
+
+[Shape: 순서도: 처리 281 | Type: AUTO_SHAPE (1) | Pos: (7.7", 4.1") | Size: (1.0" x 0.2")]
+  창고, 상품
+  정보취득
+
+[Shape: 순서도: 처리 116 | Type: AUTO_SHAPE (1) | Pos: (7.7", 6.4") | Size: (1.0" x 0.2")]
+  재고관리
+  공통모듈
+
+[Shape: 순서도: 처리 120 | Type: AUTO_SHAPE (1) | Pos: (2.8", 1.7") | Size: (4.0" x 0.2")]
+  주문ID.FIRST .. 주문ID.LAST
+
+[Shape: TextBox 121 | Type: TEXT_BOX (17) | Pos: (3.1", 1.9") | Size: (1.2" x 1.6")]
+  QC통과 (유효기간검수, 무게정보검수 추가)
+  입하지시서발행
+  입차확인
+  배차확인
+  주문승인확인
+  생산자로트 확인
+  제조일자 확인
+  유효기간확인
+  무게정보확인
+
+[Shape: 순서도: 처리 153 | Type: AUTO_SHAPE (1) | Pos: (8.2", 1.4") | Size: (1.0" x 0.2")]
+  작업정보
+  취득
+
+[Shape: 순서도: 판단 183 | Type: AUTO_SHAPE (1) | Pos: (8.0", 1.9") | Size: (1.4" x 0.2")]
+  기등록여부
+  확인
+
+[Shape: 순서도: 처리 185 | Type: AUTO_SHAPE (1) | Pos: (9.6", 1.8") | Size: (0.7" x 0.3")]
+  등록처리 종료
+
+[Shape: 순서도: 처리 290 | Type: AUTO_SHAPE (1) | Pos: (8.2", 2.4") | Size: (1.0" x 0.2")]
+  작업등록
+
+[Shape: 순서도: 처리 301 | Type: AUTO_SHAPE (1) | Pos: (8.2", 2.7") | Size: (1.0" x 0.2")]
+  작업상세
+  등록
+
+[Shape: 순서도: 판단 371 | Type: AUTO_SHAPE (1) | Pos: (4.0", 3.0") | Size: (1.7" x 0.4")]
+  내부LOT유무
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (4.1", 3.4") | Size: (1.1" x 0.2")]
+  내부LOT 미존재
+
+[Shape: 순서도: 처리 385 | Type: AUTO_SHAPE (1) | Pos: (4.3", 4.2") | Size: (1.0" x 0.3")]
+  입하장 로케이션 지정
+
+[Shape: 순서도: 처리 410 | Type: AUTO_SHAPE (1) | Pos: (4.3", 6.0") | Size: (1.0" x 0.2")]
+  작업상태
+  지정
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (5.6", 6.0") | Size: (1.0" x 0.2")]
+  주문, 주문상세
+
+[Shape: 순서도: 처리 424 | Type: AUTO_SHAPE (1) | Pos: (4.3", 5.2") | Size: (1.0" x 0.2")]
+  입출고처리
+
+[Shape: 순서도: 처리 453 | Type: AUTO_SHAPE (1) | Pos: (4.3", 4.7") | Size: (1.0" x 0.3")]
+  작업수량
+  UPDATE
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (9.2", 1.8") | Size: (1.1" x 0.2")]
+  등록
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (8.3", 2.1") | Size: (1.1" x 0.2")]
+  미등록
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (8.7", 4.8") | Size: (1.1" x 0.2")]
+  이상
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (7.8", 5.0") | Size: (1.1" x 0.2")]
+  정상
+
+[Shape: TextBox 175 | Type: TEXT_BOX (17) | Pos: (6.7", 5.7") | Size: (1.0" x 0.4")]
+  물류용기 재고반영로직추가 필요
+
+
+################################################################################
+# SLIDE 10
+# Layout: 1_제목 슬라이드
+################################################################################
+
+[Shape: 제목 2 | Type: TEXT_BOX (17) | Pos: (0.5", 0.4") | Size: (9.7" x 0.5")]
+  입고프로세스 – 입고확정(PK_WMSOP020.SP_IN_COMPLETE)
+
+[Shape: TextBox 216 | Type: TEXT_BOX (17) | Pos: (0.4", 1.1") | Size: (2.2" x 5.6")]
+  - 사전체크
+  : 센터별 정책적용 설정에 따라 주문정보의 이하 값 확인
+  생산자로트
+  제조일자
+  유효기간확인
+  무게정보확인
+  주문승인
+  배차
+  입차
+  입하작업지시서발행
+  QC통과(유효기간, 무게정보검수)
+  PLT수량입력
+  입고LOC지정(수동)
+  적치지시서 발행
+  - 적치여부
+  : 입하수량 > 0 이면 입고장물건을 출고, 입하(GRN) 선택하지 않으면 입하장 물량을 (-)할필요 없음.
+  - 작업정보등록
+  : 작업상태 =‘완료’, 확인수량 등록
+  입출고처리
+  입출고반영 : 재고 삭제 및 기존 재고 존재 시 수량 갱신, 미존재시 신규등록
+  할당처리 : 할당테이블의 할당수량(ALOC_QTY) 및 재고수량(STOCK_QTY)이 모두 0인 경우 DELETE
+  - 주문수정
+  : 주문상세 실입고수량 수정
+
+[Shape: 순서도: 수행의 시작/종료 124 | Type: AUTO_SHAPE (1) | Pos: (4.3", 1.2") | Size: (1.1" x 0.4")]
+  입고확정
+  시작
+
+[Shape: 순서도: 판단 125 | Type: AUTO_SHAPE (1) | Pos: (4.3", 2.1") | Size: (1.1" x 0.4")]
+  사전체크
+
+[Shape: 순서도: 처리 126 | Type: AUTO_SHAPE (1) | Pos: (2.9", 2.2") | Size: (1.0" x 0.3")]
+  에러처리
+
+[Shape: 순서도: 처리 128 | Type: AUTO_SHAPE (1) | Pos: (4.3", 3.4") | Size: (1.0" x 0.2")]
+  작업등록
+
+[Shape: 순서도: 판단 129 | Type: AUTO_SHAPE (1) | Pos: (4.3", 2.7") | Size: (1.1" x 0.4")]
+  적치여부
+
+[Shape: 순서도: 처리 130 | Type: AUTO_SHAPE (1) | Pos: (4.3", 4.0") | Size: (1.0" x 0.3")]
+  입하장 로케이션 지정
+
+[Shape: 순서도: 처리 163 | Type: AUTO_SHAPE (1) | Pos: (4.3", 4.6") | Size: (1.0" x 0.4")]
+  작업정보
+  등록
+
+[Shape: 순서도: 처리 168 | Type: AUTO_SHAPE (1) | Pos: (4.3", 5.2") | Size: (1.0" x 0.3")]
+  입출고처리
+
+[Shape: 순서도: 처리 202 | Type: AUTO_SHAPE (1) | Pos: (7.4", 1.4") | Size: (2.9" x 0.2")]
+  작업ID.FIRST .. 작업ID.LAST
+
+[Shape: 순서도: 처리 204 | Type: AUTO_SHAPE (1) | Pos: (7.5", 1.7") | Size: (2.6" x 0.2")]
+  작업SEQ.FIRST .. 작업SEQ.LAST
+
+[Shape: 순서도: 처리 205 | Type: AUTO_SHAPE (1) | Pos: (7.8", 2.1") | Size: (1.0" x 0.2")]
+  마감확인
+
+[Shape: 순서도: 처리 214 | Type: AUTO_SHAPE (1) | Pos: (7.8", 5.6") | Size: (1.0" x 0.2")]
+  수불등록
+
+[Shape: 순서도: 처리 215 | Type: AUTO_SHAPE (1) | Pos: (7.8", 5.1") | Size: (1.0" x 0.3")]
+  입출고이력등록
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (9.0", 5.6") | Size: (1.1" x 0.2")]
+  수불이력
+
+[Shape: 순서도: 처리 250 | Type: AUTO_SHAPE (1) | Pos: (7.8", 4.6") | Size: (1.0" x 0.2")]
+  할당처리
+
+[Shape: 순서도: 처리 259 | Type: AUTO_SHAPE (1) | Pos: (7.8", 4.2") | Size: (1.0" x 0.2")]
+  입출고 반영
+
+[Shape: 순서도: 판단 266 | Type: AUTO_SHAPE (1) | Pos: (7.7", 3.6") | Size: (1.1" x 0.4")]
+  재고확인
+
+[Shape: 순서도: 처리 267 | Type: AUTO_SHAPE (1) | Pos: (9.2", 3.7") | Size: (0.8" x 0.3")]
+  에러처리
+
+[Shape: 순서도: 처리 277 | Type: AUTO_SHAPE (1) | Pos: (7.8", 3.0") | Size: (1.0" x 0.4")]
+  현재고 취득 및 수량계산
+
+[Shape: 순서도: 처리 281 | Type: AUTO_SHAPE (1) | Pos: (7.8", 2.5") | Size: (1.0" x 0.3")]
+  창고, 상품
+  정보취득
+
+[Shape: 순서도: 처리 317 | Type: AUTO_SHAPE (1) | Pos: (4.3", 5.7") | Size: (1.0" x 0.3")]
+  주문수정
+
+[Shape: 순서도: 수행의 시작/종료 341 | Type: AUTO_SHAPE (1) | Pos: (4.3", 6.4") | Size: (1.1" x 0.3")]
+  입고확정
+  끝
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (5.5", 2.7") | Size: (1.1" x 0.2")]
+  입하수량 < 1
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (4.0", 3.1") | Size: (1.1" x 0.2")]
+  입하수량 > 0
+
+[Shape: 순서도: 처리 116 | Type: AUTO_SHAPE (1) | Pos: (7.8", 6.0") | Size: (1.0" x 0.4")]
+  재고관리
+  공통모듈
+
+[Shape: 순서도: 처리 120 | Type: AUTO_SHAPE (1) | Pos: (2.8", 1.7") | Size: (4.0" x 0.2")]
+  주문ID.FIRST .. 주문ID.LAST
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (8.7", 3.6") | Size: (1.1" x 0.2")]
+  이상
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (7.9", 3.9") | Size: (1.1" x 0.2")]
+  정상
+
+
+################################################################################
+# SLIDE 11
+# Layout: 1_제목 슬라이드
+################################################################################
+
+[Shape: 제목 2 | Type: TEXT_BOX (17) | Pos: (0.5", 0.4") | Size: (9.7" x 0.5")]
+  출고프로세스 – 출고등록(PK_WMSOP030.SP_INSERT_ORDER)
+
+[Shape: TextBox 216 | Type: TEXT_BOX (17) | Pos: (0.4", 1.1") | Size: (2.1" x 4.6")]
+  - 마감확인
+  : 마감일자 이전 주문 에러처리
+  주문(마스터) 등록
+  : 입력 주문ID가 있으면 해당 주문 UPDATE, 주문ID가 없으면 신규등록
+  주문상세 등록
+  : 입력 주문SEQ가 있으면 해당 주문 UPDATE, 주문SEQ가 없으면 신규등록(입력 주문 ID가 없을 경우, 신규등록), 마스터정보에서 취득한 유효기간, 무게정보 등록
+  - 작업상태지정
+  : 주문의 승인여부, 주문상세의 작업상태, 입차수량, 입하수량, 입고LOC지정수량 등의 정보를 기반으로 현재 작업상태를 갱신
+
+[Shape: 순서도: 수행의 시작/종료 124 | Type: AUTO_SHAPE (1) | Pos: (4.1", 1.2") | Size: (1.1" x 0.4")]
+  출고등록
+  시작
+
+[Shape: 순서도: 처리 128 | Type: AUTO_SHAPE (1) | Pos: (4.2", 3.8") | Size: (1.0" x 0.4")]
+  주문상세
+  등록
+
+[Shape: 순서도: 처리 115 | Type: AUTO_SHAPE (1) | Pos: (4.2", 1.8") | Size: (1.0" x 0.3")]
+  마감확인
+
+[Shape: 순서도: 처리 116 | Type: AUTO_SHAPE (1) | Pos: (4.2", 2.4") | Size: (1.0" x 0.4")]
+  주문(마스터)
+  등록
+
+[Shape: 순서도: 처리 123 | Type: AUTO_SHAPE (1) | Pos: (3.0", 3.1") | Size: (3.9" x 0.2")]
+  주문SEQ.FIRST .. 주문SEQ.LAST
+
+[Shape: 순서도: 처리 221 | Type: AUTO_SHAPE (1) | Pos: (4.2", 4.9") | Size: (1.0" x 0.4")]
+  작업상태
+  지정
+
+[Shape: 순서도: 처리 292 | Type: AUTO_SHAPE (1) | Pos: (8.4", 3.0") | Size: (1.0" x 0.4")]
+  마감정보
+  취득
+
+[Shape: 순서도: 판단 334 | Type: AUTO_SHAPE (1) | Pos: (8.1", 3.6") | Size: (1.5" x 0.4")]
+  마감일자비교
+
+[Shape: 순서도: 처리 340 | Type: AUTO_SHAPE (1) | Pos: (9.4", 4.2") | Size: (0.8" x 0.3")]
+  에러처리
+
+[Shape: 순서도: 수행의 시작/종료 374 | Type: AUTO_SHAPE (1) | Pos: (8.4", 1.6") | Size: (1.1" x 0.3")]
+  마감확인
+  시작
+
+[Shape: 순서도: 수행의 시작/종료 375 | Type: AUTO_SHAPE (1) | Pos: (8.4", 4.8") | Size: (1.1" x 0.3")]
+  마감확인
+  끝
+
+[Shape: 순서도: 판단 383 | Type: AUTO_SHAPE (1) | Pos: (8.1", 2.2") | Size: (1.5" x 0.4")]
+  주문일자
+  LOOP
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (9.5", 2.1") | Size: (0.9" x 0.2")]
+  LOOP END
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (8.9", 2.6") | Size: (0.9" x 0.2")]
+  LOOP
+
+[Shape: 순서도: 수행의 시작/종료 341 | Type: AUTO_SHAPE (1) | Pos: (4.1", 6.4") | Size: (1.1" x 0.3")]
+  출고등록
+  끝
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (7.6", 4.1") | Size: (1.4" x 0.2")]
+  주문일자 > 마감일자
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (9.0", 3.6") | Size: (1.5" x 0.2")]
+  주문일자 <= 마감일자
+
+[Shape: TextBox 90 | Type: TEXT_BOX (17) | Pos: (5.4", 5.3") | Size: (4.5" x 1.5")]
+  <출고>
+  1. WORK_STAT가 NULL이면 <주문입력상태:100>
+  2. WORK_STAT가 주문입력상태이고 PAY_YN이 'Y'이면 <대금결제확인:120>
+  3. WORK_STAT가 주문입력상태이거나 대금결제확인 상태이고 ,
+  4. WORK_STAT가 (등록상태OR물량할당취소)이고 , ALOC_QTY = OUT_ORD_QTY 이면 <물량할당:200>
+  5. WORK_STAT가 물량할당상태이고, ALOC_QTY = 0 이면 <물량할당취소:210>
+  6. 주문등록상태 이후 혹은 로케이션지정 취소 상태이고 OUT_LOC_QTY > 0 이면 <로케이션지정:230>
+  7. WORK_STAT가 로케이션지정 상태이고 , OUT_LOC_QTY = 0 이면 <로케이션지정취소:240>
+  8. WORK_STAT >= 등록상태(100) 이고 OUT_DSP_QTY > 0 이면 <배차상태:300>
+  9. WORK_STAT = 배차상태(300) 이고 OUT_DSP_QTY = 0 이면 <배차취소상태:310>
+  10. <피킹리스트발행:400>
+  11. WORK_STAT >= 등록상태(100) 이고 PICKING_QTY > 0 이면 <피킹확정:490>
+  12. WORK_STAT >= 등록상태(100) 이고 LOAD_QTY > 0 이면 <상차상태:500>
+  13. WORK_STAT >= 주문등록상태(100) 이고 OUT_ORD_QTY = REAL_OUT_QTY 이면 <출고확정:990>
+
+[Shape: TextBox 64 | Type: TEXT_BOX (17) | Pos: (3.2", 3.9") | Size: (1.0" x 0.4")]
+  유효기간, 무게정보 등록
+
+
+################################################################################
+# SLIDE 12
+# Layout: 1_제목 슬라이드
+################################################################################
+
+[Shape: 제목 2 | Type: TEXT_BOX (17) | Pos: (0.5", 0.4") | Size: (9.7" x 0.5")]
+  출고프로세스 – 승인(PK_WMSOP010.SP_APPROVE_ORDER)
+
+[Shape: TextBox 216 | Type: TEXT_BOX (17) | Pos: (0.4", 1.1") | Size: (2.2" x 5.8")]
+  - 대금결제 확인
+  : 센터별 정책적용에 따라  주문정보의 대금결제확인
+  - 비용청구 확인
+  : 센터별 정책적용에 따라 비용청구 여부 확인 (현재 정산 미구현)
+  거래처별유효기간확인
+  : 센터별 정책적용에 따라 해당 주문의 거래처별 유효기간을 확인
+  - 작업상태지정
+  : 주문의 승인여부, 주문상세의 작업상태, 입차수량, 입하수량, 입고LOC지정수량 등의 정보를 기반으로 현재 작업상태를 갱신
+  - UOM입력오류 확인
+  : 주문정보상세의 입고주문UOMID 의 정합성 확인
+  재고관리 공통모듈
+  :  주문정보를 논리재고 정보에 반영 (*실제처리 안함)
+
+[Shape: 순서도: 수행의 시작/종료 124 | Type: AUTO_SHAPE (1) | Pos: (6.0", 1.2") | Size: (1.1" x 0.4")]
+  승인
+  시작
+
+[Shape: 순서도: 처리 130 | Type: AUTO_SHAPE (1) | Pos: (6.1", 3.8") | Size: (1.0" x 0.3")]
+  주문승인
+  UPDATE
+
+[Shape: 순서도: 수행의 시작/종료 341 | Type: AUTO_SHAPE (1) | Pos: (6.0", 6.5") | Size: (1.1" x 0.3")]
+  승인
+  끝
+
+[Shape: 순서도: 처리 87 | Type: AUTO_SHAPE (1) | Pos: (3.6", 1.8") | Size: (5.9" x 0.2")]
+  주문ID.FIRST .. 주문ID.LAST
+
+[Shape: 순서도: 처리 89 | Type: AUTO_SHAPE (1) | Pos: (3.7", 2.1") | Size: (5.6" x 0.2")]
+  주문SEQ.FIRST .. 주문SEQ.LAST
+
+[Shape: 순서도: 처리 97 | Type: AUTO_SHAPE (1) | Pos: (3.7", 4.3") | Size: (5.6" x 0.2")]
+  주문SEQ.FIRST .. 주문SEQ.LAST
+
+[Shape: 순서도: 판단 100 | Type: AUTO_SHAPE (1) | Pos: (5.6", 5.2") | Size: (1.9" x 0.4")]
+  UOM입력오류확인
+
+[Shape: 순서도: 처리 101 | Type: AUTO_SHAPE (1) | Pos: (8.2", 5.2") | Size: (0.8" x 0.3")]
+  에러처리
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (3.8", 5.2") | Size: (1.5" x 0.2")]
+  주문, 주문상세, UOM
+
+[Shape: 순서도: 처리 187 | Type: AUTO_SHAPE (1) | Pos: (6.1", 5.7") | Size: (1.0" x 0.4")]
+  재고관리
+  공통모듈
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (8.0", 5.7") | Size: (1.1" x 0.4")]
+  논리재고,
+  주문논리재고
+
+[Shape: 순서도: 처리 233 | Type: AUTO_SHAPE (1) | Pos: (6.1", 4.6") | Size: (1.0" x 0.4")]
+  작업상태
+  지정
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (7.4", 5.2") | Size: (0.8" x 0.2")]
+  UOM오류
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (6.2", 5.5") | Size: (0.6" x 0.2")]
+  정상
+
+[Shape: 순서도: 판단 72 | Type: AUTO_SHAPE (1) | Pos: (5.6", 2.4") | Size: (1.9" x 0.3")]
+  재금결제확인
+
+[Shape: 순서도: 판단 73 | Type: AUTO_SHAPE (1) | Pos: (5.6", 2.9") | Size: (1.9" x 0.2")]
+  비용청구확인
+
+[Shape: 순서도: 처리 74 | Type: AUTO_SHAPE (1) | Pos: (8.3", 3.2") | Size: (0.8" x 0.3")]
+  에러처리
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (7.4", 2.4") | Size: (0.8" x 0.2")]
+  미결제
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (7.4", 2.8") | Size: (0.8" x 0.2")]
+  오류
+
+[Shape: 순서도: 판단 85 | Type: AUTO_SHAPE (1) | Pos: (5.6", 3.3") | Size: (1.9" x 0.2")]
+  거래처별 유효기간확인
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (7.4", 3.2") | Size: (0.8" x 0.2")]
+  오류
+
+
+################################################################################
+# SLIDE 13
+# Layout: 1_제목 슬라이드
+################################################################################
+
+[Shape: 제목 2 | Type: TEXT_BOX (17) | Pos: (0.5", 0.4") | Size: (9.7" x 0.5")]
+  출고프로세스 – 로케이션지정(PK_WMSOP010_SABLE7.SP_SAVE_LOC)
+
+[Shape: TextBox 216 | Type: TEXT_BOX (17) | Pos: (0.4", 1.3") | Size: (2.2" x 2.5")]
+  - 작업상태UPDATE
+  : 작업상세.작업수량, 작업상세.확인수량 UPDATE
+  - 주문정보존재확인
+  : 주문 정보가 존재하는 경우, 파렛트 수량 및 박스 수량을 계산하여 반영
+  -파렛트 및 박스당 상품수량 취득 : 변환 하고자 하는 상품이 UOM별로 환산정보가 있을경우만 계산
+
+[Shape: 순서도: 수행의 시작/종료 124 | Type: AUTO_SHAPE (1) | Pos: (6.0", 1.2") | Size: (1.1" x 0.3")]
+  로케이션지정
+  시작
+
+[Shape: 순서도: 처리 115 | Type: AUTO_SHAPE (1) | Pos: (6.1", 2.0") | Size: (1.0" x 0.3")]
+  작업정보
+  취득
+
+[Shape: 순서도: 수행의 시작/종료 341 | Type: AUTO_SHAPE (1) | Pos: (6.0", 6.4") | Size: (1.1" x 0.3")]
+  로케이션지정
+  끝
+
+[Shape: 순서도: 처리 87 | Type: AUTO_SHAPE (1) | Pos: (3.6", 1.7") | Size: (5.9" x 0.2")]
+  작업SEQ.FIRST .. 작업SEQ.LAST
+
+[Shape: 순서도: 처리 73 | Type: AUTO_SHAPE (1) | Pos: (6.1", 2.5") | Size: (1.0" x 0.3")]
+  내부LOT
+  등록
+
+[Shape: 순서도: 처리 99 | Type: AUTO_SHAPE (1) | Pos: (6.1", 2.9") | Size: (1.0" x 0.3")]
+  로케이션정보
+  등록
+
+[Shape: 순서도: 처리 142 | Type: AUTO_SHAPE (1) | Pos: (6.1", 3.3") | Size: (1.0" x 0.3")]
+  작업상세
+  UPDATE
+
+[Shape: 순서도: 처리 159 | Type: AUTO_SHAPE (1) | Pos: (6.1", 4.2") | Size: (1.0" x 0.3")]
+  파렛트 및 박스당 상품수량 취득
+
+[Shape: 순서도: 처리 161 | Type: AUTO_SHAPE (1) | Pos: (6.1", 4.6") | Size: (1.0" x 0.2")]
+  주문량 조회
+
+[Shape: 순서도: 처리 164 | Type: AUTO_SHAPE (1) | Pos: (6.1", 4.9") | Size: (1.0" x 0.3")]
+  주문상세
+  UPDATE
+
+[Shape: 순서도: 처리 165 | Type: AUTO_SHAPE (1) | Pos: (6.1", 5.4") | Size: (1.0" x 0.3")]
+  로케이션정보
+  UPDATE
+
+[Shape: 순서도: 처리 166 | Type: AUTO_SHAPE (1) | Pos: (6.1", 5.9") | Size: (1.0" x 0.2")]
+  작업상태지정
+
+[Shape: 순서도: 판단 259 | Type: AUTO_SHAPE (1) | Pos: (5.8", 3.7") | Size: (1.5" x 0.3")]
+  주문정보
+  존재확인
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (7.5", 3.7") | Size: (1.4" x 0.2")]
+  주문정보 미존재
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (5.6", 3.9") | Size: (1.4" x 0.2")]
+  주문정보 존재
+
+[Shape: TextBox 95 | Type: TEXT_BOX (17) | Pos: (7.1", 4.1") | Size: (2.0" x 0.6")]
+  수량관련 프로세스 협의 필요
+
+
+################################################################################
+# SLIDE 14
+# Layout: 1_제목 슬라이드
+################################################################################
+
+[Shape: 제목 2 | Type: TEXT_BOX (17) | Pos: (0.5", 0.4") | Size: (9.7" x 0.5")]
+  출고프로세스 – 배차(PK_WMSOP000. SP_SAVE_DSP)
+
+[Shape: TextBox 216 | Type: TEXT_BOX (17) | Pos: (0.4", 1.3") | Size: (2.1" x 5.1")]
+  - 사전 확인
+  : 센터별 정책적용 설정에 따라 주문정보에 이하 값 확인
+  랙보충
+  출고로케이션확인
+  할당확인
+  출고승인확인
+  거래처별유효기간확인
+  대금결제확인
+  비용확인
+  -배차수량저장
+  : 주문상세.입고배차수량, 주문상세.출고배차수량 저장
+  - 작업상태지정
+  : 주문의 승인여부, 주문상세의 작업상태, 입차수량, 입하수량, 입고LOC지정수량 등의 정보를 기반으로 현재 작업상태를 갱신
+
+[Shape: 순서도: 수행의 시작/종료 124 | Type: AUTO_SHAPE (1) | Pos: (4.3", 1.2") | Size: (1.1" x 0.4")]
+  배차
+  시작
+
+[Shape: 순서도: 수행의 시작/종료 341 | Type: AUTO_SHAPE (1) | Pos: (4.3", 6.4") | Size: (1.1" x 0.3")]
+  배차
+  끝
+
+[Shape: 순서도: 처리 74 | Type: AUTO_SHAPE (1) | Pos: (7.4", 1.4") | Size: (2.9" x 0.2")]
+  배차ID.FIRST .. 배차ID.LAST
+
+[Shape: 순서도: 처리 95 | Type: AUTO_SHAPE (1) | Pos: (7.8", 3.5") | Size: (1.0" x 0.2")]
+  차량등록
+
+[Shape: 순서도: 판단 121 | Type: AUTO_SHAPE (1) | Pos: (7.5", 2.3") | Size: (1.5" x 0.4")]
+  차량지정확인
+
+[Shape: 순서도: 처리 142 | Type: AUTO_SHAPE (1) | Pos: (7.8", 6.0") | Size: (1.0" x 0.4")]
+  배차주문
+  저장
+
+[Shape: 순서도: 처리 158 | Type: AUTO_SHAPE (1) | Pos: (4.4", 1.9") | Size: (1.0" x 0.4")]
+  배차입력
+
+[Shape: 순서도: 판단 203 | Type: AUTO_SHAPE (1) | Pos: (7.5", 2.9") | Size: (1.5" x 0.4")]
+  신규차량확인
+
+[Shape: 순서도: 처리 230 | Type: AUTO_SHAPE (1) | Pos: (7.8", 5.2") | Size: (1.0" x 0.3")]
+  차량등록
+
+[Shape: 순서도: 판단 248 | Type: AUTO_SHAPE (1) | Pos: (7.5", 4.0") | Size: (1.5" x 0.4")]
+  배차지정확인
+
+[Shape: 순서도: 판단 252 | Type: AUTO_SHAPE (1) | Pos: (7.5", 4.6") | Size: (1.5" x 0.4")]
+  신규차량확인
+
+[Shape: 순서도: 처리 282 | Type: AUTO_SHAPE (1) | Pos: (3.0", 2.6") | Size: (3.8" x 0.2")]
+  주문ID.FIRST .. 주문ID.LAST
+
+[Shape: 순서도: 처리 291 | Type: AUTO_SHAPE (1) | Pos: (4.4", 3.4") | Size: (1.0" x 0.4")]
+  배차확정
+  여부저장
+
+[Shape: 순서도: 처리 292 | Type: AUTO_SHAPE (1) | Pos: (4.4", 2.9") | Size: (1.0" x 0.3")]
+  주문상태
+  변경
+
+[Shape: 순서도: 처리 322 | Type: AUTO_SHAPE (1) | Pos: (3.0", 4.3") | Size: (3.8" x 0.2")]
+  주문ID.FIRST .. 주문ID.LAST
+
+[Shape: 순서도: 처리 324 | Type: AUTO_SHAPE (1) | Pos: (4.4", 4.7") | Size: (1.0" x 0.4")]
+  배차수량
+  저장
+
+[Shape: 순서도: 처리 353 | Type: AUTO_SHAPE (1) | Pos: (4.4", 5.3") | Size: (1.0" x 0.4")]
+  작업상태
+  지정
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (5.6", 5.4") | Size: (1.0" x 0.2")]
+  주문, 주문상세
+
+[Shape: TextBox 100 | Type: TEXT_BOX (17) | Pos: (6.3", 1.4") | Size: (1.4" x 1.0")]
+  랙보충
+  출고로케이션지정 확인
+  할당 확인
+  출고승인 확인
+  거래처별유효기간확인
+  대금결제 확인
+  비용 확인
+
+[Shape: 순서도: 판단 101 | Type: AUTO_SHAPE (1) | Pos: (7.7", 1.7") | Size: (1.1" x 0.4")]
+  사전체크
+
+[Shape: 순서도: 처리 108 | Type: AUTO_SHAPE (1) | Pos: (9.2", 1.8") | Size: (1.0" x 0.3")]
+  에러처리
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (9.0", 2.3") | Size: (0.9" x 0.2")]
+  지정
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (7.7", 2.6") | Size: (0.9" x 0.2")]
+  미지정
+
+
+################################################################################
+# SLIDE 15
+# Layout: 1_제목 슬라이드
+################################################################################
+
+[Shape: 제목 2 | Type: TEXT_BOX (17) | Pos: (0.5", 0.4") | Size: (9.7" x 0.5")]
+  출고프로세스 – 피킹(PK_WMSOP030.SP_NEW_PICKING)
+
+[Shape: TextBox 216 | Type: TEXT_BOX (17) | Pos: (0.4", 1.1") | Size: (2.1" x 6.0")]
+  - 사전체크
+  : 센터별 정책적용 설정에 따라 주문정보의 이하 값 확인.
+  비용확인
+  대금결제확인
+  거래처별유효기간확인
+  출고승인확인
+  할당확인
+  출고로케이션지정확인
+  렉보충확인
+  출고배차확인
+  파킹리스트발행확인
+  - 작업정보설정
+  : 사전에 LOC설정이 없는 경우 (예, GRN) 작업상세 정보를 참조하여 작업LOC 정보 등록, 사전 LOC 지정의 경우 (예, PICKING), 작업LOC 정보를 참조하여 등록
+  입출고처리
+  창고, 상품 정보취득 : 창고ID 및 상품 정보조회(고객사, 유효기간일수)
+  입출고반영 : 재고 삭제 및 기존 재고 존재 시 수량 갱신, 미존재시 신규등록
+  할당처리 : 할당테이블의 할당수량(ALOC_QTY) 및 재고수량(STOCK_QTY)이 모두 0인 경우 DELETE
+  - 주문상세수정
+  : 주문상세.피킹수량 UPDATE
+
+[Shape: 순서도: 수행의 시작/종료 124 | Type: AUTO_SHAPE (1) | Pos: (4.3", 1.2") | Size: (1.1" x 0.4")]
+  피킹
+  시작
+
+[Shape: 순서도: 판단 125 | Type: AUTO_SHAPE (1) | Pos: (4.3", 1.9") | Size: (1.1" x 0.4")]
+  사전체크
+
+[Shape: 순서도: 처리 126 | Type: AUTO_SHAPE (1) | Pos: (5.8", 2.0") | Size: (1.0" x 0.3")]
+  에러처리
+
+[Shape: 순서도: 처리 128 | Type: AUTO_SHAPE (1) | Pos: (4.3", 3.2") | Size: (1.0" x 0.4")]
+  작업정보
+  설정
+
+[Shape: 순서도: 처리 317 | Type: AUTO_SHAPE (1) | Pos: (4.3", 4.8") | Size: (1.0" x 0.3")]
+  주문상세
+  수정
+
+[Shape: 순서도: 수행의 시작/종료 341 | Type: AUTO_SHAPE (1) | Pos: (4.3", 6.5") | Size: (1.1" x 0.3")]
+  피킹
+  끝
+
+[Shape: 순서도: 처리 202 | Type: AUTO_SHAPE (1) | Pos: (7.2", 2.5") | Size: (3.1" x 0.1")]
+  작업ID.FIRST .. 작업ID.LAST
+
+[Shape: 순서도: 처리 204 | Type: AUTO_SHAPE (1) | Pos: (7.4", 2.7") | Size: (2.7" x 0.1")]
+  작업SEQ.FIRST .. 작업SEQ.LAST
+
+[Shape: 순서도: 처리 205 | Type: AUTO_SHAPE (1) | Pos: (7.7", 2.9") | Size: (1.0" x 0.1")]
+  마감확인
+
+[Shape: 순서도: 처리 214 | Type: AUTO_SHAPE (1) | Pos: (7.7", 5.2") | Size: (1.0" x 0.1")]
+  수불등록
+
+[Shape: 순서도: 처리 215 | Type: AUTO_SHAPE (1) | Pos: (7.7", 4.9") | Size: (1.0" x 0.2")]
+  입출고이력등록
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (9.0", 5.2") | Size: (1.2" x 0.2")]
+  수불이력
+
+[Shape: 순서도: 처리 250 | Type: AUTO_SHAPE (1) | Pos: (7.7", 4.6") | Size: (1.0" x 0.1")]
+  할당처리
+
+[Shape: 순서도: 처리 259 | Type: AUTO_SHAPE (1) | Pos: (7.7", 4.3") | Size: (1.0" x 0.1")]
+  입출고 반영
+
+[Shape: 순서도: 판단 266 | Type: AUTO_SHAPE (1) | Pos: (7.6", 3.9") | Size: (1.2" x 0.3")]
+  재고확인
+
+[Shape: 순서도: 처리 267 | Type: AUTO_SHAPE (1) | Pos: (9.2", 4.0") | Size: (0.9" x 0.2")]
+  에러처리
+
+[Shape: 순서도: 처리 277 | Type: AUTO_SHAPE (1) | Pos: (7.7", 3.5") | Size: (1.0" x 0.2")]
+  현재고 취득 및 수량계산
+
+[Shape: 순서도: 처리 281 | Type: AUTO_SHAPE (1) | Pos: (7.7", 3.2") | Size: (1.0" x 0.2")]
+  창고, 상품
+  정보취득
+
+[Shape: 순서도: 처리 116 | Type: AUTO_SHAPE (1) | Pos: (7.7", 5.5") | Size: (1.0" x 0.2")]
+  재고관리
+  공통모듈
+
+[Shape: 순서도: 처리 120 | Type: AUTO_SHAPE (1) | Pos: (2.8", 1.7") | Size: (4.0" x 0.2")]
+  주문ID.FIRST .. 주문ID.LAST
+
+[Shape: 순서도: 처리 410 | Type: AUTO_SHAPE (1) | Pos: (4.3", 5.7") | Size: (1.0" x 0.2")]
+  작업상태
+  지정
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (5.6", 5.7") | Size: (1.0" x 0.2")]
+  주문, 주문상세
+
+[Shape: 순서도: 처리 424 | Type: AUTO_SHAPE (1) | Pos: (4.3", 4.0") | Size: (1.0" x 0.2")]
+  입출고처리
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (8.7", 3.9") | Size: (1.1" x 0.2")]
+  이상
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (7.8", 4.1") | Size: (1.1" x 0.2")]
+  정상
+
+[Shape: TextBox 175 | Type: TEXT_BOX (17) | Pos: (2.8", 1.9") | Size: (1.5" x 1.3")]
+  피킹리스트발행확인
+  출고배차확인
+  랙보충
+  출고로케이션지정 확인
+  할당 확인
+  출고승인 확인
+  거래처별유효기간확인
+  대금결제 확인
+  비용 확인
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (4.4", 2.3") | Size: (0.5" x 0.2")]
+  정상
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (5.3", 2.0") | Size: (0.5" x 0.2")]
+  오류
+
+[Shape: TextBox 108 | Type: TEXT_BOX (17) | Pos: (7.0", 0.9") | Size: (3.1" x 0.4")]
+  피킹관련 추가협의 필요
+
+
+################################################################################
+# SLIDE 16
+# Layout: 1_제목 슬라이드
+################################################################################
+
+[Shape: 제목 2 | Type: TEXT_BOX (17) | Pos: (0.5", 0.4") | Size: (9.7" x 0.5")]
+  출고프로세스 – 출고확정(PK_WMSOP030.SP_OUT_COMPLETE)
+
+[Shape: TextBox 216 | Type: TEXT_BOX (17) | Pos: (0.4", 1.1") | Size: (2.2" x 6.2")]
+  - 사전체크
+  : 센터별 정책적용 설정에 따라 주문정보에 이하 값 확인.
+  무게정보확인
+  출고전표발행확인
+  상차리스트발행확인
+  피킹확정여부 확인
+  피킹리스트발행확인
+  출고배차확인
+  랙보충여부 확인
+  출고로케이션지정 확인
+  할당확인
+  출고승인결제 확인
+  거래처별유효기간확인
+  대금결제 확인
+  비용확인
+  - 작업정보등록
+  : 주문정보에서 취득한 정보를 작업 및 작업상세에 등록, 기존에 등록되어있던 작업상세, 작업LOC, 주문상세Packing정보는 삭제
+  - 작업수량UPDATE
+  : 작업상태 =‘완료’, 확인수량 UPDATE
+  입출고처리
+  입출고반영 : 재고 삭제 및 기존 재고 존재 시 수량 갱신, 미존재시 신규등록
+  할당처리 : 할당테이블의 할당수량(ALOC_QTY) 및 재고수량(STOCK_QTY)이 모두 0인 경우 DELETE
+  - 주문상세수정
+  : 주문상세.입하수량 UPDATE
+
+[Shape: 순서도: 수행의 시작/종료 124 | Type: AUTO_SHAPE (1) | Pos: (4.3", 1.2") | Size: (1.1" x 0.4")]
+  출고확정
+  시작
+
+[Shape: 순서도: 판단 125 | Type: AUTO_SHAPE (1) | Pos: (4.3", 2.0") | Size: (1.1" x 0.4")]
+  사전체크
+
+[Shape: 순서도: 처리 126 | Type: AUTO_SHAPE (1) | Pos: (5.8", 2.0") | Size: (1.0" x 0.3")]
+  에러처리
+
+[Shape: 순서도: 처리 128 | Type: AUTO_SHAPE (1) | Pos: (4.3", 2.7") | Size: (1.0" x 0.4")]
+  작업정보
+  등록
+
+[Shape: 순서도: 처리 317 | Type: AUTO_SHAPE (1) | Pos: (4.3", 5.4") | Size: (1.0" x 0.3")]
+  주문상세
+  수정
+
+[Shape: 순서도: 수행의 시작/종료 341 | Type: AUTO_SHAPE (1) | Pos: (4.3", 6.5") | Size: (1.1" x 0.3")]
+  출고확정
+  끝
+
+[Shape: 순서도: 처리 202 | Type: AUTO_SHAPE (1) | Pos: (7.2", 3.5") | Size: (3.1" x 0.1")]
+  작업ID.FIRST .. 작업ID.LAST
+
+[Shape: 순서도: 처리 204 | Type: AUTO_SHAPE (1) | Pos: (7.4", 3.7") | Size: (2.7" x 0.1")]
+  작업SEQ.FIRST .. 작업SEQ.LAST
+
+[Shape: 순서도: 처리 205 | Type: AUTO_SHAPE (1) | Pos: (7.7", 3.8") | Size: (1.0" x 0.1")]
+  마감확인
+
+[Shape: 순서도: 처리 214 | Type: AUTO_SHAPE (1) | Pos: (7.7", 6.1") | Size: (1.0" x 0.1")]
+  수불등록
+
+[Shape: 순서도: 처리 215 | Type: AUTO_SHAPE (1) | Pos: (7.7", 5.8") | Size: (1.0" x 0.2")]
+  입출고이력등록
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (9.0", 6.1") | Size: (1.2" x 0.2")]
+  수불이력
+
+[Shape: 순서도: 처리 250 | Type: AUTO_SHAPE (1) | Pos: (7.7", 5.5") | Size: (1.0" x 0.1")]
+  할당처리
+
+[Shape: 순서도: 처리 259 | Type: AUTO_SHAPE (1) | Pos: (7.7", 5.2") | Size: (1.0" x 0.1")]
+  입출고 반영
+
+[Shape: 순서도: 판단 266 | Type: AUTO_SHAPE (1) | Pos: (7.6", 4.9") | Size: (1.2" x 0.3")]
+  재고확인
+
+[Shape: 순서도: 처리 267 | Type: AUTO_SHAPE (1) | Pos: (9.2", 4.9") | Size: (0.9" x 0.2")]
+  에러처리
+
+[Shape: 순서도: 처리 277 | Type: AUTO_SHAPE (1) | Pos: (7.7", 4.5") | Size: (1.0" x 0.2")]
+  현재고 취득 및 수량계산
+
+[Shape: 순서도: 처리 281 | Type: AUTO_SHAPE (1) | Pos: (7.7", 4.1") | Size: (1.0" x 0.2")]
+  창고, 상품
+  정보취득
+
+[Shape: 순서도: 처리 116 | Type: AUTO_SHAPE (1) | Pos: (7.7", 6.4") | Size: (1.0" x 0.2")]
+  재고관리
+  공통모듈
+
+[Shape: 순서도: 처리 120 | Type: AUTO_SHAPE (1) | Pos: (2.8", 1.7") | Size: (4.0" x 0.2")]
+  주문SEQ.FIRST .. 주문SEQ.LAST
+
+[Shape: 순서도: 처리 290 | Type: AUTO_SHAPE (1) | Pos: (8.2", 1.4") | Size: (1.0" x 0.2")]
+  작업등록
+
+[Shape: 순서도: 처리 301 | Type: AUTO_SHAPE (1) | Pos: (8.2", 2.6") | Size: (1.0" x 0.2")]
+  작업상세
+  등록
+
+[Shape: 순서도: 처리 385 | Type: AUTO_SHAPE (1) | Pos: (4.3", 3.8") | Size: (1.0" x 0.3")]
+  출고 로케이션정보 등록
+
+[Shape: 순서도: 처리 410 | Type: AUTO_SHAPE (1) | Pos: (4.3", 5.9") | Size: (1.0" x 0.2")]
+  작업상태
+  지정
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (5.6", 5.9") | Size: (1.0" x 0.2")]
+  주문, 주문상세
+
+[Shape: 순서도: 처리 424 | Type: AUTO_SHAPE (1) | Pos: (4.3", 4.9") | Size: (1.0" x 0.3")]
+  입출고처리
+
+[Shape: 순서도: 처리 453 | Type: AUTO_SHAPE (1) | Pos: (4.3", 4.3") | Size: (1.0" x 0.3")]
+  작업수량
+  UPDATE
+
+[Shape: 순서도: 처리 540 | Type: AUTO_SHAPE (1) | Pos: (2.8", 3.4") | Size: (4.0" x 0.2")]
+  주문SEQ.FIRST .. 주문SEQ.LAST
+
+[Shape: 순서도: 처리 543 | Type: AUTO_SHAPE (1) | Pos: (8.2", 1.8") | Size: (1.0" x 0.2")]
+  기존작업 상세정보삭제
+
+[Shape: 순서도: 처리 561 | Type: AUTO_SHAPE (1) | Pos: (7.2", 2.3") | Size: (3.1" x 0.2")]
+  작업SEQ.FIRST .. 작업SEQ.LAST
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (5.3", 2.0") | Size: (0.5" x 0.2")]
+  오류
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (4.5", 2.4") | Size: (0.5" x 0.2")]
+  정상
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (8.7", 4.8") | Size: (1.1" x 0.2")]
+  이상
+
+[Shape: TextBox 183 | Type: TEXT_BOX (17) | Pos: (7.8", 5.1") | Size: (1.1" x 0.2")]
+  정상
+
+[Shape: TextBox 121 | Type: TEXT_BOX (17) | Pos: (2.7", 2.0") | Size: (1.5" x 1.9")]
+  무게정보확인
+  출고전표발행확인
+  상차리스트발행확인
+  피킹확정여부확인
+  피킹리스트발행확인
+  출고배차확인
+  랙보충
+  출고로케이션지정 확인
+  할당 확인
+  출고승인 확인
+  거래처별유효기간확인
+  대금결제 확인
+  비용 확인
+

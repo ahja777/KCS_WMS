@@ -1,0 +1,272 @@
+import { PrismaService } from '../../prisma/prisma.service';
+import { ChannelService } from './channel.service';
+import { ChannelOrderStatus } from '@prisma/client';
+export declare class ChannelSyncService {
+    private readonly prisma;
+    private readonly channelService;
+    private readonly logger;
+    constructor(prisma: PrismaService, channelService: ChannelService);
+    syncOrders(channelId: string, fromDate?: string, toDate?: string): Promise<{
+        syncLogId: string;
+        recordCount: number;
+        errorCount: number;
+        platform: import(".prisma/client").$Enums.ChannelPlatform;
+    }>;
+    confirmShipment(channelOrderId: string, carrier: string, trackingNumber: string): Promise<{
+        success: boolean;
+        channelOrderId: string;
+    }>;
+    syncInventory(channelId: string): Promise<{
+        success: number;
+        failed: number;
+        total: number;
+    }>;
+    getChannelOrders(channelId: string, params?: {
+        page?: number;
+        limit?: number;
+        status?: ChannelOrderStatus;
+    }): Promise<{
+        data: ({
+            items: ({
+                item: {
+                    id: string;
+                    name: string;
+                    isActive: boolean;
+                    createdAt: Date;
+                    updatedAt: Date;
+                    code: string;
+                    temperatureType: import(".prisma/client").$Enums.TemperatureType;
+                    description: string | null;
+                    barcode: string | null;
+                    category: import(".prisma/client").$Enums.ItemCategory;
+                    uom: import(".prisma/client").$Enums.UnitOfMeasure;
+                    weight: number | null;
+                    length: number | null;
+                    width: number | null;
+                    height: number | null;
+                    minStock: number;
+                    maxStock: number | null;
+                    imageUrl: string | null;
+                    lotControl: boolean;
+                    expiryControl: boolean;
+                    expiryDays: number | null;
+                    storageType: string | null;
+                    unitPrice: number | null;
+                    inboundZone: string | null;
+                    itemGroupId: string | null;
+                } | null;
+            } & {
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                unitPrice: number | null;
+                itemId: string | null;
+                quantity: number;
+                itemName: string;
+                channelOrderId: string;
+                platformItemId: string | null;
+                platformSku: string | null;
+            })[];
+            channel: {
+                id: string;
+                name: string;
+                createdAt: Date;
+                updatedAt: Date;
+                status: import(".prisma/client").$Enums.ChannelStatus;
+                notes: string | null;
+                warehouseId: string;
+                platform: import(".prisma/client").$Enums.ChannelPlatform;
+                sellerId: string | null;
+                credentials: import("@prisma/client/runtime/library").JsonValue;
+                syncEnabled: boolean;
+                syncInterval: number;
+                lastSyncAt: Date | null;
+                lastSyncError: string | null;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            status: import(".prisma/client").$Enums.ChannelOrderStatus;
+            shippingMethod: string | null;
+            trackingNumber: string | null;
+            carrier: string | null;
+            outboundOrderId: string | null;
+            channelId: string;
+            platformOrderId: string;
+            platformOrderNo: string | null;
+            orderDate: Date;
+            customerName: string | null;
+            customerPhone: string | null;
+            shippingAddress: string | null;
+            shippingZipCode: string | null;
+            totalAmount: number | null;
+            currency: string | null;
+            shippedAt: Date | null;
+            deliveredAt: Date | null;
+            rawData: import("@prisma/client/runtime/library").JsonValue | null;
+            errorMessage: string | null;
+        })[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+    }>;
+    getAllChannelOrders(params?: {
+        page?: number;
+        limit?: number;
+        status?: ChannelOrderStatus;
+        platform?: string;
+        search?: string;
+    }): Promise<{
+        data: ({
+            items: ({
+                item: {
+                    id: string;
+                    name: string;
+                    isActive: boolean;
+                    createdAt: Date;
+                    updatedAt: Date;
+                    code: string;
+                    temperatureType: import(".prisma/client").$Enums.TemperatureType;
+                    description: string | null;
+                    barcode: string | null;
+                    category: import(".prisma/client").$Enums.ItemCategory;
+                    uom: import(".prisma/client").$Enums.UnitOfMeasure;
+                    weight: number | null;
+                    length: number | null;
+                    width: number | null;
+                    height: number | null;
+                    minStock: number;
+                    maxStock: number | null;
+                    imageUrl: string | null;
+                    lotControl: boolean;
+                    expiryControl: boolean;
+                    expiryDays: number | null;
+                    storageType: string | null;
+                    unitPrice: number | null;
+                    inboundZone: string | null;
+                    itemGroupId: string | null;
+                } | null;
+            } & {
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                unitPrice: number | null;
+                itemId: string | null;
+                quantity: number;
+                itemName: string;
+                channelOrderId: string;
+                platformItemId: string | null;
+                platformSku: string | null;
+            })[];
+            channel: {
+                id: string;
+                name: string;
+                createdAt: Date;
+                updatedAt: Date;
+                status: import(".prisma/client").$Enums.ChannelStatus;
+                notes: string | null;
+                warehouseId: string;
+                platform: import(".prisma/client").$Enums.ChannelPlatform;
+                sellerId: string | null;
+                credentials: import("@prisma/client/runtime/library").JsonValue;
+                syncEnabled: boolean;
+                syncInterval: number;
+                lastSyncAt: Date | null;
+                lastSyncError: string | null;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            status: import(".prisma/client").$Enums.ChannelOrderStatus;
+            shippingMethod: string | null;
+            trackingNumber: string | null;
+            carrier: string | null;
+            outboundOrderId: string | null;
+            channelId: string;
+            platformOrderId: string;
+            platformOrderNo: string | null;
+            orderDate: Date;
+            customerName: string | null;
+            customerPhone: string | null;
+            shippingAddress: string | null;
+            shippingZipCode: string | null;
+            totalAmount: number | null;
+            currency: string | null;
+            shippedAt: Date | null;
+            deliveredAt: Date | null;
+            rawData: import("@prisma/client/runtime/library").JsonValue | null;
+            errorMessage: string | null;
+        })[];
+        total: number;
+        page: number;
+        limit: number;
+        totalPages: number;
+    }>;
+    linkProduct(channelId: string, itemId: string, platformProductId?: string, platformSku?: string): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        itemId: string;
+        channelId: string;
+        lastSyncAt: Date | null;
+        platformSku: string | null;
+        platformProductId: string | null;
+        isLinked: boolean;
+    }>;
+    unlinkProduct(channelId: string, itemId: string): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        itemId: string;
+        channelId: string;
+        lastSyncAt: Date | null;
+        platformSku: string | null;
+        platformProductId: string | null;
+        isLinked: boolean;
+    }>;
+    getLinkedProducts(channelId: string): Promise<({
+        item: {
+            id: string;
+            name: string;
+            isActive: boolean;
+            createdAt: Date;
+            updatedAt: Date;
+            code: string;
+            temperatureType: import(".prisma/client").$Enums.TemperatureType;
+            description: string | null;
+            barcode: string | null;
+            category: import(".prisma/client").$Enums.ItemCategory;
+            uom: import(".prisma/client").$Enums.UnitOfMeasure;
+            weight: number | null;
+            length: number | null;
+            width: number | null;
+            height: number | null;
+            minStock: number;
+            maxStock: number | null;
+            imageUrl: string | null;
+            lotControl: boolean;
+            expiryControl: boolean;
+            expiryDays: number | null;
+            storageType: string | null;
+            unitPrice: number | null;
+            inboundZone: string | null;
+            itemGroupId: string | null;
+        };
+    } & {
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        itemId: string;
+        channelId: string;
+        lastSyncAt: Date | null;
+        platformSku: string | null;
+        platformProductId: string | null;
+        isLinked: boolean;
+    })[]>;
+    fetchChannelProducts(channelId: string): Promise<import("../adapters/channel-adapter.interface").ChannelProductInfo[]>;
+    autoSyncOrders(): Promise<void>;
+    private resolveItemMappings;
+}

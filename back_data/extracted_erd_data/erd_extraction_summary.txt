@@ -1,0 +1,313 @@
+========================================================================================================================
+WMS ERD EXTRACTION SUMMARY
+========================================================================================================================
+
+Sources:
+  1. Global WMS 논리ERD (ULN_WMS_DE_01) - PPT with embedded ERD diagram images
+  2. Global WMS 물리ERD (ULN_WMS_DE_02) - PPT with embedded ERD diagram images
+  3. HILO ERDiagram v0.9 (논리) - ERwin binary GDM format
+  4. HILO ERDiagram 물리 v0.9 - ERwin binary GDM format
+  5. HILO ERD XPS images (데이터권한관리, 마스터, 시스템, 오더배차, 정산)
+
+========================================================================================================================
+PART 1: GLOBAL WMS ERD (from PPT images)
+========================================================================================================================
+
+The PPT files contain ERD diagrams as embedded PNG images.
+Images extracted to: /Users/hur_chulwon/Project/AI_Claude/Clip/KCS_WMS/back_data/extracted_erd_images/
+
+Category slides (from PPT text extraction):
+  - 시스템(YS) - System
+  - 기준정보(MS) - Master/Reference Info
+  - 상품(MS) - Products
+  - 물류용기(PL) - Logistics Containers
+  - 운영(OP) - Operations
+  - 재고관리(ST) - Inventory Management
+  - 재고작업(ST) - Inventory Work
+  - 논리재고(ST) - Logical Inventory
+  - 정산(AC) - Settlement/Billing
+  - 템플릿(TP) - Templates
+  - 운송장I/F - Shipping Label Interface
+  - UOM관련 - Unit of Measure
+
+--- Global WMS Tables Identified from ERD Images ---
+
+== 시스템(YS) - System ==
+  (From 논리ERD_img_002.png)
+  Tables with prefix WMS_YS:
+    - System configuration tables
+
+== 기준정보/상품(MS) - Master/Products ==
+  (From 논리ERD_img_004.png / 물리ERD_img_018.png)
+  Tables identified:
+    WMSMS030 - 상품 (Items/Products)
+    WMSMS094 - 분류군 (Classification)
+    WMSMS096 - 화주별거래처상품구분 (Owner-Customer-Product)
+    WMSMS011 - 화주거래처 (Owner-Customer)
+    WMSMS050 - 센터화주상품정보 (Center-Owner-Product Info)
+    WMSMS051 - 로트정보 (Lot Info)
+    WMSMS054 - 센터화주상품대 (Center-Owner-Product Group)
+    WMSMS092 - SET상품정보 (SET Product Info)
+    WMSMS093 - SET구매기준 (SET Purchase Standard)
+    WMSMS095 - 부산물 (By-products)
+    WMSMS101 - UOM환산 (UOM Conversion)
+    WMSMS100 - UOM (Unit of Measure)
+    WMSMS103 - SET환산 (SET Conversion)
+
+== 물류용기(PL) - Logistics Containers ==
+  (From 논리ERD_img_005.png / 물리ERD_img_019.png)
+  Tables identified:
+    WMSPL010 - 물류용기 (Logistics Container)
+    WMSPL015 - 상품분류정보 (Product Classification)
+    WMSPL020 - 물류용기 세부 (Container Detail)
+    WMSPL030 - L/U방법관리단위 (L/U Method Management)
+    WMSPL040 - 문전 (Door)
+    WMSPL050 - 주문관리 (Order Management)
+
+== 운영(OP) - Operations ==
+  (From 논리ERD_img_006.png / 물리ERD_img_020.png)
+  Tables identified:
+    WMSOP010 - 주문 (Orders)
+    WMSOP015 - 주문상세배차 (Order Detail Dispatch)
+    WMSOP020 - 배차 (Dispatch)
+    WMSOP021 - 배차상세 (Dispatch Detail)
+    WMSOP030 - 배차 실행 (Dispatch Execution)
+    WMSOP031 - 배차실행상세 (Dispatch Execution Detail)
+    WMSOP040 - 입고 (Receiving)
+    WMSOP041 - 입고상세 (Receiving Detail)
+    WMSOP043 - 배차 라인 (Dispatch Line)
+    WMSOP050 - 출고 (Shipping)
+    WMSOP055 - 매입 (Purchasing)
+    WMSOP060 - 피킹 (Picking)
+    WMSOP070 - 크로스도킹 (Cross-docking)
+    WMSOP093 - PRICELIST (Price List)
+    WMSOP095 - 배차검토 (Dispatch Review)
+
+== 재고관리/재고작업(ST) - Inventory ==
+  (From 논리ERD_img_007.png, 008.png / 물리ERD_img_021.png, 022.png)
+  Tables identified:
+    WMSST010 - 재고 (Inventory)
+    WMSST011 - 재고이력 (Inventory History)
+    WMSST020 - 재고작업 (Inventory Work)
+    WMSST030 - 재고이동 (Inventory Movement)
+    WMSST040 - 재고작업세부 (Inventory Work Detail)
+    WMSST050 - 재고조정 (Inventory Adjustment)
+    WMSST060 - 논리재고 (Logical Inventory)
+    WMSST070 - 재고실사 (Inventory Count)
+    WMSST080 - STOCK MOVE TEMP (Stock Move Temp)
+    WMSST090 - 바코드 (Barcode)
+    WMSST101 - 재고작업이력 (Inventory Work History)
+    WMSST102 - 재고작업 세부 이력 (Work Detail History)
+
+== 논리재고(ST) - Logical Inventory ==
+  (From 논리ERD_img_009.png / 물리ERD_img_023.png)
+  Tables identified:
+    WMSST060 - 논리재고 (Logical Inventory)
+    WMSST501 - 센터별상품 재고 (Center Product Stock)
+    WMSST502 - 센터별상품별주문 (Center Product Order)
+    WMSOP011 - 주문 세부 (Order Detail)
+    WMSST070 - 재고조회 (Inventory Query)
+
+== 정산(AC) - Settlement/Billing ==
+  (From 논리ERD_img_010.png / 물리ERD_img_024.png)
+  Tables identified:
+    WMSAC010 - 정산기준 (Settlement Standard)
+    WMSAC011 - 정산기준상세 (Settlement Standard Detail)
+    WMSAC012 - 발가일정 (Invoice Schedule)
+    WMSAC020 - 정산 (Settlement)
+    WMSAC021 - 정산내역 (Settlement Detail)
+    WMSAC025 - 정산항목 (Settlement Item)
+    WMSAC030 - 매출정산 (Sales Settlement)
+    WMSAC031 - 매출정산세부 (Sales Settlement Detail)
+    WMSAC040 - 세금계산서 (Tax Invoice)
+    WMSAC041 - 세금계산서세부 (Tax Invoice Detail)
+
+== 템플릿(TP) - Templates ==
+  (From 논리ERD_img_011.png / 물리ERD_img_025.png)
+  Tables identified:
+    WMSTP010 - 템플릿양식 (Template Form)
+      TEMPLATE_ID: VARCHAR2(20) [PK]
+      TEMPLATE_NM: VARCHAR2(30)
+      TEMPLATE_TYPE: VARCHAR2(20)
+      TEMPLATE_FILE: VARCHAR2(100)
+      UPDATE_ALLOW: VARCHAR2(4)
+      START_ROW: NUMBER
+    WMSTP020 - 템플릿컬럼 (Template Column)
+      TEMPLATE_ID: VARCHAR2(20) [FK]
+      COL_SEQ: NUMBER
+      COL_NM: VARCHAR2(30)
+      COL_LEVEL: NUMBER
+      COL_LOOP_GROUP: NUMBER
+      MUST_YN: CHAR(1)
+      MUST_GROUP: NUMBER
+      DEFAULT_VALUE: VARCHAR2(255)
+      SAM_VALUE: VARCHAR2(255)
+      BIND_COL: VARCHAR2(30)
+      COL_WIDTH: NUMBER
+      COL_ALIGN: VARCHAR2(20)
+      UNIQUE_COL_YN: VARCHAR2(4)
+      COL_TYPE: VARCHAR2(20)
+      COL_FORMAT: VARCHAR2(20)
+    WMSTP030 - 화주템플릿 (Owner Template)
+      TEMPLATE_ID: VARCHAR2(20) [FK]
+      CUST_SEQ: NUMBER
+      LC_ID: VARCHAR2(20) [FK]
+      CUST_ID: VARCHAR2(20) [FK]
+      UPDATE_ALLOW: VARCHAR2(4)
+      START_ROW: NUMBER
+      REMARK: VARCHAR2(600)
+    WMSTP040 - 화주템플릿컬럼 (Owner Template Column)
+      TEMPLATE_ID: VARCHAR2(20) [FK]
+      CUST_SEQ: NUMBER [FK]
+      COL_SEQ: NUMBER
+      COL_NM: VARCHAR2(30)
+      USE_YN: CHAR(1)
+      DEFAULT_VALUE: VARCHAR2(255)
+      USE_SEQ: NUMBER
+      VIEW_SEQ: NUMBER
+      COL_WIDTH: NUMBER
+      COL_ALIGN: VARCHAR2(20)
+      UNIQUE_COL_YN: VARCHAR2(4)
+      USE_FORMAT: VARCHAR2(20)
+
+== 운송장I/F - Shipping Label Interface ==
+  (From 논리ERD_img_012.png / 물리ERD_img_026.png)
+  Tables identified:
+    WMSIF010 - 운송장시스템 (Shipping System)
+    WMSIF020 - 기본코드 (Base Code)
+    WMSIF030 - 우편번호 (Zip Code)
+    WMSIF040 - 운송장 (Shipping Label)
+    WMSIF050 - 운송장오더 (Shipping Label Order)
+    WMSIF060 - 운송장입고 (Shipping Label Receiving)
+
+== UOM관련 - UOM Related ==
+  (From 논리ERD_img_013.png / 물리ERD_img_027.png)
+  Various UOM-related tables
+
+
+========================================================================================================================
+PART 2: HILO ERD (from XPS + ERwin)
+========================================================================================================================
+
+Files extracted:
+  - hilo_erd_entities.json (from erwin binary): 799 entities, 5012 columns
+  - hilo_erd_xps_entities.json (from XPS vector text)
+  - hilo_erd_complete_text.txt (raw text from XPS)
+
+--- HILO ERD Entity Summary by Category ---
+
+  [데이터권한관리] Data Authority Management - User permissions, carrier/owner/service mappings
+    - ILUSER (사용자정보)
+    - ILCARRIER (실행사)
+    - ILTRANSSERVICE (운송서비스)
+    - ILORGANIZATION (사업부)
+    - ILOWNER (화주)
+    - 운송서비스사업부매핑
+    - 운송서비스사용자매핑
+    - 운송서비스실행사매핑
+    - 운송서비스화주매핑
+
+  [마스터] Master Data - Transport patterns, vehicles, drivers, routes, items, customers, tariffs
+    - ILTRANSPATTERN (운송패턴)
+    - ILTRANSSERVICE (운송서비스)
+    - ILORGANIZATION (사업부)
+    - ILOWNER (화주)
+    - ILDEPOT (센터)
+    - ILOWNERTODEPOTLINK (화주사관리센터)
+    - ILCUSTOMER (거래처)
+    - ILAREATOCUSTOMERLINK (거래처권역매핑)
+    - ILITEMGROUP (제품그룹)
+    - ILITEMCLASS (제품분류)
+    - ILITEM (제품)
+    - ILCARRIER (실행사)
+    - ILCARRIERTOOWNERLINK
+    - ILVEHICLE (차량)
+    - ILVEHICLECONTRACT (차량계약정보)
+    - ILTARIFFBYVEHICLETYPE (차량타입별계약단가)
+    - ILDRIVER (운전자정보)
+    - ILDRIVERSCHEDULE (운전자스케줄)
+    - ILVEHICLESCHEDULE (차량스케줄)
+    - ILEQUIPMENT (차량장비)
+    - ILEQUIPMENTTYPE (차량장비타입)
+    - ILDEFINE (사용자정의정보)
+    - ILROUTE (운송루트)
+    - ILROUTELINE (운송루트세부)
+    - ILCONVERSION (도량형환산)
+    - ILUSERTOOWNERLINK (사용자별화주권한)
+    - ILUSERTODEPOTLINK (사용자별센터권한)
+    - ILUSERTOCARRIERLINK (사용자별실행사권한)
+    - ILTRANSLINEINFODEFINE (원운송오더세부특화정보정의)
+    - ILTRANSINFODEFINE (원오더헤더특화정보정의)
+    - ILZIPCODE (우편번호)
+    - ILITEMPRICE (제품가격)
+    - ILPACK (운송포장)
+    - ILCARRIERSELECTIONRULE (실행사배차규칙)
+    - ILTARIFF (운송비)
+    - ILEFFECTIVETARIFF (운송비유효기간)
+    - ILCHARGECODE (정산코드)
+    - ILAREA (권역)
+
+  [시스템] System - Menus, users, groups, programs, configs, logs, boards
+    - ILBOARD (게시판)
+    - ILBOARDCOMMENT (게시판댓글)
+    - ILNSTR (메시지)
+    - ILMENU (메뉴)
+    - ILGROUP (사용자그룹)
+    - ILUSERTOGROUPLINK (사용자그룹매핑)
+    - ILGROUPTOPROGRAMLINK (그룹프로그램매핑)
+    - ILUSER (사용자)
+    - ILUSERTOPROGRAMLINK (사용자프로그램매핑)
+    - ILCONFIG (설정)
+    - ILSEQUENCE (시퀀스)
+    - ILASSEMBLY (어셈블리)
+    - ILACTIVEUSER (활성사용자)
+    - ILNOTICE (공지사항)
+    - ILLOG (로그)
+    - ILPATH (연계경로)
+    - ILPROGRAM (프로그램)
+
+  [오더배차] Order/Dispatch - Transport orders, schedules, turns, inventory, receipts, tasks, GPS
+    - ILRESOURCE (리소스/배차)
+    - ILORGTRANSORDER (원오더)
+    - ILORGTRANSORDERLINE (원오더라인)
+    - ILTRANSFORECAST (조달오더)
+    - ILTRANSINFO (운송특화정보)
+    - ILTRANSLINEINFO (운송특화세부정보)
+    - ILTRANSORDER (운송오더)
+    - ILTRANSORDERLINE (운송오더라인)
+    - ILSCHEDULE (스케줄)
+    - ILSCHEDULETOORDERLINK (스케줄오더매핑)
+    - ILTURN (턴)
+    - ILTRANSCOST (운송비)
+    - ILTRANSCOSTBYORDERLINE (오더라인별운송비)
+    - ILCONTENT (입고예정정보)
+    - ILINVENTORY (재고)
+    - ILINVENTORYBYDATE (일별재고)
+    - ILINVENTORYBYMONTH (월별재고)
+    - ILRECEIPT (출고예정정보)
+    - ILRECEIPTLINE (출고예정세부)
+    - ILTASK (작업)
+    - ILORDERDISPATCHRESULT (배차결과)
+    - ILGPSTRACE (GPS추적)
+    - ILCLAIM (클레임)
+
+  [정산] Settlement - Revenue/expense aggregation, tax invoices
+    - 기간별매출집계 (ILCHARGEBYOWNERBYMONTH)
+    - 세부항목별매출집계 (ILCHARGEDETAILBYMONTH)
+    - 기간별매입집계 (ILPAYBYCARRIERBYMONTH)
+    - 세부항목별매입집계 (ILPAYDETAILBYMONTH)
+    - 매출세금계산서 (ILSALESINVOICE)
+    - 매출세금계산서세부 (ILSALESINVOICELINE)
+    - 매입세금계산서 (ILPURCHASEINVOICE)
+    - 매입세금계산서세부 (ILPURCHASEINVOICELINE)
+
+
+========================================================================================================================
+OUTPUT FILES
+========================================================================================================================
+  1. /Users/hur_chulwon/Project/AI_Claude/Clip/KCS_WMS/back_data/extracted_erd_data/erd_extraction_summary.txt (this file)
+  2. /Users/hur_chulwon/Project/AI_Claude/Clip/KCS_WMS/back_data/extracted_erd_data/hilo_erd_entities.json (ERwin binary entity data)
+  3. /Users/hur_chulwon/Project/AI_Claude/Clip/KCS_WMS/back_data/extracted_erd_data/hilo_erd_xps_entities.json (XPS structured entity data)
+  4. /Users/hur_chulwon/Project/AI_Claude/Clip/KCS_WMS/back_data/extracted_erd_data/hilo_erd_complete_text.txt (XPS raw text)
+  5. /Users/hur_chulwon/Project/AI_Claude/Clip/KCS_WMS/back_data/extracted_erd_images/ (PPT embedded images)
+  6. /Users/hur_chulwon/Project/AI_Claude/Clip/KCS_WMS/back_data/extracted_erd_images/hilo/ (XPS thumbnails)

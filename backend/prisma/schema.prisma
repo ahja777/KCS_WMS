@@ -1,0 +1,1048 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────
+
+enum WarehouseStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+}
+
+enum ZoneType {
+  RECEIVING
+  STORAGE
+  PICKING
+  PACKING
+  SHIPPING
+  QUARANTINE
+  RETURN
+}
+
+enum LocationStatus {
+  AVAILABLE
+  OCCUPIED
+  RESERVED
+  BLOCKED
+}
+
+enum ItemCategory {
+  GENERAL
+  ELECTRONICS
+  CLOTHING
+  FOOD
+  FRAGILE
+  HAZARDOUS
+  OVERSIZED
+}
+
+enum UnitOfMeasure {
+  EA
+  BOX
+  PALLET
+  CASE
+  KG
+  LB
+}
+
+enum PartnerType {
+  SUPPLIER
+  CUSTOMER
+  CARRIER
+}
+
+enum InboundStatus {
+  DRAFT
+  CONFIRMED
+  ARRIVED
+  RECEIVING
+  COMPLETED
+  CANCELLED
+}
+
+enum OutboundStatus {
+  DRAFT
+  CONFIRMED
+  PICKING
+  PACKING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum TransactionType {
+  INBOUND
+  OUTBOUND
+  ADJUSTMENT_IN
+  ADJUSTMENT_OUT
+  TRANSFER
+  CYCLE_COUNT
+  RETURN
+}
+
+enum AdjustmentReason {
+  DAMAGE
+  EXPIRY
+  LOST
+  FOUND
+  CORRECTION
+  OTHER
+}
+
+enum CycleCountStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  OPERATOR
+  VIEWER
+}
+
+// ERD 기반 추가 Enum - 온도유형 (HILO ERD: ILDEPOT.TEMPERATURETYPE)
+enum TemperatureType {
+  NORMAL
+  COLD
+  FROZEN
+}
+
+// ERD 기반 추가 Enum - 주문유형 (Global WMS: WMSOP010)
+enum OrderType {
+  PURCHASE
+  RETURN_IN
+  TRANSFER_IN
+  PURCHASE_OUT
+  SALES
+  TRANSFER_OUT
+  RETURN_OUT
+}
+
+// ─── Models ──────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  email     String   @unique @db.VarChar(100)
+  password  String   @db.VarChar(255)
+  name      String   @db.VarChar(50)
+  role      UserRole @default(OPERATOR)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Warehouse {
+  id              String          @id @default(uuid()) @db.VarChar(36)
+  code            String          @unique @db.VarChar(20)
+  name            String          @db.VarChar(100)
+  country         String          @db.VarChar(50)
+  city            String          @db.VarChar(50)
+  address         String          @db.VarChar(255)
+  zipCode         String?         @db.VarChar(20)
+  timezone        String          @default("UTC") @db.VarChar(50)
+  status          WarehouseStatus @default(ACTIVE)
+  // ERD 기반 추가: ILDEPOT 참조 - 온도관리, 보세구역
+  temperatureType TemperatureType @default(NORMAL)
+  isBonded        Boolean         @default(false)
+  contactName     String?         @db.VarChar(50)
+  contactPhone    String?         @db.VarChar(30)
+  contactEmail    String?         @db.VarChar(100)
+  // ERD 기반 추가: ILDEPOT - 좌표(GPS)
+  latitude        Float?
+  longitude       Float?
+  notes           String?         @db.Text
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  // 화면설계서 Slide 46: 창고유형, 창고구분
+  warehouseType  String? @db.VarChar(20)
+  warehouseClass String? @db.VarChar(20)
+
+  zones          Zone[]
+  docks          Dock[]
+  inboundOrders  InboundOrder[]
+  outboundOrders OutboundOrder[]
+  inventories    Inventory[]
+  salesChannels  SalesChannel[]
+  vehicles       Vehicle[]
+  dispatches     Dispatch[]
+  workOrders     WorkOrder[]
+  settlements    Settlement[]
+
+  @@index([status])
+  @@map("warehouses")
+}
+
+model Zone {
+  id          String   @id @default(uuid()) @db.VarChar(36)
+  warehouseId String   @db.VarChar(36)
+  code        String   @db.VarChar(20)
+  name        String   @db.VarChar(100)
+  type        ZoneType @default(STORAGE)
+  description String?  @db.VarChar(255)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  warehouse Warehouse  @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  locations Location[]
+
+  @@unique([warehouseId, code])
+  @@map("zones")
+}
+
+model Location {
+  id           String         @id @default(uuid()) @db.VarChar(36)
+  zoneId       String         @db.VarChar(36)
+  code         String         @db.VarChar(30)
+  aisle        String         @db.VarChar(10)
+  rack         String         @db.VarChar(10)
+  level        String         @db.VarChar(10)
+  bin          String         @db.VarChar(10)
+  status       LocationStatus @default(AVAILABLE)
+  maxWeight    Float?
+  maxVolume    Float?
+  // 화면설계서 Slide 48: LOC구분, 적재가능량, 통제여부
+  locationType String?        @db.VarChar(20)
+  capacity     Float?
+  isRestricted Boolean        @default(false)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  zone        Zone        @relation(fields: [zoneId], references: [id], onDelete: Cascade)
+  inventories Inventory[]
+
+  @@unique([zoneId, code])
+  @@index([status])
+  @@map("locations")
+}
+
+model Item {
+  id              String          @id @default(uuid()) @db.VarChar(36)
+  code            String          @unique @db.VarChar(30)
+  name            String          @db.VarChar(200)
+  description     String?         @db.Text
+  barcode         String?         @unique @db.VarChar(50)
+  category        ItemCategory    @default(GENERAL)
+  uom             UnitOfMeasure   @default(EA)
+  weight          Float?
+  length          Float?
+  width           Float?
+  height          Float?
+  minStock        Int             @default(0)
+  maxStock        Int?
+  imageUrl        String?         @db.VarChar(500)
+  isActive        Boolean         @default(true)
+  // ERD 기반 추가: ILITEM - 온도관리, LOT관리, 유효기간관리
+  temperatureType TemperatureType @default(NORMAL)
+  lotControl      Boolean         @default(false)
+  expiryControl   Boolean         @default(false)
+  expiryDays      Int?
+  // ERD 기반 추가: WMSMS030 - 상품분류, 보관유형
+  storageType     String?         @db.VarChar(20)
+  // 화면설계서 Slide 51: 상품군, 단가, 입고존
+  itemGroupId     String?         @db.VarChar(36)
+  unitPrice       Float?
+  inboundZone     String?         @db.VarChar(20)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  itemGroup             ItemGroup?             @relation(fields: [itemGroupId], references: [id])
+  inboundOrderItems     InboundOrderItem[]
+  outboundOrderItems    OutboundOrderItem[]
+  inventories           Inventory[]
+  inventoryTransactions InventoryTransaction[]
+  channelProducts       ChannelProduct[]
+  channelOrderItems     ChannelOrderItem[]
+  uomConversions        UomConversion[]
+
+  @@index([name])
+  @@index([category])
+  @@index([isActive])
+  @@index([itemGroupId])
+  @@map("items")
+}
+
+model Partner {
+  id           String      @id @default(uuid()) @db.VarChar(36)
+  code         String      @unique @db.VarChar(20)
+  name         String      @db.VarChar(100)
+  type         PartnerType
+  contactName  String?     @db.VarChar(50)
+  contactPhone String?     @db.VarChar(30)
+  contactEmail String?     @db.VarChar(100)
+  country      String?     @db.VarChar(50)
+  city         String?     @db.VarChar(50)
+  address      String?     @db.VarChar(255)
+  // ERD 기반 추가: ILCARRIER/ILOWNER - 사업자번호, 대표자
+  businessNo   String?     @db.VarChar(30)
+  president    String?     @db.VarChar(50)
+  // 화면설계서 Slide 49-50: 팩스, 업태, 업종, 신용등급, 출고통제
+  faxNumber    String?     @db.VarChar(30)
+  website      String?     @db.VarChar(200)
+  businessType String?     @db.VarChar(50)
+  businessKind String?     @db.VarChar(50)
+  creditRating String?     @db.VarChar(10)
+  shipControl  Boolean     @default(false)
+  notes        String?     @db.Text
+  isActive     Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  inboundOrders  InboundOrder[]
+  outboundOrders OutboundOrder[]
+
+  @@index([type])
+  @@index([name])
+  @@index([isActive])
+  @@map("partners")
+}
+
+model InboundOrder {
+  id            String        @id @default(uuid()) @db.VarChar(36)
+  orderNumber   String        @unique @db.VarChar(30)
+  partnerId     String        @db.VarChar(36)
+  warehouseId   String        @db.VarChar(36)
+  // ERD 기반 추가: WMSOP010 - 주문유형
+  orderType     OrderType     @default(PURCHASE)
+  expectedDate  DateTime
+  arrivedDate   DateTime?
+  completedDate DateTime?
+  status        InboundStatus @default(DRAFT)
+  // 화면설계서 Slide 18: BL번호
+  blNo          String?       @db.VarChar(50)
+  notes         String?       @db.Text
+  createdBy     String?       @db.VarChar(36)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  partner    Partner            @relation(fields: [partnerId], references: [id])
+  warehouse  Warehouse          @relation(fields: [warehouseId], references: [id])
+  items      InboundOrderItem[]
+  receipts   InboundReceipt[]
+  dispatches Dispatch[]
+
+  @@index([status, warehouseId])
+  @@index([warehouseId])
+  @@index([partnerId])
+  @@index([createdAt])
+  @@map("inbound_orders")
+}
+
+model InboundOrderItem {
+  id             String    @id @default(uuid()) @db.VarChar(36)
+  inboundOrderId String    @db.VarChar(36)
+  itemId         String    @db.VarChar(36)
+  expectedQty    Int
+  receivedQty    Int       @default(0)
+  damagedQty     Int       @default(0)
+  // ERD 기반 추가: WMSOP041 - LOT, 유효기간
+  lotNo          String?   @db.VarChar(50)
+  expiryDate     DateTime?
+  notes          String?   @db.Text
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  inboundOrder InboundOrder @relation(fields: [inboundOrderId], references: [id], onDelete: Cascade)
+  item         Item         @relation(fields: [itemId], references: [id])
+
+  @@index([inboundOrderId])
+  @@index([itemId])
+  @@map("inbound_order_items")
+}
+
+model InboundReceipt {
+  id             String   @id @default(uuid()) @db.VarChar(36)
+  inboundOrderId String   @db.VarChar(36)
+  receivedBy     String   @db.VarChar(36)
+  receivedDate   DateTime @default(now())
+  lotNo          String?  @db.VarChar(50)
+  locationCode   String?  @db.VarChar(30)
+  notes          String?  @db.Text
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  inboundOrder InboundOrder @relation(fields: [inboundOrderId], references: [id], onDelete: Cascade)
+
+  @@index([inboundOrderId])
+  @@map("inbound_receipts")
+}
+
+model OutboundOrder {
+  id             String         @id @default(uuid()) @db.VarChar(36)
+  orderNumber    String         @unique @db.VarChar(30)
+  partnerId      String         @db.VarChar(36)
+  warehouseId    String         @db.VarChar(36)
+  // ERD 기반 추가: 주문유형
+  orderType      OrderType      @default(SALES)
+  shipDate       DateTime?
+  deliveryDate   DateTime?
+  completedDate  DateTime?
+  status         OutboundStatus @default(DRAFT)
+  shippingMethod String?        @db.VarChar(50)
+  trackingNumber String?        @db.VarChar(100)
+  // 화면설계서 Slide 23: BL번호, 긴급출고
+  blNo           String?        @db.VarChar(50)
+  isUrgent       Boolean        @default(false)
+  notes          String?        @db.Text
+  createdBy      String?        @db.VarChar(36)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  partner       Partner             @relation(fields: [partnerId], references: [id])
+  warehouse     Warehouse           @relation(fields: [warehouseId], references: [id])
+  items         OutboundOrderItem[]
+  shipments     OutboundShipment[]
+  channelOrders ChannelOrder[]
+
+  @@index([status, warehouseId])
+  @@index([warehouseId])
+  @@index([partnerId])
+  @@index([createdAt])
+  @@map("outbound_orders")
+}
+
+model OutboundOrderItem {
+  id              String   @id @default(uuid()) @db.VarChar(36)
+  outboundOrderId String   @db.VarChar(36)
+  itemId          String   @db.VarChar(36)
+  orderedQty      Int
+  pickedQty       Int      @default(0)
+  packedQty       Int      @default(0)
+  shippedQty      Int      @default(0)
+  // ERD 기반 추가: LOT 지정 출고
+  lotNo           String?  @db.VarChar(50)
+  notes           String?  @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  outboundOrder OutboundOrder @relation(fields: [outboundOrderId], references: [id], onDelete: Cascade)
+  item          Item          @relation(fields: [itemId], references: [id])
+
+  @@index([outboundOrderId])
+  @@index([itemId])
+  @@map("outbound_order_items")
+}
+
+model OutboundShipment {
+  id              String   @id @default(uuid()) @db.VarChar(36)
+  outboundOrderId String   @db.VarChar(36)
+  shippedBy       String   @db.VarChar(36)
+  shippedDate     DateTime @default(now())
+  carrier         String?  @db.VarChar(100)
+  trackingNumber  String?  @db.VarChar(100)
+  weight          Float?
+  notes           String?  @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  outboundOrder OutboundOrder @relation(fields: [outboundOrderId], references: [id], onDelete: Cascade)
+
+  @@index([outboundOrderId])
+  @@map("outbound_shipments")
+}
+
+model Inventory {
+  id           String    @id @default(uuid()) @db.VarChar(36)
+  itemId       String    @db.VarChar(36)
+  warehouseId  String    @db.VarChar(36)
+  locationId   String?   @db.VarChar(36)
+  lotNo        String?   @db.VarChar(50)
+  quantity     Int       @default(0)
+  reservedQty  Int       @default(0)
+  availableQty Int       @default(0)
+  // ERD 기반 추가: WMSST010 - 유효기간, 입고일
+  expiryDate   DateTime?
+  inboundDate  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  item      Item      @relation(fields: [itemId], references: [id])
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id])
+  location  Location? @relation(fields: [locationId], references: [id])
+
+  @@unique([itemId, warehouseId, locationId, lotNo])
+  @@index([warehouseId])
+  @@index([locationId])
+  @@index([warehouseId, itemId])
+  @@map("inventories")
+}
+
+model InventoryTransaction {
+  id            String          @id @default(uuid()) @db.VarChar(36)
+  itemId        String          @db.VarChar(36)
+  warehouseId   String          @db.VarChar(36)
+  locationCode  String?         @db.VarChar(30)
+  lotNo         String?         @db.VarChar(50)
+  txType        TransactionType
+  quantity      Int
+  referenceType String?         @db.VarChar(30)
+  referenceId   String?         @db.VarChar(36)
+  notes         String?         @db.Text
+  performedBy   String?         @db.VarChar(36)
+  createdAt     DateTime        @default(now())
+
+  item Item @relation(fields: [itemId], references: [id])
+
+  @@index([itemId])
+  @@index([warehouseId])
+  @@index([txType])
+  @@index([createdAt])
+  @@index([warehouseId, createdAt])
+  @@index([itemId, warehouseId])
+  @@index([referenceType, referenceId])
+  @@map("inventory_transactions")
+}
+
+model StockAdjustment {
+  id           String           @id @default(uuid()) @db.VarChar(36)
+  warehouseId  String           @db.VarChar(36)
+  itemCode     String           @db.VarChar(30)
+  locationCode String?          @db.VarChar(30)
+  lotNo        String?          @db.VarChar(50)
+  adjustQty    Int
+  reason       AdjustmentReason
+  notes        String?          @db.Text
+  performedBy  String           @db.VarChar(36)
+  approvedBy   String?          @db.VarChar(36)
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([warehouseId])
+  @@index([createdAt])
+  @@map("stock_adjustments")
+}
+
+model CycleCount {
+  id           String           @id @default(uuid()) @db.VarChar(36)
+  warehouseId  String           @db.VarChar(36)
+  locationCode String?          @db.VarChar(30)
+  itemCode     String?          @db.VarChar(30)
+  systemQty    Int
+  countedQty   Int?
+  variance     Int?
+  status       CycleCountStatus @default(PLANNED)
+  countedBy    String?          @db.VarChar(36)
+  countedDate  DateTime?
+  notes        String?          @db.Text
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([warehouseId, status])
+  @@index([status])
+  @@index([createdAt])
+  @@map("cycle_counts")
+}
+
+// ─── ERD 신규 테이블: 화면설계서 + Global WMS ERD 기반 ─────
+
+// 공통코드 (화면설계서 Slide 7: TMSYS010 기준관리)
+model CommonCode {
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  codeType  String   @db.VarChar(20)
+  typeNm    String   @db.VarChar(50)
+  code      String   @db.VarChar(20)
+  codeNm    String   @db.VarChar(100)
+  value     String?  @db.VarChar(255)
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([codeType, code])
+  @@index([codeType])
+  @@map("common_codes")
+}
+
+// 상품군 (화면설계서 Slide 59: WMSMS094)
+model ItemGroup {
+  id          String   @id @default(uuid()) @db.VarChar(36)
+  code        String   @unique @db.VarChar(20)
+  name        String   @db.VarChar(100)
+  groupType   String?  @db.VarChar(20)
+  inboundZone String?  @db.VarChar(20)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  items Item[]
+
+  @@map("item_groups")
+}
+
+// UOM 마스터 (화면설계서 Slide 53: WMSMS100)
+model UomMaster {
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  code      String   @unique @db.VarChar(20)
+  name      String   @db.VarChar(50)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  conversionsFrom UomConversion[] @relation("fromUom")
+  conversionsTo   UomConversion[] @relation("toUom")
+
+  @@map("uom_masters")
+}
+
+// UOM 환산 (화면설계서 Slide 51: WMSMS101 UOM환산이력)
+model UomConversion {
+  id        String    @id @default(uuid()) @db.VarChar(36)
+  itemId    String?   @db.VarChar(36)
+  fromUomId String    @db.VarChar(36)
+  toUomId   String    @db.VarChar(36)
+  convQty   Float
+  startDate DateTime?
+  endDate   DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  item    Item?     @relation(fields: [itemId], references: [id])
+  fromUom UomMaster @relation("fromUom", fields: [fromUomId], references: [id])
+  toUom   UomMaster @relation("toUom", fields: [toUomId], references: [id])
+
+  @@index([itemId])
+  @@index([fromUomId, toUomId])
+  @@map("uom_conversions")
+}
+
+// 차량 (화면설계서 Slide 55: WMSMS050)
+model Vehicle {
+  id          String   @id @default(uuid()) @db.VarChar(36)
+  plateNo     String   @unique @db.VarChar(20)
+  tonnage     Float
+  driverName  String?  @db.VarChar(50)
+  driverPhone String?  @db.VarChar(30)
+  warehouseId String?  @db.VarChar(36)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  warehouse  Warehouse? @relation(fields: [warehouseId], references: [id])
+  dispatches Dispatch[]
+
+  @@index([warehouseId])
+  @@map("vehicles")
+}
+
+// 도크장 (화면설계서 Slide 54: WMSMS120)
+model Dock {
+  id           String   @id @default(uuid()) @db.VarChar(36)
+  warehouseId  String   @db.VarChar(36)
+  code         String   @db.VarChar(20)
+  name         String   @db.VarChar(100)
+  sortOrder    Int      @default(0)
+  maxTonnage   Float?
+  vehiclePlate String?  @db.VarChar(20)
+  notes        String?  @db.VarChar(255)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+
+  @@unique([warehouseId, code])
+  @@map("docks")
+}
+
+// 배차 (화면설계서 Slide 27: WMSOP050 배차작업)
+enum DispatchStatus {
+  PLANNED
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model Dispatch {
+  id              String         @id @default(uuid()) @db.VarChar(36)
+  warehouseId     String         @db.VarChar(36)
+  vehicleId       String?        @db.VarChar(36)
+  inboundOrderId  String?        @db.VarChar(36)
+  outboundOrderId String?        @db.VarChar(36)
+  dispatchDate    DateTime
+  dispatchSeq     Int            @default(1)
+  status          DispatchStatus @default(PLANNED)
+  notes           String?        @db.Text
+  createdBy       String?        @db.VarChar(36)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  warehouse    Warehouse      @relation(fields: [warehouseId], references: [id])
+  vehicle      Vehicle?       @relation(fields: [vehicleId], references: [id])
+  inboundOrder InboundOrder?  @relation(fields: [inboundOrderId], references: [id])
+  items        DispatchItem[]
+
+  @@index([warehouseId, dispatchDate])
+  @@index([vehicleId])
+  @@index([status])
+  @@map("dispatches")
+}
+
+model DispatchItem {
+  id            String   @id @default(uuid()) @db.VarChar(36)
+  dispatchId    String   @db.VarChar(36)
+  itemCode      String   @db.VarChar(30)
+  itemName      String   @db.VarChar(200)
+  orderedQty    Int
+  dispatchedQty Int      @default(0)
+  notes         String?  @db.Text
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  dispatch Dispatch @relation(fields: [dispatchId], references: [id], onDelete: Cascade)
+
+  @@index([dispatchId])
+  @@map("dispatch_items")
+}
+
+// 작업지시 (화면설계서 Slide 28-30: 피킹/상차 리스트, ERD: WMSST020)
+enum WorkOrderType {
+  RECEIVING
+  PUTAWAY
+  PICKING
+  PACKING
+  LOADING
+  MOVEMENT
+  COUNT
+}
+
+enum WorkOrderStatus {
+  CREATED
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model WorkOrder {
+  id            String          @id @default(uuid()) @db.VarChar(36)
+  warehouseId   String          @db.VarChar(36)
+  workType      WorkOrderType
+  status        WorkOrderStatus @default(CREATED)
+  referenceType String?         @db.VarChar(30)
+  referenceId   String?         @db.VarChar(36)
+  assignedTo    String?         @db.VarChar(36)
+  startedAt     DateTime?
+  completedAt   DateTime?
+  notes         String?         @db.Text
+  createdBy     String?         @db.VarChar(36)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  warehouse Warehouse       @relation(fields: [warehouseId], references: [id])
+  items     WorkOrderItem[]
+
+  @@index([warehouseId, workType])
+  @@index([status])
+  @@index([referenceType, referenceId])
+  @@map("work_orders")
+}
+
+model WorkOrderItem {
+  id           String   @id @default(uuid()) @db.VarChar(36)
+  workOrderId  String   @db.VarChar(36)
+  itemCode     String   @db.VarChar(30)
+  itemName     String   @db.VarChar(200)
+  fromLocation String?  @db.VarChar(30)
+  toLocation   String?  @db.VarChar(30)
+  lotNo        String?  @db.VarChar(50)
+  plannedQty   Int
+  actualQty    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  workOrder WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+
+  @@index([workOrderId])
+  @@map("work_order_items")
+}
+
+// 재고이동 (화면설계서 Slide 34-35: WMSST030)
+enum MovementStatus {
+  DRAFT
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model InventoryMovement {
+  id              String         @id @default(uuid()) @db.VarChar(36)
+  warehouseId     String         @db.VarChar(36)
+  fromWarehouseId String?        @db.VarChar(36)
+  toWarehouseId   String?        @db.VarChar(36)
+  movementDate    DateTime       @default(now())
+  status          MovementStatus @default(DRAFT)
+  notes           String?        @db.Text
+  performedBy     String?        @db.VarChar(36)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  items InventoryMovementItem[]
+
+  @@index([warehouseId])
+  @@index([movementDate])
+  @@index([status])
+  @@map("inventory_movements")
+}
+
+model InventoryMovementItem {
+  id           String   @id @default(uuid()) @db.VarChar(36)
+  movementId   String   @db.VarChar(36)
+  itemCode     String   @db.VarChar(30)
+  itemName     String   @db.VarChar(200)
+  fromLocation String?  @db.VarChar(30)
+  toLocation   String?  @db.VarChar(30)
+  lotNo        String?  @db.VarChar(50)
+  stockQty     Int      @default(0)
+  moveQty      Int
+  uom          String?  @db.VarChar(20)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  movement InventoryMovement @relation(fields: [movementId], references: [id], onDelete: Cascade)
+
+  @@index([movementId])
+  @@map("inventory_movement_items")
+}
+
+// 정산 (화면설계서 Slide 80-83: WMSAC010/020)
+enum SettlementStatus {
+  DRAFT
+  CALCULATED
+  CONFIRMED
+  INVOICED
+}
+
+model Settlement {
+  id          String           @id @default(uuid()) @db.VarChar(36)
+  warehouseId String           @db.VarChar(36)
+  partnerId   String?          @db.VarChar(36)
+  periodStart DateTime
+  periodEnd   DateTime
+  status      SettlementStatus @default(DRAFT)
+  inboundFee  Float            @default(0)
+  outboundFee Float            @default(0)
+  storageFee  Float            @default(0)
+  handlingFee Float            @default(0)
+  totalAmount Float            @default(0)
+  notes       String?          @db.Text
+  createdBy   String?          @db.VarChar(36)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  warehouse Warehouse          @relation(fields: [warehouseId], references: [id])
+  details   SettlementDetail[]
+
+  @@index([warehouseId])
+  @@index([periodStart, periodEnd])
+  @@index([status])
+  @@map("settlements")
+}
+
+model SettlementDetail {
+  id           String   @id @default(uuid()) @db.VarChar(36)
+  settlementId String   @db.VarChar(36)
+  workDate     DateTime
+  itemCode     String?  @db.VarChar(30)
+  itemName     String?  @db.VarChar(200)
+  inboundQty   Int      @default(0)
+  outboundQty  Int      @default(0)
+  stockQty     Int      @default(0)
+  inboundFee   Float    @default(0)
+  outboundFee  Float    @default(0)
+  storageFee   Float    @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  settlement Settlement @relation(fields: [settlementId], references: [id], onDelete: Cascade)
+
+  @@index([settlementId])
+  @@index([workDate])
+  @@map("settlement_details")
+}
+
+// ─── External Channel Integration ─────────────────────────
+
+enum ChannelPlatform {
+  COUPANG
+  NAVER
+  AMAZON
+  SHOPIFY
+  EBAY
+  RAKUTEN
+  LAZADA
+  SHOPEE
+  ELEVENTH_ST
+}
+
+enum ChannelStatus {
+  ACTIVE
+  INACTIVE
+  ERROR
+  PENDING
+}
+
+enum ChannelOrderStatus {
+  NEW
+  SYNCED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  RETURN_REQUESTED
+  RETURNED
+  ERROR
+}
+
+enum SyncDirection {
+  INBOUND
+  OUTBOUND
+  BOTH
+}
+
+enum SyncType {
+  ORDER_PULL
+  INVENTORY_PUSH
+  PRODUCT_SYNC
+  SHIPMENT_PUSH
+  RETURN_PULL
+}
+
+model SalesChannel {
+  id            String          @id @default(uuid()) @db.VarChar(36)
+  name          String          @db.VarChar(100)
+  platform      ChannelPlatform
+  sellerId      String?         @db.VarChar(100)
+  warehouseId   String          @db.VarChar(36)
+  status        ChannelStatus   @default(PENDING)
+  // 인증정보 (암호화 저장)
+  credentials   Json            @db.Json
+  // 동기화 설정
+  syncEnabled   Boolean         @default(true)
+  syncInterval  Int             @default(10) // 분 단위
+  lastSyncAt    DateTime?
+  lastSyncError String?         @db.Text
+  notes         String?         @db.Text
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  warehouse       Warehouse        @relation(fields: [warehouseId], references: [id])
+  channelOrders   ChannelOrder[]
+  channelProducts ChannelProduct[]
+  syncLogs        ChannelSyncLog[]
+
+  @@unique([platform, sellerId])
+  @@index([platform])
+  @@index([status])
+  @@map("sales_channels")
+}
+
+model ChannelOrder {
+  id              String             @id @default(uuid()) @db.VarChar(36)
+  channelId       String             @db.VarChar(36)
+  platformOrderId String             @db.VarChar(100)
+  platformOrderNo String?            @db.VarChar(100)
+  status          ChannelOrderStatus @default(NEW)
+  // 주문 정보
+  orderDate       DateTime
+  customerName    String?            @db.VarChar(100)
+  customerPhone   String?            @db.VarChar(30)
+  shippingAddress String?            @db.Text
+  shippingZipCode String?            @db.VarChar(20)
+  shippingMethod  String?            @db.VarChar(50)
+  totalAmount     Float?
+  currency        String?            @db.VarChar(10)
+  // WMS 연동
+  outboundOrderId String?            @db.VarChar(36)
+  // 배송 정보
+  carrier         String?            @db.VarChar(100)
+  trackingNumber  String?            @db.VarChar(100)
+  shippedAt       DateTime?
+  deliveredAt     DateTime?
+  // 원본 데이터
+  rawData         Json?              @db.Json
+  errorMessage    String?            @db.Text
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  channel       SalesChannel       @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  outboundOrder OutboundOrder?     @relation(fields: [outboundOrderId], references: [id])
+  items         ChannelOrderItem[]
+
+  @@unique([channelId, platformOrderId])
+  @@index([channelId, status])
+  @@index([status])
+  @@index([orderDate])
+  @@index([outboundOrderId])
+  @@map("channel_orders")
+}
+
+model ChannelOrderItem {
+  id             String   @id @default(uuid()) @db.VarChar(36)
+  channelOrderId String   @db.VarChar(36)
+  platformItemId String?  @db.VarChar(100)
+  platformSku    String?  @db.VarChar(100)
+  itemName       String   @db.VarChar(200)
+  quantity       Int
+  unitPrice      Float?
+  // WMS 품목 매핑
+  itemId         String?  @db.VarChar(36)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  channelOrder ChannelOrder @relation(fields: [channelOrderId], references: [id], onDelete: Cascade)
+  item         Item?        @relation(fields: [itemId], references: [id])
+
+  @@index([channelOrderId])
+  @@index([itemId])
+  @@map("channel_order_items")
+}
+
+model ChannelProduct {
+  id                String    @id @default(uuid()) @db.VarChar(36)
+  channelId         String    @db.VarChar(36)
+  itemId            String    @db.VarChar(36)
+  platformProductId String?   @db.VarChar(100)
+  platformSku       String?   @db.VarChar(100)
+  isLinked          Boolean   @default(true)
+  lastSyncAt        DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  channel SalesChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  item    Item         @relation(fields: [itemId], references: [id])
+
+  @@unique([channelId, itemId])
+  @@unique([channelId, platformSku])
+  @@index([channelId])
+  @@index([itemId])
+  @@map("channel_products")
+}
+
+model ChannelSyncLog {
+  id          String        @id @default(uuid()) @db.VarChar(36)
+  channelId   String        @db.VarChar(36)
+  syncType    SyncType
+  direction   SyncDirection
+  status      String        @db.VarChar(20) // SUCCESS, FAILED, PARTIAL
+  recordCount Int           @default(0)
+  errorCount  Int           @default(0)
+  errorDetail String?       @db.Text
+  startedAt   DateTime      @default(now())
+  completedAt DateTime?
+  createdAt   DateTime      @default(now())
+
+  channel SalesChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@index([channelId, syncType])
+  @@index([channelId, createdAt])
+  @@map("channel_sync_logs")
+}
