@@ -18,6 +18,7 @@ import {
   Zap,
   FileText,
 } from "lucide-react";
+import SortableHeader, { useTableSort } from "@/components/ui/SortableHeader";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import { formatDate, formatNumber } from "@/lib/utils";
@@ -233,9 +234,9 @@ export default function InboundPage() {
     return m;
   }, [inventoryItems]);
 
-  // Compute master grid summary totals per order
+  // Compute master grid summary totals per order (with sorting)
   const masterRows = useMemo(() => {
-    return orders.map((order) => {
+    const rows = orders.map((order) => {
       const lines = order.lines ?? [];
       const totalExpectedQty = lines.reduce((s, l) => s + (l.expectedQty ?? 0), 0);
       const totalReceivedQty = lines.reduce((s, l) => s + (l.receivedQty ?? 0), 0);
@@ -255,7 +256,11 @@ export default function InboundPage() {
         blNumber: ((order as unknown as Record<string, unknown>).blNumber as string) ?? "-",
       };
     });
+
+    return rows;
   }, [orders, stockMap]);
+
+  const { sortedData: sortedMasterRows, sortKey, sortDir, handleSort } = useTableSort(masterRows);
 
   return (
     <div className="flex h-full flex-col gap-4">
@@ -408,33 +413,15 @@ export default function InboundPage() {
                       onChange={toggleSelectAll}
                     />
                   </th>
-                  <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">
-                    작업상태
-                  </th>
-                  <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">
-                    주문번호
-                  </th>
-                  <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">
-                    거래처
-                  </th>
-                  <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">
-                    창고
-                  </th>
-                  <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">
-                    입고예정일
-                  </th>
-                  <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">
-                    입고일자
-                  </th>
-                  <th className="px-3 py-3 text-right text-xs font-medium text-[#8B95A1]">
-                    주문량합계
-                  </th>
-                  <th className="px-3 py-3 text-right text-xs font-medium text-[#8B95A1]">
-                    입고량합계
-                  </th>
-                  <th className="px-3 py-3 text-right text-xs font-medium text-[#3182F6]">
-                    현재고
-                  </th>
+                  <SortableHeader field="status" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>작업상태</SortableHeader>
+                  <SortableHeader field="orderNumber" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>주문번호</SortableHeader>
+                  <SortableHeader field="partnerName" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>거래처</SortableHeader>
+                  <SortableHeader field="warehouseName" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>창고</SortableHeader>
+                  <SortableHeader field="expectedDate" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>입고예정일</SortableHeader>
+                  <SortableHeader field="arrivedDate" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>입고일자</SortableHeader>
+                  <SortableHeader field="totalExpectedQty" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="text-right">주문량합계</SortableHeader>
+                  <SortableHeader field="totalReceivedQty" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="text-right">입고량합계</SortableHeader>
+                  <SortableHeader field="currentStock" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="text-right !text-[#3182F6]">현재고</SortableHeader>
                   <th className="px-3 py-3 text-center text-xs font-medium text-[#8B95A1]">
                     긴급여부
                   </th>
@@ -463,7 +450,7 @@ export default function InboundPage() {
                       </div>
                     </td>
                   </tr>
-                ) : masterRows.length === 0 ? (
+                ) : sortedMasterRows.length === 0 ? (
                   <tr>
                     <td
                       colSpan={11}
@@ -473,7 +460,7 @@ export default function InboundPage() {
                     </td>
                   </tr>
                 ) : (
-                  masterRows.map((row) => (
+                  sortedMasterRows.map((row) => (
                     <tr
                       key={row.id}
                       onClick={() => handleMasterRowClick(row.id)}

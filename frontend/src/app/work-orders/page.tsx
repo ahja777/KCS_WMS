@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import SortableHeader, { useTableSort } from "@/components/ui/SortableHeader";
 import { Plus, UserCheck, Play, CheckCircle, Printer, AlertCircle } from "lucide-react";
 import Badge from "@/components/ui/Badge";
 import Modal from "@/components/ui/Modal";
@@ -101,6 +102,8 @@ export default function WorkOrdersPage() {
   const total = response?.total ?? 0;
   const totalPages = response?.totalPages ?? 1;
   const warehouses = warehousesRes?.data ?? [];
+
+  const { sortedData: sortedOrders, sortKey, sortDir, handleSort } = useTableSort(orders);
 
   const handleRowClick = (order: WorkOrder) => {
     setSelectedId((prev) => (prev === order.id ? undefined : order.id));
@@ -362,14 +365,14 @@ export default function WorkOrdersPage() {
             <table className="w-full text-left text-sm">
               <thead className="sticky top-0 bg-[#F7F8FA]">
                 <tr>
-                  <th className="px-4 py-3 text-xs font-medium text-[#8B95A1]">작업번호</th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-[#8B95A1]">유형</th>
-                  <th className="px-4 py-3 text-xs font-medium text-[#8B95A1]">창고</th>
-                  <th className="px-4 py-3 text-xs font-medium text-[#8B95A1]">담당자</th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-[#8B95A1]">상태</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-[#8B95A1]">품목수</th>
-                  <th className="px-4 py-3 text-xs font-medium text-[#8B95A1]">생성일</th>
-                  <th className="px-4 py-3 text-xs font-medium text-[#8B95A1]">완료일</th>
+                  <SortableHeader field="orderNumber" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>작업번호</SortableHeader>
+                  <SortableHeader field="type" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="text-center">유형</SortableHeader>
+                  <SortableHeader field="warehouse.name" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>창고</SortableHeader>
+                  <SortableHeader field="assignee" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>담당자</SortableHeader>
+                  <SortableHeader field="status" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="text-center">상태</SortableHeader>
+                  <SortableHeader field="items.length" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="text-right">품목수</SortableHeader>
+                  <SortableHeader field="createdAt" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>생성일</SortableHeader>
+                  <SortableHeader field="updatedAt" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>완료일</SortableHeader>
                 </tr>
               </thead>
               <tbody>
@@ -386,7 +389,7 @@ export default function WorkOrdersPage() {
                     </td>
                   </tr>
                 ) : (
-                  orders.map((order: WorkOrder) => (
+                  sortedOrders.map((order: WorkOrder) => (
                     <tr
                       key={order.id}
                       onClick={() => handleRowClick(order)}
@@ -472,12 +475,12 @@ export default function WorkOrdersPage() {
             <table className="w-full text-left text-sm">
               <thead className="sticky top-0 bg-[#F7F8FA]">
                 <tr>
-                  <th className="px-4 py-3 text-xs font-medium text-[#8B95A1]">품목코드</th>
-                  <th className="px-4 py-3 text-xs font-medium text-[#8B95A1]">품목명</th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-[#8B95A1]">수량</th>
-                  <th className="px-4 py-3 text-xs font-medium text-[#8B95A1]">로케이션(FROM)</th>
-                  <th className="px-4 py-3 text-xs font-medium text-[#8B95A1]">로케이션(TO)</th>
-                  <th className="px-4 py-3 text-center text-xs font-medium text-[#8B95A1]">상태</th>
+                  <SortableHeader field="item.code" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>품목코드</SortableHeader>
+                  <SortableHeader field="item.name" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>품목명</SortableHeader>
+                  <SortableHeader field="quantity" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="text-right">수량</SortableHeader>
+                  <SortableHeader field="locationCode" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>로케이션(FROM)</SortableHeader>
+                  <SortableHeader field="toLocationCode" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>로케이션(TO)</SortableHeader>
+                  <SortableHeader field="completedQty" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="text-center">상태</SortableHeader>
                 </tr>
               </thead>
               <tbody>

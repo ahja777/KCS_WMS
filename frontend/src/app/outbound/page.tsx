@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import SortableHeader, { useTableSort } from "@/components/ui/SortableHeader";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { Search, RotateCcw, Plus, Trash2 } from "lucide-react";
@@ -200,6 +201,8 @@ export default function OutboundPage() {
     });
   }, [orders, stockMap]);
 
+  const { sortedData: sortedMasterRows, sortKey, sortDir, handleSort } = useTableSort(masterRows);
+
   // Detail lines for bottom grid
   const detailLines = useMemo(() => {
     if (!selectedRow) return [];
@@ -215,6 +218,8 @@ export default function OutboundPage() {
       uom: line.item?.uom ?? "EA",
     }));
   }, [selectedRow]);
+
+  const { sortedData: sortedDetailLines, sortKey: detailSortKey, sortDir: detailSortDir, handleSort: handleDetailSort } = useTableSort(detailLines);
 
   const contextMenuItems = [
     { label: "주문확정", action: "주문확정" },
@@ -344,17 +349,17 @@ export default function OutboundPage() {
                     className="h-4 w-4 rounded border-[#D1D6DB]"
                   />
                 </th>
-                <th className="px-3 py-2.5 text-xs font-semibold text-[#8B95A1]">작업상태</th>
-                <th className="px-3 py-2.5 text-xs font-semibold text-[#8B95A1]">주문번호</th>
-                <th className="px-3 py-2.5 text-xs font-semibold text-[#8B95A1]">거래처</th>
-                <th className="px-3 py-2.5 text-xs font-semibold text-[#8B95A1]">배송처</th>
-                <th className="px-3 py-2.5 text-xs font-semibold text-[#8B95A1]">출고예정일</th>
-                <th className="px-3 py-2.5 text-xs font-semibold text-[#8B95A1]">출고일자</th>
-                <th className="px-3 py-2.5 text-right text-xs font-semibold text-[#8B95A1]">주문량합계</th>
-                <th className="px-3 py-2.5 text-right text-xs font-semibold text-[#8B95A1]">출고량합계</th>
-                <th className="px-3 py-2.5 text-right text-xs font-semibold text-[#3182F6]">현재고</th>
-                <th className="px-3 py-2.5 text-xs font-semibold text-[#8B95A1]">송장번호</th>
-                <th className="px-3 py-2.5 text-xs font-semibold text-[#8B95A1]">배송방법</th>
+                <SortableHeader field="order.status" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>작업상태</SortableHeader>
+                <SortableHeader field="order.orderNumber" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>주문번호</SortableHeader>
+                <SortableHeader field="order.partner.name" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>거래처</SortableHeader>
+                <SortableHeader field="order.partner.name" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>배송처</SortableHeader>
+                <SortableHeader field="order.shipDate" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>출고예정일</SortableHeader>
+                <SortableHeader field="order.deliveryDate" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>출고일자</SortableHeader>
+                <SortableHeader field="totalOrdered" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="text-right">주문량합계</SortableHeader>
+                <SortableHeader field="totalShipped" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="text-right">출고량합계</SortableHeader>
+                <SortableHeader field="currentStock" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="text-right">현재고</SortableHeader>
+                <SortableHeader field="order.trackingNumber" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>송장번호</SortableHeader>
+                <SortableHeader field="order.shippingMethod" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>배송방법</SortableHeader>
               </tr>
             </thead>
             <tbody>
@@ -381,7 +386,7 @@ export default function OutboundPage() {
                   </td>
                 </tr>
               ) : (
-                masterRows.map(({ order, totalOrdered, totalShipped, currentStock }) => (
+                sortedMasterRows.map(({ order, totalOrdered, totalShipped, currentStock }) => (
                   <tr
                     key={order.id}
                     onClick={() => handleRowClick(order)}
@@ -455,14 +460,14 @@ export default function OutboundPage() {
             <table className="w-full text-left text-sm">
               <thead className="sticky top-0 z-10">
                 <tr className="bg-[#F7F8FA]">
-                  <th className="px-3 py-2.5 text-xs font-semibold text-[#8B95A1]">상품코드</th>
-                  <th className="px-3 py-2.5 text-xs font-semibold text-[#8B95A1]">상품명</th>
-                  <th className="px-3 py-2.5 text-xs font-semibold text-[#8B95A1]">작업상태</th>
-                  <th className="px-3 py-2.5 text-right text-xs font-semibold text-[#8B95A1]">주문수량</th>
-                  <th className="px-3 py-2.5 text-right text-xs font-semibold text-[#8B95A1]">피킹수량</th>
-                  <th className="px-3 py-2.5 text-right text-xs font-semibold text-[#8B95A1]">패킹수량</th>
-                  <th className="px-3 py-2.5 text-right text-xs font-semibold text-[#8B95A1]">출하수량</th>
-                  <th className="px-3 py-2.5 text-xs font-semibold text-[#8B95A1]">UOM</th>
+                  <SortableHeader field="itemCode" sortKey={detailSortKey} sortDir={detailSortDir} onSort={handleDetailSort}>상품코드</SortableHeader>
+                  <SortableHeader field="itemName" sortKey={detailSortKey} sortDir={detailSortDir} onSort={handleDetailSort}>상품명</SortableHeader>
+                  <SortableHeader field="workStatus" sortKey={detailSortKey} sortDir={detailSortDir} onSort={handleDetailSort}>작업상태</SortableHeader>
+                  <SortableHeader field="orderedQty" sortKey={detailSortKey} sortDir={detailSortDir} onSort={handleDetailSort} className="text-right">주문수량</SortableHeader>
+                  <SortableHeader field="pickedQty" sortKey={detailSortKey} sortDir={detailSortDir} onSort={handleDetailSort} className="text-right">피킹수량</SortableHeader>
+                  <SortableHeader field="packedQty" sortKey={detailSortKey} sortDir={detailSortDir} onSort={handleDetailSort} className="text-right">패킹수량</SortableHeader>
+                  <SortableHeader field="shippedQty" sortKey={detailSortKey} sortDir={detailSortDir} onSort={handleDetailSort} className="text-right">출하수량</SortableHeader>
+                  <SortableHeader field="uom" sortKey={detailSortKey} sortDir={detailSortDir} onSort={handleDetailSort}>UOM</SortableHeader>
                 </tr>
               </thead>
               <tbody>
@@ -473,7 +478,7 @@ export default function OutboundPage() {
                     </td>
                   </tr>
                 ) : (
-                  detailLines.map((line) => (
+                  sortedDetailLines.map((line) => (
                     <tr key={line.id} className="border-b border-[#F2F4F6] hover:bg-[#F7F8FA]">
                       <td className="px-3 py-2.5 text-sm font-mono text-[#4E5968]">{line.itemCode}</td>
                       <td className="px-3 py-2.5 text-sm text-[#191F28]">{line.itemName}</td>

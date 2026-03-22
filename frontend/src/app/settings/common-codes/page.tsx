@@ -7,6 +7,7 @@ import { z } from "zod";
 import { Search, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import ConfirmModal from "@/components/ui/ConfirmModal";
+import SortableHeader, { useTableSort } from "@/components/ui/SortableHeader";
 import {
   useCommonCodes,
   useCreateCommonCode,
@@ -101,15 +102,18 @@ export default function CommonCodesPage() {
   // Pagination
   const leftPerPage = 20;
   const leftTotalPages = Math.max(1, Math.ceil(groupRows.length / leftPerPage));
-  const leftPagedData = groupRows.slice((leftPage - 1) * leftPerPage, leftPage * leftPerPage);
+  const leftPagedDataRaw = groupRows.slice((leftPage - 1) * leftPerPage, leftPage * leftPerPage);
   const leftStart = groupRows.length > 0 ? (leftPage - 1) * leftPerPage + 1 : 0;
   const leftEnd = Math.min(leftPage * leftPerPage, groupRows.length);
 
   const rightPerPage = 20;
   const rightTotalPages = Math.max(1, Math.ceil(rightCodes.length / rightPerPage));
-  const rightPagedData = rightCodes.slice((rightPage - 1) * rightPerPage, rightPage * rightPerPage);
+  const rightPagedDataRaw = rightCodes.slice((rightPage - 1) * rightPerPage, rightPage * rightPerPage);
   const rightStart = rightCodes.length > 0 ? (rightPage - 1) * rightPerPage + 1 : 0;
   const rightEnd = Math.min(rightPage * rightPerPage, rightCodes.length);
+
+  const { sortedData: leftPagedData, sortKey: lsk, sortDir: lsd, handleSort: lhs } = useTableSort(leftPagedDataRaw);
+  const { sortedData: rightPagedData, sortKey: rsk, sortDir: rsd, handleSort: rhs } = useTableSort(rightPagedDataRaw);
 
   const handleSearch = () => {
     setLeftPage(1);
@@ -281,10 +285,10 @@ export default function CommonCodesPage() {
                           className="h-3.5 w-3.5 rounded border-gray-300"
                         />
                       </th>
-                      <th className="px-3 py-2.5 text-xs font-medium text-[#8B95A1]">*사용자구분</th>
-                      <th className="px-3 py-2.5 text-xs font-medium text-[#8B95A1]">*유형코드</th>
-                      <th className="px-3 py-2.5 text-xs font-medium text-[#8B95A1]">*유형명</th>
-                      <th className="px-3 py-2.5 text-xs font-medium text-[#8B95A1]">*코드레벨</th>
+                      <SortableHeader field="userType" sortKey={lsk} sortDir={lsd} onSort={lhs}>*사용자구분</SortableHeader>
+                      <SortableHeader field="codeType" sortKey={lsk} sortDir={lsd} onSort={lhs}>*유형코드</SortableHeader>
+                      <SortableHeader field="typeNm" sortKey={lsk} sortDir={lsd} onSort={lhs}>*유형명</SortableHeader>
+                      <SortableHeader field="codeLevel" sortKey={lsk} sortDir={lsd} onSort={lhs}>*코드레벨</SortableHeader>
                     </tr>
                   </thead>
                   <tbody>
@@ -425,10 +429,10 @@ export default function CommonCodesPage() {
                           className="h-3.5 w-3.5 rounded border-gray-300"
                         />
                       </th>
-                      <th className="px-3 py-2.5 text-xs font-medium text-[#8B95A1]">기초코드</th>
-                      <th className="px-3 py-2.5 text-xs font-medium text-[#8B95A1]">*기초코드명</th>
-                      <th className="px-3 py-2.5 text-xs font-medium text-[#8B95A1]">값</th>
-                      <th className="px-3 py-2.5 text-xs font-medium text-[#8B95A1]">순서</th>
+                      <SortableHeader field="code" sortKey={rsk} sortDir={rsd} onSort={rhs}>기초코드</SortableHeader>
+                      <SortableHeader field="codeNm" sortKey={rsk} sortDir={rsd} onSort={rhs}>*기초코드명</SortableHeader>
+                      <SortableHeader field="value" sortKey={rsk} sortDir={rsd} onSort={rhs}>값</SortableHeader>
+                      <SortableHeader field="sortOrder" sortKey={rsk} sortDir={rsd} onSort={rhs}>순서</SortableHeader>
                     </tr>
                   </thead>
                   <tbody>

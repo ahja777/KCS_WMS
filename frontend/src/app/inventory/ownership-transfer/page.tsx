@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import SortableHeader, { useTableSort } from "@/components/ui/SortableHeader";
 import { Search, RotateCcw, AlertCircle } from "lucide-react";
 import Button from "@/components/ui/Button";
 import InventoryTabNav from "@/components/inventory/InventoryTabNav";
@@ -61,6 +62,7 @@ const mockData = [
 export default function OwnershipTransferPage() {
   const addToast = useToastStore((s) => s.addToast);
   const [searchPartner, setSearchPartner] = useState("");
+  const { sortedData: sortedData, sortKey, sortDir, handleSort } = useTableSort(mockData);
 
   return (
     <div className="space-y-6">
@@ -101,6 +103,7 @@ export default function OwnershipTransferPage() {
 
       {/* Action buttons */}
       <div className="flex justify-end gap-2">
+        <Button size="sm" onClick={() => addToast({ type: "success", message: "저장되었습니다." })}>저장</Button>
         <Button size="sm" onClick={() => addToast({ type: "info", message: "신규 등록 화면" })}>신규</Button>
         <Button size="sm" variant="secondary" onClick={() => addToast({ type: "warning", message: "삭제할 항목을 선택해주세요." })}>삭제</Button>
         <Button size="sm" variant="outline" className="!bg-[#22C55E] !text-white !border-[#22C55E]">엑셀</Button>
@@ -118,21 +121,21 @@ export default function OwnershipTransferPage() {
                 <th className="w-10 px-3 py-3 text-center">
                   <input type="checkbox" className="h-4 w-4 rounded border-[#D1D6DB]" />
                 </th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">작업번호</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">완료</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">작업일</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">양도자</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">상품</th>
-                <th className="px-3 py-3 text-right text-xs font-medium text-[#8B95A1]">수량</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">UOM</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">양수자</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">상품</th>
-                <th className="px-3 py-3 text-right text-xs font-medium text-[#8B95A1]">수량</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">UOM</th>
+                <SortableHeader field="workNumber" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>작업번호</SortableHeader>
+                <SortableHeader field="status" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>완료</SortableHeader>
+                <SortableHeader field="workDate" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>작업일</SortableHeader>
+                <SortableHeader field="assignor" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>양도자</SortableHeader>
+                <SortableHeader field="assignorProduct" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>상품</SortableHeader>
+                <SortableHeader field="assignorQty" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="text-right">수량</SortableHeader>
+                <SortableHeader field="assignorUOM" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>UOM</SortableHeader>
+                <SortableHeader field="assignee" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>양수자</SortableHeader>
+                <SortableHeader field="assigneeProduct" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>상품</SortableHeader>
+                <SortableHeader field="assigneeQty" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="text-right">수량</SortableHeader>
+                <SortableHeader field="assigneeUOM" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>UOM</SortableHeader>
               </tr>
             </thead>
             <tbody>
-              {mockData.map((row, idx) => (
+              {sortedData.map((row, idx) => (
                 <tr key={row.id} className="cursor-pointer border-b border-[#F2F4F6] transition-colors hover:bg-[#F7F8FA]">
                   <td className="px-3 py-3 text-center">
                     <input type="checkbox" className="h-4 w-4 rounded border-[#D1D6DB]" />

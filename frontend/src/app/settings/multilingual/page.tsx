@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import SortableHeader, { useTableSort } from "@/components/ui/SortableHeader";
 import { Search, Download } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
@@ -73,6 +74,7 @@ export default function MultilingualPage() {
 
   const totalPages = Math.max(1, Math.ceil(filteredData.length / perPage));
   const pagedData = filteredData.slice((page - 1) * perPage, page * perPage);
+  const { sortedData: sortedPagedData, sortKey, sortDir, handleSort } = useTableSort(pagedData);
 
   const toggleSelect = (id: number) => {
     setSelectedIds((prev) => {
@@ -168,18 +170,18 @@ export default function MultilingualPage() {
                 <th className="w-10 px-3 py-3 text-center">
                   <input type="checkbox" className="h-4 w-4 rounded border-[#D1D6DB]" checked={selectedIds.size === pagedData.length && pagedData.length > 0} onChange={toggleAll} />
                 </th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">*키값</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">한국어</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">일본어</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">중국어</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">영어</th>
+                <SortableHeader field="keyValue" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>*키값</SortableHeader>
+                <SortableHeader field="korean" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>한국어</SortableHeader>
+                <SortableHeader field="japanese" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>일본어</SortableHeader>
+                <SortableHeader field="chinese" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>중국어</SortableHeader>
+                <SortableHeader field="english" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>영어</SortableHeader>
               </tr>
             </thead>
             <tbody>
               {pagedData.length === 0 ? (
                 <tr><td colSpan={6} className="py-16 text-center text-sm text-[#8B95A1]">데이터가 없습니다.</td></tr>
               ) : (
-                pagedData.map((row) => (
+                sortedPagedData.map((row) => (
                   <tr key={row.id} onClick={() => handleRowClick(row)} className="cursor-pointer border-b border-[#F2F4F6] transition-colors hover:bg-[#F7F8FA]">
                     <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                       <input type="checkbox" className="h-4 w-4 rounded border-[#D1D6DB]" checked={selectedIds.has(row.id)} onChange={() => toggleSelect(row.id)} />

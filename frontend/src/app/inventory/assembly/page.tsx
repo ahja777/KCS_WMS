@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import SortableHeader, { useTableSort } from "@/components/ui/SortableHeader";
 import { Search, RotateCcw } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { useToastStore } from "@/stores/toast.store";
@@ -114,6 +115,7 @@ export default function AssemblyPage() {
   const [assemblyType, setAssemblyType] = useState("assembly");
   const [showFormModal, setShowFormModal] = useState(false);
 
+  const { sortedData: sortedAssemblyList, sortKey, sortDir, handleSort } = useTableSort(MOCK_ASSEMBLY_LIST);
   const detailItems = selectedId ? MOCK_DETAIL_MAP[selectedId] ?? [] : [];
 
   const handleReset = () => {
@@ -231,15 +233,18 @@ export default function AssemblyPage() {
             <thead className="bg-[#F7F8FA]">
               <tr>
                 <th className="w-10 px-3 py-3 text-center"><input type="checkbox" className="h-4 w-4 rounded border-[#D1D6DB]" /></th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">작업구분</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">작업일자</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">작업시간</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]" colSpan={2}>완성품</th>
-                <th className="px-3 py-3 text-right text-xs font-medium text-[#8B95A1]">수량</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">UOM</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]" colSpan={2}>창고</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">로케이션</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]" colSpan={2}>화주</th>
+                <SortableHeader field="workType" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>작업구분</SortableHeader>
+                <SortableHeader field="workDate" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>작업일자</SortableHeader>
+                <SortableHeader field="workTime" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>작업시간</SortableHeader>
+                <SortableHeader field="productCode" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>완성품</SortableHeader>
+                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]"></th>
+                <SortableHeader field="qty" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="text-right">수량</SortableHeader>
+                <SortableHeader field="uom" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>UOM</SortableHeader>
+                <SortableHeader field="warehouseCode" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>창고</SortableHeader>
+                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]"></th>
+                <SortableHeader field="location" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>로케이션</SortableHeader>
+                <SortableHeader field="ownerCode" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>화주</SortableHeader>
+                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]"></th>
               </tr>
               <tr className="border-b border-[#E5E8EB] bg-[#F7F8FA]">
                 <th></th>
@@ -261,7 +266,7 @@ export default function AssemblyPage() {
               {MOCK_ASSEMBLY_LIST.length === 0 ? (
                 <tr><td colSpan={13} className="py-16 text-center text-sm text-[#8B95A1]">데이터가 없습니다.</td></tr>
               ) : (
-                MOCK_ASSEMBLY_LIST.map((item) => (
+                sortedAssemblyList.map((item) => (
                   <tr
                     key={item.id}
                     onClick={() => setSelectedId(item.id)}
@@ -302,11 +307,13 @@ export default function AssemblyPage() {
             <thead className="bg-[#F7F8FA]">
               <tr>
                 <th className="w-10 px-3 py-3 text-center"><input type="checkbox" className="h-4 w-4 rounded border-[#D1D6DB]" /></th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]" colSpan={2}>부분품</th>
-                <th className="px-3 py-3 text-right text-xs font-medium text-[#8B95A1]">수량</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">UOM</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">로케이션</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]" colSpan={2}>창고</th>
+                <SortableHeader field="partCode" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>부분품</SortableHeader>
+                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]"></th>
+                <SortableHeader field="qty" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="text-right">수량</SortableHeader>
+                <SortableHeader field="uom" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>UOM</SortableHeader>
+                <SortableHeader field="location" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>로케이션</SortableHeader>
+                <SortableHeader field="warehouseCode" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>창고</SortableHeader>
+                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]"></th>
               </tr>
               <tr className="border-b border-[#E5E8EB] bg-[#F7F8FA]">
                 <th></th>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import SortableHeader, { useTableSort } from "@/components/ui/SortableHeader";
 import { useDebounce } from "@/hooks/useDebounce";
 import { Search, AlertCircle, RotateCcw } from "lucide-react";
 import Button from "@/components/ui/Button";
@@ -52,6 +53,8 @@ export default function InventoryPage() {
       { previousStock: 0, inbound: 0, outbound: 0, eventOutbound: 0, currentStock: 0 }
     );
   }, [inventoryItems]);
+
+  const { sortedData: sortedInventory, sortKey, sortDir, handleSort } = useTableSort(inventoryItems);
 
   const handleReset = () => {
     setSearch("");
@@ -135,14 +138,16 @@ export default function InventoryPage() {
             <thead className="bg-[#F7F8FA]">
               <tr>
                 <th className="w-10 px-3 py-3 text-center"><input type="checkbox" className="h-4 w-4 rounded border-[#D1D6DB]" /></th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]" colSpan={2}>화주</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">상품군</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]" colSpan={2}>상품</th>
-                <th className="px-3 py-3 text-right text-xs font-medium text-[#8B95A1]">전일재고</th>
-                <th className="px-3 py-3 text-right text-xs font-medium text-[#8B95A1]">입고</th>
-                <th className="px-3 py-3 text-right text-xs font-medium text-[#8B95A1]">일반출고</th>
-                <th className="px-3 py-3 text-right text-xs font-medium text-[#8B95A1]">이벤트출고</th>
-                <th className="px-3 py-3 text-right text-xs font-medium text-[#8B95A1]">정상재고</th>
+                <SortableHeader field="partnerId" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>화주</SortableHeader>
+                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]"></th>
+                <SortableHeader field="itemGroup" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>상품군</SortableHeader>
+                <SortableHeader field="item.code" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>상품</SortableHeader>
+                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]"></th>
+                <SortableHeader field="previousStock" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="text-right">전일재고</SortableHeader>
+                <SortableHeader field="inbound" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="text-right">입고</SortableHeader>
+                <SortableHeader field="outbound" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="text-right">일반출고</SortableHeader>
+                <SortableHeader field="eventOutbound" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="text-right">이벤트출고</SortableHeader>
+                <SortableHeader field="quantity" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="text-right">정상재고</SortableHeader>
               </tr>
               <tr className="border-b border-[#E5E8EB] bg-[#F7F8FA]">
                 <th></th>
@@ -168,7 +173,7 @@ export default function InventoryPage() {
               ) : inventoryItems.length === 0 ? (
                 <tr><td colSpan={11} className="py-16 text-center text-sm text-[#8B95A1]">데이터가 없습니다.</td></tr>
               ) : (
-                inventoryItems.map((item, idx) => (
+                sortedInventory.map((item, idx) => (
                   <tr
                     key={item.id ?? idx}
                     onClick={() => setSelectedRow(item)}
@@ -219,15 +224,16 @@ export default function InventoryPage() {
             <thead className="bg-[#F7F8FA]">
               <tr>
                 <th className="w-10 px-3 py-3 text-center"><input type="checkbox" className="h-4 w-4 rounded border-[#D1D6DB]" /></th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">작업일자</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">로케이션</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]" colSpan={2}>상품</th>
-                <th className="px-3 py-3 text-right text-xs font-medium text-[#8B95A1]">재고수량</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">UOM</th>
-                <th className="px-3 py-3 text-right text-xs font-medium text-[#8B95A1]">PLT수량</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">B/L번호</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">창고</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">LOT번호</th>
+                <SortableHeader field="updatedAt" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>작업일자</SortableHeader>
+                <SortableHeader field="locationCode" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>로케이션</SortableHeader>
+                <SortableHeader field="item.code" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>상품</SortableHeader>
+                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]"></th>
+                <SortableHeader field="quantity" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="text-right">재고수량</SortableHeader>
+                <SortableHeader field="item.uom" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>UOM</SortableHeader>
+                <SortableHeader field="pltQty" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="text-right">PLT수량</SortableHeader>
+                <SortableHeader field="blNumber" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>B/L번호</SortableHeader>
+                <SortableHeader field="warehouse.name" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>창고</SortableHeader>
+                <SortableHeader field="lotNumber" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>LOT번호</SortableHeader>
               </tr>
             </thead>
             <tbody>

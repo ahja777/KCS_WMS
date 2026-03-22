@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import SortableHeader, { useTableSort } from "@/components/ui/SortableHeader";
 import { Search, RotateCcw } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
@@ -58,6 +59,7 @@ export default function TemplatesPage() {
   const perPage = 20;
   const totalPages = Math.max(1, Math.ceil(data.length / perPage));
   const pagedData = data.slice((page - 1) * perPage, page * perPage);
+  const { sortedData: sortedPagedData, sortKey, sortDir, handleSort } = useTableSort(pagedData);
 
   const toggleSelect = (id: number) => {
     setSelectedIds((prev) => {
@@ -139,25 +141,25 @@ export default function TemplatesPage() {
             <thead className="bg-[#F7F8FA]">
               <tr>
                 <th className="w-10 px-3 py-3 text-center"><input type="checkbox" className="h-4 w-4 rounded border-[#D1D6DB]" /></th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">컬럼순서</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">ID</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">SEQ</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">항목명</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">항목코드</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">필수여부</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">기본값</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">사이즈</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">사용여부</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">보기순번</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">데이터타입</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">표시형식</th>
+                <SortableHeader field="colOrder" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>컬럼순서</SortableHeader>
+                <SortableHeader field="templateId" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>ID</SortableHeader>
+                <SortableHeader field="seq" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>SEQ</SortableHeader>
+                <SortableHeader field="fieldName" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>항목명</SortableHeader>
+                <SortableHeader field="fieldCode" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>항목코드</SortableHeader>
+                <SortableHeader field="required" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>필수여부</SortableHeader>
+                <SortableHeader field="defaultValue" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>기본값</SortableHeader>
+                <SortableHeader field="size" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>사이즈</SortableHeader>
+                <SortableHeader field="isUsed" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>사용여부</SortableHeader>
+                <SortableHeader field="viewOrder" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>보기순번</SortableHeader>
+                <SortableHeader field="dataType" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>데이터타입</SortableHeader>
+                <SortableHeader field="displayFormat" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>표시형식</SortableHeader>
               </tr>
             </thead>
             <tbody>
               {pagedData.length === 0 ? (
                 <tr><td colSpan={13} className="py-16 text-center text-sm text-[#8B95A1]">데이터가 없습니다.</td></tr>
               ) : (
-                pagedData.map((row) => (
+                sortedPagedData.map((row) => (
                   <tr
                     key={row.id}
                     onClick={() => { setEditingRow(row); setIsFormOpen(true); }}

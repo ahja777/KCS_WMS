@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import SortableHeader, { useTableSort } from "@/components/ui/SortableHeader";
 import { useDebounce } from "@/hooks/useDebounce";
 import { Search, RotateCcw } from "lucide-react";
 import Button from "@/components/ui/Button";
@@ -106,6 +107,8 @@ export default function ContainerStockPage() {
 
   const total = response?.total ?? masterItems.length;
   const totalPages = response?.totalPages ?? 1;
+
+  const { sortedData: sortedMasterItems, sortKey, sortDir, handleSort } = useTableSort(masterItems);
 
   const locationItems = useMemo(() => {
     if (!selectedRow) return [];
@@ -241,15 +244,15 @@ export default function ContainerStockPage() {
                 <th className="w-10 px-3 py-3 text-center">
                   <input type="checkbox" className="h-4 w-4 rounded border-[#D1D6DB]" />
                 </th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">화주코드</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">화주명</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">물류용기군</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">물류용기코드</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">물류용기명</th>
-                <th className="px-3 py-3 text-right text-xs font-medium text-[#8B95A1]">정상재고</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">재고단위</th>
-                <th className="px-3 py-3 text-right text-xs font-medium text-[#8B95A1]">적정재고</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">비고</th>
+                <SortableHeader field="partnerCode" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>화주코드</SortableHeader>
+                <SortableHeader field="partnerName" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>화주명</SortableHeader>
+                <SortableHeader field="containerGroup" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>물류용기군</SortableHeader>
+                <SortableHeader field="containerCode" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>물류용기코드</SortableHeader>
+                <SortableHeader field="containerName" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>물류용기명</SortableHeader>
+                <SortableHeader field="normalStock" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="text-right">정상재고</SortableHeader>
+                <SortableHeader field="stockUnit" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>재고단위</SortableHeader>
+                <SortableHeader field="optimalStock" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="text-right">적정재고</SortableHeader>
+                <SortableHeader field="notes" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>비고</SortableHeader>
               </tr>
             </thead>
             <tbody>
@@ -276,7 +279,7 @@ export default function ContainerStockPage() {
                   </td>
                 </tr>
               ) : (
-                masterItems.map((item, idx) => (
+                sortedMasterItems.map((item, idx) => (
                   <tr
                     key={item.id ?? idx}
                     onClick={() => setSelectedRow(item)}
@@ -342,12 +345,12 @@ export default function ContainerStockPage() {
                 <th className="w-10 px-3 py-3 text-center">
                   <input type="checkbox" className="h-4 w-4 rounded border-[#D1D6DB]" />
                 </th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">작업일자</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">로케이션</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">용기코드</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">물류용기명</th>
-                <th className="px-3 py-3 text-right text-xs font-medium text-[#8B95A1]">재고수량</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">창고</th>
+                <SortableHeader field="workDate" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>작업일자</SortableHeader>
+                <SortableHeader field="locationCode" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>로케이션</SortableHeader>
+                <SortableHeader field="containerCode" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>용기코드</SortableHeader>
+                <SortableHeader field="containerName" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>물류용기명</SortableHeader>
+                <SortableHeader field="stockQty" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="text-right">재고수량</SortableHeader>
+                <SortableHeader field="warehouseName" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>창고</SortableHeader>
               </tr>
             </thead>
             <tbody>

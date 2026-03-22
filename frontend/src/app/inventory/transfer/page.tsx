@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import SortableHeader, { useTableSort } from "@/components/ui/SortableHeader";
 import { Search, RotateCcw } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { formatNumber } from "@/lib/utils";
@@ -23,6 +24,8 @@ export default function TransferPage() {
   const inventoryItems = inventoryResponse?.data ?? [];
   const total = inventoryResponse?.total ?? 0;
   const totalPages = inventoryResponse?.totalPages ?? 1;
+
+  const { sortedData: sortedItems, sortKey, sortDir, handleSort } = useTableSort(inventoryItems);
 
   return (
     <div className="space-y-6">
@@ -80,11 +83,13 @@ export default function TransferPage() {
             <thead className="bg-[#F7F8FA]">
               <tr>
                 <th className="w-10 px-3 py-3 text-center"><input type="checkbox" className="h-4 w-4 rounded border-[#D1D6DB]" /></th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">상태</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">작업시간</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]" colSpan={2}>로케이션</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">상품군</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]" colSpan={2}>상품</th>
+                <SortableHeader field="status" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>상태</SortableHeader>
+                <SortableHeader field="updatedAt" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>작업시간</SortableHeader>
+                <SortableHeader field="locationCode" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>로케이션</SortableHeader>
+                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]"></th>
+                <SortableHeader field="itemGroup" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>상품군</SortableHeader>
+                <SortableHeader field="item.code" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>상품</SortableHeader>
+                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]"></th>
               </tr>
               <tr className="border-b border-[#E5E8EB] bg-[#F7F8FA]">
                 <th></th><th></th><th></th>
@@ -107,7 +112,7 @@ export default function TransferPage() {
               ) : inventoryItems.length === 0 ? (
                 <tr><td colSpan={8} className="py-16 text-center text-sm text-[#8B95A1]">데이터가 없습니다.</td></tr>
               ) : (
-                inventoryItems.map((item, idx) => (
+                sortedItems.map((item, idx) => (
                   <tr key={item.id ?? idx} className="cursor-pointer border-b border-[#F2F4F6] hover:bg-[#F7F8FA]">
                     <td className="px-3 py-3 text-center"><input type="checkbox" className="h-4 w-4 rounded border-[#D1D6DB]" /></td>
                     <td className="px-3 py-3 text-sm text-[#4E5968]">완료</td>

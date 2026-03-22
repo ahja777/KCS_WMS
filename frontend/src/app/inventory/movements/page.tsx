@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import SortableHeader, { useTableSort } from "@/components/ui/SortableHeader";
 import { Search, AlertCircle, RotateCcw } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { formatNumber, formatDateTime } from "@/lib/utils";
@@ -73,6 +74,8 @@ export default function MovementsPage() {
     setPage(1);
   };
 
+  const { sortedData: sortedMovements, sortKey, sortDir, handleSort } = useTableSort(movements);
+
   // Detail items for selected movement
   const detailItems = selectedMovement?.items ?? [];
 
@@ -133,12 +136,12 @@ export default function MovementsPage() {
             <thead className="bg-[#F7F8FA]">
               <tr>
                 <th className="w-10 px-3 py-3 text-center"><input type="checkbox" className="h-4 w-4 rounded border-[#D1D6DB]" /></th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">상태</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">작업번호</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">화주</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">작업일자</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">출고창고</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">입고창고</th>
+                <SortableHeader field="status" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>상태</SortableHeader>
+                <SortableHeader field="movementNumber" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>작업번호</SortableHeader>
+                <SortableHeader field="partner" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>화주</SortableHeader>
+                <SortableHeader field="createdAt" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>작업일자</SortableHeader>
+                <SortableHeader field="fromWarehouseId" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>출고창고</SortableHeader>
+                <SortableHeader field="toWarehouseId" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>입고창고</SortableHeader>
               </tr>
             </thead>
             <tbody>
@@ -153,7 +156,7 @@ export default function MovementsPage() {
               ) : movements.length === 0 ? (
                 <tr><td colSpan={7} className="py-16 text-center text-sm text-[#8B95A1]">이동 내역이 없습니다.</td></tr>
               ) : (
-                movements.map((mv) => {
+                sortedMovements.map((mv) => {
                   const statusLabel = mv.status === "COMPLETED" ? "완료" : mv.status === "DRAFT" ? "선택" : mv.status;
                   return (
                     <tr
@@ -191,15 +194,16 @@ export default function MovementsPage() {
             <thead className="bg-[#F7F8FA]">
               <tr>
                 <th className="w-10 px-3 py-3 text-center"><input type="checkbox" className="h-4 w-4 rounded border-[#D1D6DB]" /></th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">상태</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">작업시간</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]" colSpan={2}>로케이션</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">제품명</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">화주</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">LOT번호</th>
-                <th className="px-3 py-3 text-right text-xs font-medium text-[#8B95A1]">재고수량</th>
-                <th className="px-3 py-3 text-right text-xs font-medium text-[#8B95A1]">이동수량</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">UOM</th>
+                <SortableHeader field="status" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>상태</SortableHeader>
+                <SortableHeader field="createdAt" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>작업시간</SortableHeader>
+                <SortableHeader field="fromLocationCode" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>로케이션</SortableHeader>
+                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]"></th>
+                <SortableHeader field="item.name" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>제품명</SortableHeader>
+                <SortableHeader field="partner" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>화주</SortableHeader>
+                <SortableHeader field="lotNumber" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>LOT번호</SortableHeader>
+                <SortableHeader field="stockQty" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="text-right">재고수량</SortableHeader>
+                <SortableHeader field="quantity" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="text-right">이동수량</SortableHeader>
+                <SortableHeader field="uom" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>UOM</SortableHeader>
               </tr>
               <tr className="border-b border-[#E5E8EB] bg-[#F7F8FA]">
                 <th></th><th></th><th></th>

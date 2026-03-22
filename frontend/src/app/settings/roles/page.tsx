@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
+import SortableHeader, { useTableSort } from "@/components/ui/SortableHeader";
 import { formatDate } from "@/lib/utils";
 import { useUsers, useUpdateUser } from "@/hooks/useApi";
 import { useToastStore } from "@/stores/toast.store";

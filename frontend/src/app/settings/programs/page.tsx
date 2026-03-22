@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import SortableHeader, { useTableSort } from "@/components/ui/SortableHeader";
 import { useRouter } from "next/navigation";
 import {
   Monitor,
@@ -74,7 +75,7 @@ export default function ProgramsPage() {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("전체");
 
-  const filteredPrograms = useMemo(() => {
+  const filteredProgramsBase = useMemo(() => {
     return PROGRAMS.filter((p) => {
       const matchCategory = categoryFilter === "전체" || p.category === categoryFilter;
       const matchSearch =
@@ -86,6 +87,8 @@ export default function ProgramsPage() {
       return matchCategory && matchSearch;
     });
   }, [search, categoryFilter]);
+
+  const { sortedData: filteredPrograms, sortKey, sortDir, handleSort } = useTableSort(filteredProgramsBase);
 
   // Group for display
   const groupedPrograms = useMemo(() => {
@@ -175,21 +178,11 @@ export default function ProgramsPage() {
               <table className="w-full text-left text-sm">
                 <thead className="bg-[#F7F8FA]">
                   <tr>
-                    <th className="px-5 py-3 text-xs font-medium uppercase tracking-wider text-[#8B95A1]">
-                      화면구분
-                    </th>
-                    <th className="px-5 py-3 text-xs font-medium uppercase tracking-wider text-[#8B95A1]">
-                      화면ID
-                    </th>
-                    <th className="px-5 py-3 text-xs font-medium uppercase tracking-wider text-[#8B95A1]">
-                      화면명
-                    </th>
-                    <th className="px-5 py-3 text-xs font-medium uppercase tracking-wider text-[#8B95A1]">
-                      URL
-                    </th>
-                    <th className="px-5 py-3 text-xs font-medium uppercase tracking-wider text-[#8B95A1]">
-                      비고
-                    </th>
+                    <SortableHeader field="category" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>화면구분</SortableHeader>
+                    <SortableHeader field="screenId" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>화면ID</SortableHeader>
+                    <SortableHeader field="screenName" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>화면명</SortableHeader>
+                    <SortableHeader field="url" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>URL</SortableHeader>
+                    <SortableHeader field="description" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>비고</SortableHeader>
                   </tr>
                 </thead>
                 <tbody>

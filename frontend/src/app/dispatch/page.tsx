@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import SortableHeader, { useTableSort } from "@/components/ui/SortableHeader";
 import { Search, RotateCcw, Plus, Trash2, FileSpreadsheet } from "lucide-react";
 import { cn, formatDate, formatNumber } from "@/lib/utils";
 import Badge from "@/components/ui/Badge";
@@ -70,6 +71,9 @@ export default function DispatchPage() {
   const dispatches = dispatchesRes?.data ?? [];
   const warehouses = warehousesRes?.data ?? [];
   const orders = ordersRes?.data ?? [];
+
+  const { sortedData: sortedVehicles, sortKey: vSortKey, sortDir: vSortDir, handleSort: handleVSort } = useTableSort(vehicles);
+  const { sortedData: sortedDispatches, sortKey: dSortKey, sortDir: dSortDir, handleSort: handleDSort } = useTableSort(dispatches);
 
   const handleSearch = () => {
     addToast({ type: "info", message: "검색되었습니다." });
@@ -245,11 +249,11 @@ export default function DispatchPage() {
             <table className="w-full text-left text-sm">
               <thead className="sticky top-0 bg-[#F7F8FA]">
                 <tr>
-                  <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">차량번호</th>
-                  <th className="px-3 py-3 text-right text-xs font-medium text-[#8B95A1]">TON수</th>
-                  <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">기사명</th>
-                  <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">연락처</th>
-                  <th className="px-3 py-3 text-center text-xs font-medium text-[#8B95A1]">상태</th>
+                  <SortableHeader field="plateNumber" sortKey={vSortKey} sortDir={vSortDir} onSort={handleVSort}>차량번호</SortableHeader>
+                  <SortableHeader field="tonnage" sortKey={vSortKey} sortDir={vSortDir} onSort={handleVSort} className="text-right">TON수</SortableHeader>
+                  <SortableHeader field="driverName" sortKey={vSortKey} sortDir={vSortDir} onSort={handleVSort}>기사명</SortableHeader>
+                  <SortableHeader field="driverPhone" sortKey={vSortKey} sortDir={vSortDir} onSort={handleVSort}>연락처</SortableHeader>
+                  <SortableHeader field="isActive" sortKey={vSortKey} sortDir={vSortDir} onSort={handleVSort} className="text-center">상태</SortableHeader>
                 </tr>
               </thead>
               <tbody>
@@ -266,7 +270,7 @@ export default function DispatchPage() {
                     </td>
                   </tr>
                 ) : (
-                  vehicles.map((v: Vehicle) => (
+                  sortedVehicles.map((v: Vehicle) => (
                     <tr
                       key={v.id}
                       onClick={() => setSelectedVehicle(v)}
@@ -332,13 +336,13 @@ export default function DispatchPage() {
                       }}
                     />
                   </th>
-                  <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">차량번호</th>
-                  <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">주문번호</th>
-                  <th className="px-3 py-3 text-center text-xs font-medium text-[#8B95A1]">순번</th>
-                  <th className="px-3 py-3 text-center text-xs font-medium text-[#8B95A1]">작업상태</th>
-                  <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">상품</th>
-                  <th className="px-3 py-3 text-right text-xs font-medium text-[#8B95A1]">주문수량</th>
-                  <th className="px-3 py-3 text-right text-xs font-medium text-[#8B95A1]">배차수량</th>
+                  <SortableHeader field="vehicle.plateNumber" sortKey={dSortKey} sortDir={dSortDir} onSort={handleDSort}>차량번호</SortableHeader>
+                  <SortableHeader field="outboundOrderId" sortKey={dSortKey} sortDir={dSortDir} onSort={handleDSort}>주문번호</SortableHeader>
+                  <SortableHeader field="dispatchSeq" sortKey={dSortKey} sortDir={dSortDir} onSort={handleDSort} className="text-center">순번</SortableHeader>
+                  <SortableHeader field="status" sortKey={dSortKey} sortDir={dSortDir} onSort={handleDSort} className="text-center">작업상태</SortableHeader>
+                  <SortableHeader field="itemName" sortKey={dSortKey} sortDir={dSortDir} onSort={handleDSort}>상품</SortableHeader>
+                  <SortableHeader field="orderedQty" sortKey={dSortKey} sortDir={dSortDir} onSort={handleDSort} className="text-right">주문수량</SortableHeader>
+                  <SortableHeader field="dispatchedQty" sortKey={dSortKey} sortDir={dSortDir} onSort={handleDSort} className="text-right">배차수량</SortableHeader>
                 </tr>
               </thead>
               <tbody>
@@ -357,7 +361,7 @@ export default function DispatchPage() {
                     </td>
                   </tr>
                 ) : (
-                  dispatches.map((d: any) => {
+                  sortedDispatches.map((d: any) => {
                     const items = d.items ?? [];
                     if (items.length === 0) {
                       return (

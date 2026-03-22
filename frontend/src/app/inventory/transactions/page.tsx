@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import SortableHeader, { useTableSort } from "@/components/ui/SortableHeader";
 import { Search, AlertCircle, RotateCcw } from "lucide-react";
 import Table, { type Column } from "@/components/ui/Table";
 import Button from "@/components/ui/Button";
@@ -66,6 +67,8 @@ export default function InventoryTransactionsPage() {
   const totalPages = response?.totalPages ?? 1;
 
   const totalQty = useMemo(() => transactions.reduce((s, t) => s + t.quantity, 0), [transactions]);
+
+  const { sortedData: sortedTransactions, sortKey, sortDir, handleSort } = useTableSort(transactions);
 
   const handleReset = () => {
     setSearch("");
@@ -150,18 +153,18 @@ export default function InventoryTransactionsPage() {
           <table className="w-full text-left text-sm">
             <thead className="bg-[#F7F8FA]">
               <tr>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">종류</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">개업일자</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">작업시간</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">입/출고</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">상품코드</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">상품명</th>
-                <th className="px-3 py-3 text-right text-xs font-medium text-[#8B95A1]">수량</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">UOM</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">입실일</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">창고</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">담당자</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">원주문ID</th>
+                <SortableHeader field="type" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>종류</SortableHeader>
+                <SortableHeader field="createdAt" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>개업일자</SortableHeader>
+                <SortableHeader field="createdAt" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>작업시간</SortableHeader>
+                <SortableHeader field="quantity" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>입/출고</SortableHeader>
+                <SortableHeader field="item.code" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>상품코드</SortableHeader>
+                <SortableHeader field="item.name" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>상품명</SortableHeader>
+                <SortableHeader field="quantity" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="text-right">수량</SortableHeader>
+                <SortableHeader field="uom" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>UOM</SortableHeader>
+                <SortableHeader field="createdAt" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>입실일</SortableHeader>
+                <SortableHeader field="warehouseId" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>창고</SortableHeader>
+                <SortableHeader field="createdBy" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>담당자</SortableHeader>
+                <SortableHeader field="referenceId" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>원주문ID</SortableHeader>
               </tr>
             </thead>
             <tbody>
@@ -180,7 +183,7 @@ export default function InventoryTransactionsPage() {
               ) : transactions.length === 0 ? (
                 <tr><td colSpan={12} className="py-16 text-center text-sm text-[#8B95A1]">입출고 내역이 없습니다.</td></tr>
               ) : (
-                transactions.map((tx, idx) => {
+                sortedTransactions.map((tx, idx) => {
                   const dateStr = tx.createdAt?.slice(0, 10) ?? "-";
                   const timeStr = tx.createdAt?.slice(11, 19) ?? "-";
                   const isInbound = tx.quantity > 0;

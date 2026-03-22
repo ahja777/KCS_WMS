@@ -6,6 +6,7 @@ import { Search, AlertCircle, RotateCcw, ChevronLeft, ChevronRight } from "lucid
 import { useUsers, useDeleteUser, useWarehouses, useCreateUser, useUpdateUser } from "@/hooks/useApi";
 import { useToastStore } from "@/stores/toast.store";
 import { usePermission } from "@/hooks/usePermission";
+import SortableHeader, { useTableSort } from "@/components/ui/SortableHeader";
 import type { User, UserRole, Warehouse } from "@/types";
 
 const userTypeOptions = [
@@ -94,9 +95,11 @@ export default function UsersPage() {
   const { data: warehouseResponse } = useWarehouses({ page: 1, limit: 100 });
   const warehouses = warehouseResponse?.data ?? [];
 
-  const users = response?.data ?? [];
+  const usersRaw = response?.data ?? [];
   const total = response?.total ?? 0;
   const totalPages = response?.totalPages ?? 1;
+
+  const { sortedData: users, sortKey, sortDir, handleSort } = useTableSort(usersRaw);
 
   const whPerPage = 10;
   const whTotalPages = Math.max(1, Math.ceil(warehouses.length / whPerPage));
@@ -365,14 +368,14 @@ export default function UsersPage() {
                               className="h-3.5 w-3.5 rounded border-gray-300"
                             />
                           </th>
-                          <th className="px-3 py-2.5 text-xs font-medium text-[#8B95A1]">업체명</th>
-                          <th className="px-3 py-2.5 text-xs font-medium text-[#8B95A1]">사용자구분</th>
-                          <th className="px-3 py-2.5 text-xs font-medium text-[#8B95A1]">업무</th>
-                          <th className="px-3 py-2.5 text-xs font-medium text-[#8B95A1]">사용자 ID</th>
-                          <th className="px-3 py-2.5 text-xs font-medium text-[#8B95A1]">사용자명</th>
-                          <th className="px-3 py-2.5 text-xs font-medium text-[#8B95A1]">전화번호</th>
-                          <th className="px-3 py-2.5 text-xs font-medium text-[#8B95A1]">핸드폰</th>
-                          <th className="px-3 py-2.5 text-xs font-medium text-[#8B95A1]">이메일</th>
+                          <SortableHeader field="company" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>업체명</SortableHeader>
+                          <SortableHeader field="role" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>사용자구분</SortableHeader>
+                          <SortableHeader field="duty" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>업무</SortableHeader>
+                          <SortableHeader field="email" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>사용자 ID</SortableHeader>
+                          <SortableHeader field="name" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>사용자명</SortableHeader>
+                          <SortableHeader field="phone" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>전화번호</SortableHeader>
+                          <SortableHeader field="mobile" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>핸드폰</SortableHeader>
+                          <SortableHeader field="email" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>이메일</SortableHeader>
                         </tr>
                       </thead>
                       <tbody>
