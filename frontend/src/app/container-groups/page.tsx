@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Search, AlertCircle } from "lucide-react";
 import Table, { type Column } from "@/components/ui/Table";
+import SortableHeader, { useTableSort } from "@/components/ui/SortableHeader";
 import Modal from "@/components/ui/Modal";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import {
@@ -60,7 +61,8 @@ export default function ContainerGroupsPage() {
 
   const deleteMutation = useDeleteContainerGroup();
 
-  const groups = (response?.data ?? []) as ContainerGroupRow[];
+  const groupsRaw = (response?.data ?? []) as ContainerGroupRow[];
+  const { sortedData: groups, sortKey, sortDir, handleSort } = useTableSort(groupsRaw);
   const total = response?.total ?? 0;
   const totalPages = response?.totalPages ?? 1;
 
@@ -262,15 +264,15 @@ export default function ContainerGroupsPage() {
                         className="h-4 w-4 rounded border-[#D1D6DB] text-[#3182F6]"
                       />
                     </th>
-                    <th className="px-5 py-4 text-xs font-medium uppercase tracking-wider text-[#8B95A1]">용기군코드</th>
-                    <th className="px-5 py-4 text-xs font-medium uppercase tracking-wider text-[#8B95A1]">용기군명</th>
-                    <th className="px-5 py-4 text-xs font-medium uppercase tracking-wider text-[#8B95A1]">물류센터ID</th>
-                    <th className="px-5 py-4 text-xs font-medium uppercase tracking-wider text-[#8B95A1]">존ID</th>
-                    <th className="px-5 py-4 text-xs font-medium uppercase tracking-wider text-[#8B95A1]">작업자IP</th>
-                    <th className="px-5 py-4 text-xs font-medium uppercase tracking-wider text-[#8B95A1]">등록일자</th>
-                    <th className="px-5 py-4 text-xs font-medium uppercase tracking-wider text-[#8B95A1]">등록자번호</th>
-                    <th className="px-5 py-4 text-xs font-medium uppercase tracking-wider text-[#8B95A1]">수정일자</th>
-                    <th className="px-5 py-4 text-xs font-medium uppercase tracking-wider text-[#8B95A1]">수정자번호</th>
+                    <SortableHeader field="code" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>용기군코드</SortableHeader>
+                    <SortableHeader field="name" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>용기군명</SortableHeader>
+                    <SortableHeader field="centerId" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>물류센터ID</SortableHeader>
+                    <SortableHeader field="zoneId" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>존ID</SortableHeader>
+                    <SortableHeader field="workerIp" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>작업자IP</SortableHeader>
+                    <SortableHeader field="createdAt" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>등록일자</SortableHeader>
+                    <SortableHeader field="createdBy" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>등록자번호</SortableHeader>
+                    <SortableHeader field="updatedAt" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>수정일자</SortableHeader>
+                    <SortableHeader field="updatedBy" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>수정자번호</SortableHeader>
                   </tr>
                 </thead>
                 <tbody>

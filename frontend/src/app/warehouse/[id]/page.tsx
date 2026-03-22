@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import Badge from "@/components/ui/Badge";
 import ConfirmModal from "@/components/ui/ConfirmModal";
+import SortableHeader, { useTableSort } from "@/components/ui/SortableHeader";
 import {
   useWarehouse,
   useZones,
@@ -44,7 +45,8 @@ export default function WarehouseDetailPage() {
 
   // Zones
   const { data: zonesResponse, isLoading: zonesLoading, error: zonesError } = useZones(warehouseId);
-  const zones = zonesResponse?.data ?? [];
+  const zonesRaw = zonesResponse?.data ?? [];
+  const { sortedData: zones, sortKey: zsk, sortDir: zsd, handleSort: zhs } = useTableSort(zonesRaw);
   const deleteZoneMutation = useDeleteZone(warehouseId);
 
   // Zone form
@@ -241,11 +243,11 @@ export default function WarehouseDetailPage() {
               <thead className="bg-[#F7F8FA]">
                 <tr>
                   <th className="w-10 px-3 py-4" />
-                  <th className="px-5 py-4 text-xs font-medium uppercase tracking-wider text-[#8B95A1]">코드</th>
-                  <th className="px-5 py-4 text-xs font-medium uppercase tracking-wider text-[#8B95A1]">구역명</th>
-                  <th className="px-5 py-4 text-xs font-medium uppercase tracking-wider text-[#8B95A1]">유형</th>
+                  <SortableHeader field="code" sortKey={zsk} sortDir={zsd} onSort={zhs}>코드</SortableHeader>
+                  <SortableHeader field="name" sortKey={zsk} sortDir={zsd} onSort={zhs}>구역명</SortableHeader>
+                  <SortableHeader field="type" sortKey={zsk} sortDir={zsd} onSort={zhs}>유형</SortableHeader>
                   <th className="px-5 py-4 text-xs font-medium uppercase tracking-wider text-[#8B95A1]">로케이션수</th>
-                  <th className="px-5 py-4 text-xs font-medium uppercase tracking-wider text-[#8B95A1]">설명</th>
+                  <SortableHeader field="description" sortKey={zsk} sortDir={zsd} onSort={zhs}>설명</SortableHeader>
                   <th className="px-5 py-4 text-xs font-medium uppercase tracking-wider text-[#8B95A1]" />
                 </tr>
               </thead>
@@ -355,7 +357,8 @@ function ZoneRow({
     warehouseId,
     isExpanded ? zone.id : undefined
   );
-  const locations = locationsResponse?.data ?? [];
+  const locationsRaw = locationsResponse?.data ?? [];
+  const { sortedData: locations, sortKey: locSk, sortDir: locSd, handleSort: locHs } = useTableSort(locationsRaw);
 
   return (
     <>
@@ -449,14 +452,14 @@ function ZoneRow({
                   <table className="w-full text-left text-xs">
                     <thead>
                       <tr className="border-b border-[#E5E8EB]">
-                        <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-[#8B95A1]">코드</th>
-                        <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-[#8B95A1]">Aisle</th>
-                        <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-[#8B95A1]">Rack</th>
-                        <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-[#8B95A1]">Level</th>
-                        <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-[#8B95A1]">Bin</th>
-                        <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-[#8B95A1]">상태</th>
-                        <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-[#8B95A1]">최대중량(kg)</th>
-                        <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-[#8B95A1]">최대용적(m3)</th>
+                        <SortableHeader field="code" sortKey={locSk} sortDir={locSd} onSort={locHs}>코드</SortableHeader>
+                        <SortableHeader field="aisle" sortKey={locSk} sortDir={locSd} onSort={locHs}>Aisle</SortableHeader>
+                        <SortableHeader field="rack" sortKey={locSk} sortDir={locSd} onSort={locHs}>Rack</SortableHeader>
+                        <SortableHeader field="level" sortKey={locSk} sortDir={locSd} onSort={locHs}>Level</SortableHeader>
+                        <SortableHeader field="bin" sortKey={locSk} sortDir={locSd} onSort={locHs}>Bin</SortableHeader>
+                        <SortableHeader field="status" sortKey={locSk} sortDir={locSd} onSort={locHs}>상태</SortableHeader>
+                        <SortableHeader field="maxWeight" sortKey={locSk} sortDir={locSd} onSort={locHs}>최대중량(kg)</SortableHeader>
+                        <SortableHeader field="maxVolume" sortKey={locSk} sortDir={locSd} onSort={locHs}>최대용적(m3)</SortableHeader>
                         <th className="px-4 py-3 text-xs font-medium uppercase tracking-wider text-[#8B95A1]" />
                       </tr>
                     </thead>

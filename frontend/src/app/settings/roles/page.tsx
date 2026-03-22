@@ -204,61 +204,7 @@ export default function RolesPage() {
                 ))}
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-[#F7F8FA]">
-                    <tr>
-                      <th className="px-5 py-3 text-xs font-medium uppercase tracking-wider text-[#8B95A1]">
-                        이름
-                      </th>
-                      <th className="px-5 py-3 text-xs font-medium uppercase tracking-wider text-[#8B95A1]">
-                        이메일
-                      </th>
-                      <th className="px-5 py-3 text-xs font-medium uppercase tracking-wider text-[#8B95A1]">
-                        상태
-                      </th>
-                      <th className="px-5 py-3 text-xs font-medium uppercase tracking-wider text-[#8B95A1]">
-                        가입일
-                      </th>
-                      <th className="px-5 py-3 text-xs font-medium uppercase tracking-wider text-[#8B95A1]">
-                        작업
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {roleUsers.map((user) => (
-                      <tr
-                        key={user.id}
-                        className="border-b border-[#F2F4F6] transition-colors hover:bg-[#F7F8FA]"
-                      >
-                        <td className="px-5 py-4">
-                          <span className="text-sm font-medium text-[#191F28]">{user.name}</span>
-                        </td>
-                        <td className="px-5 py-4">
-                          <span className="text-sm text-[#4E5968]">{user.email}</span>
-                        </td>
-                        <td className="px-5 py-4">
-                          <Badge status={user.isActive ? "ACTIVE" : "INACTIVE"} />
-                        </td>
-                        <td className="px-5 py-4">
-                          <span className="text-sm text-[#8B95A1]">
-                            {formatDate(user.createdAt)}
-                          </span>
-                        </td>
-                        <td className="px-5 py-4">
-                          <button
-                            onClick={() => handleEditRole(user)}
-                            className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-[#3182F6] transition-colors hover:bg-[#E8F2FF]"
-                          >
-                            <UserCog className="h-3.5 w-3.5" />
-                            권한변경
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <RoleUserTable roleUsers={roleUsers} onEditRole={handleEditRole} />
             )}
           </div>
         );
@@ -337,6 +283,60 @@ export default function RolesPage() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function RoleUserTable({ roleUsers, onEditRole }: { roleUsers: User[]; onEditRole: (user: User) => void }) {
+  const { sortedData, sortKey, sortDir, handleSort } = useTableSort(roleUsers);
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-left text-sm">
+        <thead className="bg-[#F7F8FA]">
+          <tr>
+            <SortableHeader field="name" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>이름</SortableHeader>
+            <SortableHeader field="email" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>이메일</SortableHeader>
+            <SortableHeader field="isActive" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>상태</SortableHeader>
+            <SortableHeader field="createdAt" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>가입일</SortableHeader>
+            <th className="px-5 py-3 text-xs font-medium uppercase tracking-wider text-[#8B95A1]">
+              작업
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {sortedData.map((user) => (
+            <tr
+              key={user.id}
+              className="border-b border-[#F2F4F6] transition-colors hover:bg-[#F7F8FA]"
+            >
+              <td className="px-5 py-4">
+                <span className="text-sm font-medium text-[#191F28]">{user.name}</span>
+              </td>
+              <td className="px-5 py-4">
+                <span className="text-sm text-[#4E5968]">{user.email}</span>
+              </td>
+              <td className="px-5 py-4">
+                <Badge status={user.isActive ? "ACTIVE" : "INACTIVE"} />
+              </td>
+              <td className="px-5 py-4">
+                <span className="text-sm text-[#8B95A1]">
+                  {formatDate(user.createdAt)}
+                </span>
+              </td>
+              <td className="px-5 py-4">
+                <button
+                  onClick={() => onEditRole(user)}
+                  className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-[#3182F6] transition-colors hover:bg-[#E8F2FF]"
+                >
+                  <UserCog className="h-3.5 w-3.5" />
+                  권한변경
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

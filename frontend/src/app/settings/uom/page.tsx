@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Search, AlertCircle } from "lucide-react";
 import Table, { type Column } from "@/components/ui/Table";
+import SortableHeader, { useTableSort } from "@/components/ui/SortableHeader";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import { useUoms, useCreateUom, useUpdateUom, useDeleteUom } from "@/hooks/useApi";
 import { useToastStore } from "@/stores/toast.store";
@@ -50,7 +51,8 @@ export default function UomPage() {
   const totalPages = response?.totalPages ?? 1;
 
   // Combine server data with new rows for display
-  const displayData = [...newRows, ...uoms];
+  const displayDataRaw = [...newRows, ...uoms];
+  const { sortedData: displayData, sortKey, sortDir, handleSort } = useTableSort(displayDataRaw);
 
   const handleNew = () => {
     const tempId = `new-${Date.now()}`;
@@ -318,8 +320,8 @@ export default function UomPage() {
                         className="h-4 w-4 rounded border-[#D1D6DB] text-[#3182F6]"
                       />
                     </th>
-                    <th className="px-5 py-4 text-xs font-medium uppercase tracking-wider text-[#8B95A1]">UOM코드</th>
-                    <th className="px-5 py-4 text-xs font-medium uppercase tracking-wider text-[#8B95A1]">UOM명</th>
+                    <SortableHeader field="code" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>UOM코드</SortableHeader>
+                    <SortableHeader field="name" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>UOM명</SortableHeader>
                   </tr>
                 </thead>
                 <tbody>
