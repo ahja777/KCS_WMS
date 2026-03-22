@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { X } from "lucide-react";
 import { useCreateChannel, useUpdateChannel } from "@/hooks/useChannels";
 import { useWarehouses } from "@/hooks/useApi";
+import { useToastStore } from "@/stores/toast.store";
 import type { SalesChannel, ChannelPlatform } from "@/types/channel";
 import {
   PLATFORM_LABELS,
@@ -35,6 +36,7 @@ export default function ChannelFormModal({
   channel,
   onSuccess,
 }: Props) {
+  const addToast = useToastStore((s) => s.addToast);
   const [name, setName] = useState("");
   const [platform, setPlatform] = useState<ChannelPlatform>("COUPANG");
   const [sellerId, setSellerId] = useState("");
@@ -91,10 +93,11 @@ export default function ChannelFormModal({
       } else {
         await createMutation.mutateAsync(payload);
       }
+      addToast({ type: "success", message: "저장되었습니다." });
       onSuccess?.();
       onClose();
     } catch {
-      alert("저장 중 오류가 발생했습니다.");
+      addToast({ type: "error", message: "저장 중 오류가 발생했습니다." });
     }
   };
 

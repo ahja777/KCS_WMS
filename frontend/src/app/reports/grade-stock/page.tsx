@@ -278,21 +278,25 @@ export default function GradeStockPage() {
     {
       key: "partner",
       header: "화주",
+      sortable: true,
       render: (row) => <span className="text-sm text-[#4E5968]">{row.partner}</span>,
     },
     {
       key: "warehouseName",
       header: "창고",
+      sortable: true,
       render: (row) => <span className="text-sm text-[#4E5968]">{row.warehouseName}</span>,
     },
     {
       key: "locationCode",
       header: "로케이션",
+      sortable: true,
       render: (row) => <span className="text-sm font-medium text-[#191F28]">{row.locationCode}</span>,
     },
     {
       key: "itemLabel",
       header: "상품",
+      sortable: true,
       render: (row) => <span className="text-sm text-[#191F28]">{row.itemLabel}</span>,
     },
     {
@@ -304,6 +308,7 @@ export default function GradeStockPage() {
     {
       key: "uom",
       header: "UOM",
+      sortable: true,
       render: (row) => (
         <span className="inline-flex items-center rounded-full bg-[#F2F4F6] px-2.5 py-0.5 text-xs font-medium text-[#4E5968]">
           {row.uom}

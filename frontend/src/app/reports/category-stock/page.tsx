@@ -147,6 +147,7 @@ export default function CategoryStockPage() {
     {
       key: "uom",
       header: "UOM",
+      sortable: true,
       render: (row) => (
         <span className="inline-flex items-center rounded-full bg-[#F2F4F6] px-2.5 py-0.5 text-xs font-medium text-[#4E5968]">
           {row.uom}
@@ -156,6 +157,7 @@ export default function CategoryStockPage() {
     {
       key: "isDeleted",
       header: "삭제여부",
+      sortable: true,
       render: (row) => (
         <span className={`text-sm font-medium ${row.isDeleted ? "text-[#F04452]" : "text-[#4E5968]"}`}>
           {row.isDeleted ? "Y" : "N"}
