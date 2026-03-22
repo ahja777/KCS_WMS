@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
-import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronUp, ChevronDown, ChevronLeft, ChevronRight, ChevronsUpDown } from "lucide-react";
 import Button from "./Button";
 
 export interface Column<T> {
@@ -25,6 +25,7 @@ interface TableProps<T> {
   onRowClick?: (row: T) => void;
   emptyMessage?: string;
   activeRowId?: string;
+  clientSort?: boolean;
 }
 
 export default function Table<T extends object>({
@@ -39,6 +40,7 @@ export default function Table<T extends object>({
   onRowClick,
   emptyMessage = "데이터가 없습니다.",
   activeRowId,
+  clientSort = true,
 }: TableProps<T>) {
   const [sortKey, setSortKey] = useState<string>("");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
@@ -50,34 +52,66 @@ export default function Table<T extends object>({
     onSort?.(key, newOrder);
   };
 
+  // Client-side sorting when no onSort callback and clientSort enabled
+  const sortedData = useMemo(() => {
+    if (!sortKey || !clientSort || onSort) return data;
+    return [...data].sort((a, b) => {
+      const aVal = (a as Record<string, unknown>)[sortKey];
+      const bVal = (b as Record<string, unknown>)[sortKey];
+      if (aVal == null && bVal == null) return 0;
+      if (aVal == null) return 1;
+      if (bVal == null) return -1;
+      const aStr = String(aVal);
+      const bStr = String(bVal);
+      const aNum = Number(aVal);
+      const bNum = Number(bVal);
+      let cmp: number;
+      if (!isNaN(aNum) && !isNaN(bNum)) {
+        cmp = aNum - bNum;
+      } else {
+        cmp = aStr.localeCompare(bStr, "ko");
+      }
+      return sortOrder === "asc" ? cmp : -cmp;
+    });
+  }, [data, sortKey, sortOrder, clientSort, onSort]);
+
   return (
     <div className="w-full">
       <div className="overflow-x-auto">
         <table className="w-full text-left text-sm">
           <thead className="bg-[#F7F8FA]">
             <tr>
-              {columns.map((col) => (
+              {columns.map((col) => {
+                const isSortable = col.sortable !== false && col.key !== "actions" && col.key !== "checked";
+                const isActive = sortKey === col.key;
+                return (
                 <th
                   key={col.key}
                   className={cn(
                     "px-5 py-4 text-xs font-medium uppercase tracking-wider text-[#8B95A1]",
-                    col.sortable && "cursor-pointer select-none hover:text-[#4E5968]",
+                    isSortable && "cursor-pointer select-none hover:text-[#4E5968]",
+                    isActive && "text-[#3182F6]",
                     col.width
                   )}
-                  onClick={() => col.sortable && handleSort(col.key)}
+                  onClick={() => isSortable && handleSort(col.key)}
                 >
                   <div className="flex items-center gap-1">
                     {col.header}
-                    {col.sortable && sortKey === col.key && (
-                      sortOrder === "asc" ? (
-                        <ChevronUp className="h-3.5 w-3.5" />
+                    {isSortable && (
+                      isActive ? (
+                        sortOrder === "asc" ? (
+                          <ChevronUp className="h-3.5 w-3.5 text-[#3182F6]" />
+                        ) : (
+                          <ChevronDown className="h-3.5 w-3.5 text-[#3182F6]" />
+                        )
                       ) : (
-                        <ChevronDown className="h-3.5 w-3.5" />
+                        <ChevronsUpDown className="h-3 w-3 text-[#B0B8C1]" />
                       )
                     )}
                   </div>
                 </th>
-              ))}
+                );
+              })}
             </tr>
           </thead>
           <tbody>
@@ -91,7 +125,7 @@ export default function Table<T extends object>({
                   ))}
                 </tr>
               ))
-            ) : data.length === 0 ? (
+            ) : sortedData.length === 0 ? (
               <tr>
                 <td
                   colSpan={columns.length}
@@ -101,7 +135,7 @@ export default function Table<T extends object>({
                 </td>
               </tr>
             ) : (
-              data.map((row, idx) => {
+              sortedData.map((row, idx) => {
                 const rowId = (row as Record<string, unknown>).id as string;
                 const isActive = activeRowId != null && rowId === activeRowId;
                 return (

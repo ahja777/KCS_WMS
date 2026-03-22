@@ -65,6 +65,29 @@ export class InboundService {
     return order;
   }
 
+  private async generateOrderNumber(prefix: string): Promise<string> {
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+    const todayPrefix = `${prefix}-${dateStr}`;
+
+    const lastOrder = await this.prisma.inboundOrder.findFirst({
+      where: { orderNumber: { startsWith: todayPrefix } },
+      orderBy: { orderNumber: 'desc' },
+      select: { orderNumber: true },
+    });
+
+    let nextSeq = 1;
+    if (lastOrder) {
+      const parts = lastOrder.orderNumber.split('-');
+      const lastSeq = parseInt(parts[parts.length - 1], 10);
+      if (!isNaN(lastSeq)) {
+        nextSeq = lastSeq + 1;
+      }
+    }
+
+    return `${todayPrefix}-${String(nextSeq).padStart(4, '0')}`;
+  }
+
   async create(dto: CreateInboundOrderDto) {
     // H-12: Deadline check - reject if expectedDate is in the past
     const expectedDate = new Date(dto.expectedDate);
@@ -72,6 +95,11 @@ export class InboundService {
     today.setHours(0, 0, 0, 0);
     if (expectedDate < today) {
       throw new BadRequestException('입고 예정일이 과거입니다.');
+    }
+
+    // 주문번호 자동생성
+    if (!dto.orderNumber) {
+      dto.orderNumber = await this.generateOrderNumber('IB');
     }
 
     const existing = await this.prisma.inboundOrder.findUnique({
@@ -83,6 +111,7 @@ export class InboundService {
     return this.prisma.inboundOrder.create({
       data: {
         ...orderData,
+        orderNumber: dto.orderNumber!,
         expectedDate: new Date(dto.expectedDate),
         items: {
           create: items.map((item) => ({

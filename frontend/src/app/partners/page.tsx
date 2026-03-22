@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, AlertCircle, Trash2, Download, RotateCcw } from "lucide-react";
+import { Search, AlertCircle, RotateCcw } from "lucide-react";
 import Table, { type Column } from "@/components/ui/Table";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import { downloadExcel } from "@/lib/export";
@@ -16,6 +16,29 @@ const inputBase =
 const selectBase =
   "w-full rounded-xl border-0 bg-[#F7F8FA] px-4 py-3 text-sm text-[#191F28] outline-none transition-all focus:border focus:border-[#3182F6] focus:bg-white focus:ring-2 focus:ring-[#3182F6]/20 appearance-none";
 
+const initialForm = {
+  code: "",
+  name: "",
+  type: "CUSTOMER" as string,
+  contactName: "",
+  contactPhone: "",
+  contactEmail: "",
+  country: "",
+  city: "",
+  address: "",
+  notes: "",
+  isActive: true,
+  businessNo: "",
+  president: "",
+  faxNumber: "",
+  website: "",
+  businessType: "",
+  businessKind: "",
+  creditRating: "",
+  shipControl: false,
+  zipCode: "",
+};
+
 export default function PartnersPage() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search);
@@ -25,19 +48,7 @@ export default function PartnersPage() {
   const [isNew, setIsNew] = useState(false);
 
   // Form state
-  const [form, setForm] = useState({
-    code: "",
-    name: "",
-    type: "CUSTOMER" as string,
-    contactName: "",
-    contactPhone: "",
-    contactEmail: "",
-    country: "",
-    city: "",
-    address: "",
-    notes: "",
-    isActive: true,
-  });
+  const [form, setForm] = useState({ ...initialForm });
 
   const addToast = useToastStore((s) => s.addToast);
 
@@ -69,6 +80,15 @@ export default function PartnersPage() {
         address: selectedPartner.address ?? "",
         notes: selectedPartner.notes ?? "",
         isActive: selectedPartner.isActive,
+        businessNo: selectedPartner.businessNo ?? "",
+        president: selectedPartner.president ?? "",
+        faxNumber: selectedPartner.faxNumber ?? "",
+        website: selectedPartner.website ?? "",
+        businessType: selectedPartner.businessType ?? "",
+        businessKind: selectedPartner.businessKind ?? "",
+        creditRating: selectedPartner.creditRating ?? "",
+        shipControl: selectedPartner.shipControl ?? false,
+        zipCode: selectedPartner.zipCode ?? "",
       });
     }
   }, [selectedPartner, isNew]);
@@ -76,10 +96,7 @@ export default function PartnersPage() {
   const handleNew = () => {
     setIsNew(true);
     setSelectedPartner(null);
-    setForm({
-      code: "", name: "", type: "CUSTOMER", contactName: "", contactPhone: "",
-      contactEmail: "", country: "", city: "", address: "", notes: "", isActive: true,
-    });
+    setForm({ ...initialForm });
   };
 
   const handleSave = async () => {
@@ -114,6 +131,11 @@ export default function PartnersPage() {
     }
   };
 
+  const handleReset = () => {
+    setSearch("");
+    setPage(1);
+  };
+
   const leftColumns: Column<Partner>[] = [
     { key: "code", header: "코드", sortable: true },
     { key: "name", header: "화주명", sortable: true },
@@ -129,6 +151,10 @@ export default function PartnersPage() {
     },
   ];
 
+  const updateField = (field: string, value: string | boolean) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
   return (
     <div className="space-y-6">
       {/* Search bar */}
@@ -143,7 +169,7 @@ export default function PartnersPage() {
               </button>
             </div>
           </div>
-          <button className="flex h-[46px] items-center rounded-xl bg-[#F2F4F6] px-3 text-[#4E5968] hover:bg-[#E5E8EB]">
+          <button onClick={handleReset} className="flex h-[46px] items-center rounded-xl bg-[#F2F4F6] px-3 text-[#4E5968] hover:bg-[#E5E8EB]">
             <RotateCcw className="h-4 w-4" />
           </button>
           <button onClick={() => setPage(1)} className="flex h-[46px] items-center gap-2 rounded-xl bg-[#3182F6] px-6 text-sm font-semibold text-white hover:bg-[#1B64DA]">
@@ -202,79 +228,106 @@ export default function PartnersPage() {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-sm font-medium text-red-500">* 화주코드</label>
-                  <input value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} className={inputBase} disabled={!isNew && !!selectedPartner} />
+                  <input value={form.code} onChange={(e) => updateField("code", e.target.value)} className={inputBase} disabled={!isNew && !!selectedPartner} />
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-red-500">* 화주명</label>
-                  <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className={inputBase} />
+                  <input value={form.name} onChange={(e) => updateField("name", e.target.value)} className={inputBase} />
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-[#4E5968]">상호</label>
-                  <input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className={inputBase} />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-[#4E5968]">사업자등록번호</label>
-                  <input value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} className={inputBase} />
+                  <input value={form.city} onChange={(e) => updateField("city", e.target.value)} className={inputBase} />
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-[#4E5968]">대표자명</label>
-                  <input value={form.contactName} onChange={(e) => setForm({ ...form, contactName: e.target.value })} className={inputBase} />
+                  <input value={form.president} onChange={(e) => updateField("president", e.target.value)} className={inputBase} />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-[#4E5968]">팩스번호</label>
-                  <input className={inputBase} />
+                  <label className="mb-1 block text-sm font-medium text-[#4E5968]">사업자등록번호</label>
+                  <input value={form.businessNo} onChange={(e) => updateField("businessNo", e.target.value)} className={inputBase} />
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-[#4E5968]">사업장전화</label>
-                  <input value={form.contactPhone} onChange={(e) => setForm({ ...form, contactPhone: e.target.value })} className={inputBase} />
+                  <input value={form.contactPhone} onChange={(e) => updateField("contactPhone", e.target.value)} className={inputBase} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[#4E5968]">팩스번호</label>
+                  <input value={form.faxNumber} onChange={(e) => updateField("faxNumber", e.target.value)} className={inputBase} />
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-[#4E5968]">우편번호</label>
-                  <input className={inputBase} />
+                  <input value={form.zipCode} onChange={(e) => updateField("zipCode", e.target.value)} className={inputBase} />
                 </div>
                 <div className="md:col-span-2">
                   <label className="mb-1 block text-sm font-medium text-[#4E5968]">사업장주소</label>
-                  <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} className={inputBase} />
+                  <input value={form.address} onChange={(e) => updateField("address", e.target.value)} className={inputBase} />
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-[#4E5968]">업태</label>
-                  <select value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })} className={selectBase}>
+                  <select value={form.businessType} onChange={(e) => updateField("businessType", e.target.value)} className={selectBase}>
                     <option value="">선택</option>
+                    <option value="제조업">제조업</option>
+                    <option value="도매업">도매업</option>
+                    <option value="소매업">소매업</option>
+                    <option value="서비스업">서비스업</option>
+                    <option value="운수업">운수업</option>
+                    <option value="기타">기타</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[#4E5968]">업종</label>
+                  <select value={form.businessKind} onChange={(e) => updateField("businessKind", e.target.value)} className={selectBase}>
+                    <option value="">선택</option>
+                    <option value="물류">물류</option>
+                    <option value="유통">유통</option>
+                    <option value="전자">전자</option>
+                    <option value="식품">식품</option>
+                    <option value="의류">의류</option>
+                    <option value="기타">기타</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[#4E5968]">홈페이지주소</label>
+                  <input value={form.website} onChange={(e) => updateField("website", e.target.value)} className={inputBase} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[#4E5968]">출고통제</label>
+                  <select value={form.shipControl ? "Y" : "N"} onChange={(e) => updateField("shipControl", e.target.value === "Y")} className={selectBase}>
+                    <option value="N">N</option>
+                    <option value="Y">Y</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[#4E5968]">담당자이메일</label>
+                  <input value={form.contactEmail} onChange={(e) => updateField("contactEmail", e.target.value)} className={inputBase} />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[#4E5968]">신용등급</label>
+                  <select value={form.creditRating} onChange={(e) => updateField("creditRating", e.target.value)} className={selectBase}>
+                    <option value="">선택</option>
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                    <option value="C">C</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-[#4E5968]">거래처유형</label>
+                  <select value={form.type} onChange={(e) => updateField("type", e.target.value)} className={selectBase}>
                     <option value="SUPPLIER">공급처</option>
                     <option value="CUSTOMER">고객사</option>
                     <option value="CARRIER">운송사</option>
                   </select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-[#4E5968]">업종</label>
-                  <select className={selectBase}>
-                    <option value="">선택</option>
+                  <label className="mb-1 block text-sm font-medium text-[#4E5968]">활성여부</label>
+                  <select value={form.isActive ? "Y" : "N"} onChange={(e) => updateField("isActive", e.target.value === "Y")} className={selectBase}>
+                    <option value="Y">활성</option>
+                    <option value="N">비활성</option>
                   </select>
                 </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-[#4E5968]">홈페이지주소</label>
-                  <input className={inputBase} />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-[#4E5968]">출고통제</label>
-                  <select className={selectBase}>
-                    <option value="">선택</option>
-                    <option value="Y">Y</option>
-                    <option value="N">N</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-[#4E5968]">담당자이메일</label>
-                  <input value={form.contactEmail} onChange={(e) => setForm({ ...form, contactEmail: e.target.value })} className={inputBase} />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-[#4E5968]">신용등급</label>
-                  <select className={selectBase}>
-                    <option value="">선택</option>
-                    <option value="A">A</option>
-                    <option value="B">B</option>
-                    <option value="C">C</option>
-                  </select>
+                <div className="md:col-span-2">
+                  <label className="mb-1 block text-sm font-medium text-[#4E5968]">비고</label>
+                  <input value={form.notes} onChange={(e) => updateField("notes", e.target.value)} className={inputBase} />
                 </div>
               </div>
             </div>

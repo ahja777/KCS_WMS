@@ -804,3 +804,41 @@ export const usePartnerProducts = (params?: QueryParams) =>
   useList<any>("partner-products", params);
 export const useCreatePartnerProduct = () => useCreate<any>("partner-products");
 export const useDeletePartnerProduct = () => useDelete("partner-products");
+
+// ===== Dispatches =====
+export function useDispatches(params?: QueryParams) {
+  return useQuery({
+    queryKey: ["dispatches", params],
+    queryFn: async () => {
+      const { data: wrapped } = await api.get("/dispatches", { params });
+      const inner = wrapped.data;
+      if (inner.meta) return { data: inner.data, ...inner.meta };
+      return inner;
+    },
+  });
+}
+
+export function useCreateDispatch() {
+  const queryClient = useQueryClient();
+  return useMutation<unknown, Error, Record<string, unknown>>({
+    mutationFn: async (payload) => {
+      const { data: wrapped } = await api.post("/dispatches", payload);
+      return wrapped.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["dispatches"] });
+    },
+  });
+}
+
+export function useDeleteDispatch() {
+  const queryClient = useQueryClient();
+  return useMutation<void, Error, string>({
+    mutationFn: async (id) => {
+      await api.delete(`/dispatches/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["dispatches"] });
+    },
+  });
+}

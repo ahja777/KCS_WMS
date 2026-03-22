@@ -61,12 +61,57 @@ export class CreatePartnerDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  zipCode?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
   notes?: string;
 
   @ApiPropertyOptional()
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  businessNo?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  president?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  faxNumber?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  website?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  businessType?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  businessKind?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  creditRating?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsBoolean()
+  shipControl?: boolean;
 }
 
 export class UpdatePartnerDto extends PartialType(CreatePartnerDto) {}

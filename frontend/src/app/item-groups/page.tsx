@@ -1,47 +1,60 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Plus, Search, Trash2, AlertCircle } from "lucide-react";
+import { useState, useCallback } from "react";
+import { Search, AlertCircle } from "lucide-react";
 import Table, { type Column } from "@/components/ui/Table";
-import Modal from "@/components/ui/Modal";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import {
   useItemGroups,
   useCreateItemGroup,
   useUpdateItemGroup,
   useDeleteItemGroup,
-  usePartners,
-  useItems,
 } from "@/hooks/useApi";
 import { useToastStore } from "@/stores/toast.store";
 import { useDebounce } from "@/hooks/useDebounce";
 import { downloadExcel } from "@/lib/export";
-import type { ItemGroup, Partner, Item } from "@/types";
-
-const itemGroupSchema = z.object({
-  code: z.string().min(1, "상품군코드를 입력해주세요"),
-  name: z.string().min(1, "상품군명을 입력해주세요"),
-  type: z.string().min(1, "타입을 입력해주세요"),
-  description: z.string().optional(),
-});
-
-type ItemGroupFormData = z.infer<typeof itemGroupSchema>;
+import type { ItemGroup } from "@/types";
 
 const inputBase =
   "w-full rounded-xl border-0 bg-[#F7F8FA] px-4 py-3 text-sm text-[#191F28] placeholder-[#B0B8C1] outline-none transition-all focus:border focus:border-[#3182F6] focus:bg-white focus:ring-2 focus:ring-[#3182F6]/20";
+
+const cellInput =
+  "w-full border-0 bg-transparent px-2 py-1 text-sm text-[#191F28] outline-none focus:bg-[#F7F8FA] focus:ring-1 focus:ring-[#3182F6]/30 rounded";
+
+const cellSelect =
+  "w-full border-0 bg-transparent px-1 py-1 text-sm text-[#191F28] outline-none focus:bg-[#F7F8FA] focus:ring-1 focus:ring-[#3182F6]/30 rounded cursor-pointer";
+
+const TYPE_OPTIONS = [
+  { value: "상품", label: "상품" },
+  { value: "물류기기", label: "물류기기" },
+];
+
+const ZONE_OPTIONS = [
+  { value: "Z01", label: "Z01" },
+  { value: "Z02", label: "Z02" },
+  { value: "Z03", label: "Z03" },
+  { value: "Z04", label: "Z04" },
+  { value: "Z05", label: "Z05" },
+];
+
+interface EditableRow {
+  id: string;
+  type: string;
+  code: string;
+  name: string;
+  inboundZone: string;
+  isNew?: boolean;
+  isDirty?: boolean;
+}
 
 export default function ItemGroupsPage() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search);
   const [page, setPage] = useState(1);
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingGroup, setEditingGroup] = useState<ItemGroup | undefined>();
-  const [deletingGroup, setDeletingGroup] = useState<ItemGroup | undefined>();
-  const [selectedPartnerId, setSelectedPartnerId] = useState("");
-  const [selectedGroupId, setSelectedGroupId] = useState("");
+  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+  const [editableRows, setEditableRows] = useState<EditableRow[]>([]);
+  const [hasLocalChanges, setHasLocalChanges] = useState(false);
+  const [deletingIds, setDeletingIds] = useState<string[]>([]);
 
   const addToast = useToastStore((s) => s.addToast);
 
@@ -51,273 +64,330 @@ export default function ItemGroupsPage() {
     ...(debouncedSearch ? { search: debouncedSearch } : {}),
   });
 
-  const { data: partnerRes } = usePartners({ limit: 100 });
-  const partners = partnerRes?.data ?? [];
-
-  const { data: itemsRes } = useItems({ limit: 200 });
-  const allItems = itemsRes?.data ?? [];
-
+  const createMutation = useCreateItemGroup();
+  const updateMutation = useUpdateItemGroup();
   const deleteMutation = useDeleteItemGroup();
 
   const groups = response?.data ?? [];
   const total = response?.total ?? 0;
   const totalPages = response?.totalPages ?? 1;
 
-  // Filter items by selected group
-  const filteredItems = useMemo(() => {
-    if (!selectedGroupId) return allItems.slice(0, 20);
-    return allItems.filter((i: any) => i.itemGroupId === selectedGroupId);
-  }, [allItems, selectedGroupId]);
+  // Merge server data with local edits
+  const displayRows: EditableRow[] = hasLocalChanges
+    ? editableRows
+    : groups.map((g) => ({
+        id: g.id,
+        type: g.type || "상품",
+        code: g.code,
+        name: g.name,
+        inboundZone: ((g as unknown as Record<string, unknown>).inboundZone as string) || "",
+      }));
 
-  const handleCreate = () => {
-    setEditingGroup(undefined);
-    setIsFormOpen(true);
+  // Initialize editable rows from server data when not yet editing
+  const ensureEditable = useCallback(() => {
+    if (!hasLocalChanges) {
+      setEditableRows(
+        groups.map((g) => ({
+          id: g.id,
+          type: g.type || "상품",
+          code: g.code,
+          name: g.name,
+          inboundZone: ((g as unknown as Record<string, unknown>).inboundZone as string) || "",
+        }))
+      );
+      setHasLocalChanges(true);
+    }
+  }, [groups, hasLocalChanges]);
+
+  const handleCellChange = (id: string, field: keyof EditableRow, value: string) => {
+    ensureEditable();
+    setEditableRows((prev) =>
+      prev.map((row) =>
+        row.id === id ? { ...row, [field]: value, isDirty: true } : row
+      )
+    );
+    setHasLocalChanges(true);
   };
 
-  const handleEdit = (g: ItemGroup) => {
-    setEditingGroup(g);
-    setIsFormOpen(true);
+  const handleAddNew = () => {
+    ensureEditable();
+    const newRow: EditableRow = {
+      id: `new-${Date.now()}`,
+      type: "상품",
+      code: "",
+      name: "",
+      inboundZone: "",
+      isNew: true,
+      isDirty: true,
+    };
+    setEditableRows((prev) => [newRow, ...prev]);
+    setHasLocalChanges(true);
   };
 
-  const handleDeleteClick = (e: React.MouseEvent, g: ItemGroup) => {
-    e.stopPropagation();
-    setDeletingGroup(g);
-  };
+  const handleSave = async () => {
+    const dirtyRows = editableRows.filter((r) => r.isDirty);
+    if (dirtyRows.length === 0) {
+      addToast({ type: "info", message: "변경된 내용이 없습니다." });
+      return;
+    }
 
-  const handleDeleteConfirm = async () => {
-    if (!deletingGroup) return;
+    // Validate
+    for (const row of dirtyRows) {
+      if (!row.code.trim()) {
+        addToast({ type: "error", message: "상품군코드를 입력해주세요." });
+        return;
+      }
+      if (!row.name.trim()) {
+        addToast({ type: "error", message: "상품군명을 입력해주세요." });
+        return;
+      }
+    }
+
     try {
-      await deleteMutation.mutateAsync(deletingGroup.id);
-      addToast({ type: "success", message: `"${deletingGroup.name}" 상품군이 삭제되었습니다.` });
+      for (const row of dirtyRows) {
+        const payload = {
+          code: row.code,
+          name: row.name,
+          type: row.type,
+          description: "",
+        };
+        if (row.isNew) {
+          await createMutation.mutateAsync(payload);
+        } else {
+          await updateMutation.mutateAsync({ id: row.id, payload });
+        }
+      }
+      addToast({ type: "success", message: `${dirtyRows.length}건이 저장되었습니다.` });
+      setHasLocalChanges(false);
+      setEditableRows([]);
     } catch {
-      addToast({ type: "error", message: "삭제 중 오류가 발생했습니다." });
-    } finally {
-      setDeletingGroup(undefined);
+      addToast({ type: "error", message: "저장 중 오류가 발생했습니다." });
     }
   };
 
-  // Partner columns
-  const partnerColumns: Column<Partner>[] = [
-    { key: "name", header: "화주명" },
-    { key: "code", header: "거래처코드" },
-    {
-      key: "isActive",
-      header: "유효기간통제여부",
-      render: (row) => <span className="text-sm">{row.isActive ? "Y" : "N"}</span>,
-    },
-  ];
+  const handleDeleteClick = () => {
+    if (selectedRows.size === 0) {
+      addToast({ type: "error", message: "삭제할 항목을 선택해주세요." });
+      return;
+    }
+    setDeletingIds(Array.from(selectedRows));
+  };
 
-  // Item Group columns
-  const groupColumns: Column<ItemGroup>[] = [
-    { key: "code", header: "상품군코드", sortable: true },
-    { key: "name", header: "상품군명", sortable: true },
+  const handleDeleteConfirm = async () => {
+    try {
+      // Remove new (unsaved) rows locally
+      const newRowIds = deletingIds.filter((id) => id.startsWith("new-"));
+      const existingIds = deletingIds.filter((id) => !id.startsWith("new-"));
+
+      if (newRowIds.length > 0 && hasLocalChanges) {
+        setEditableRows((prev) => prev.filter((r) => !newRowIds.includes(r.id)));
+      }
+
+      for (const id of existingIds) {
+        await deleteMutation.mutateAsync(id);
+      }
+
+      addToast({ type: "success", message: `${deletingIds.length}건이 삭제되었습니다.` });
+      setSelectedRows(new Set());
+
+      if (existingIds.length > 0) {
+        setHasLocalChanges(false);
+        setEditableRows([]);
+      }
+    } catch {
+      addToast({ type: "error", message: "삭제 중 오류가 발생했습니다." });
+    } finally {
+      setDeletingIds([]);
+    }
+  };
+
+  const toggleRow = (id: string) => {
+    setSelectedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const columns: Column<EditableRow>[] = [
+    {
+      key: "select",
+      header: "",
+      width: "w-10",
+      render: (row) => (
+        <input
+          type="checkbox"
+          checked={selectedRows.has(row.id)}
+          onChange={() => toggleRow(row.id)}
+          onClick={(e) => e.stopPropagation()}
+          className="h-4 w-4 rounded border-[#D1D6DB] text-[#3182F6]"
+        />
+      ),
+    },
     {
       key: "type",
-      header: "타입",
+      header: "상품군타입",
       render: (row) => (
-        <span className="inline-flex rounded-lg bg-[#F2F4F6] px-2.5 py-1 text-xs font-medium text-[#4E5968]">
-          {row.type}
-        </span>
-      ),
-    },
-    {
-      key: "actions",
-      header: "",
-      render: (row) => (
-        <button
-          onClick={(e) => handleDeleteClick(e, row)}
-          className="rounded-lg p-1.5 text-[#B0B8C1] transition-colors hover:bg-red-50 hover:text-red-500"
+        <select
+          value={row.type}
+          onChange={(e) => handleCellChange(row.id, "type", e.target.value)}
+          onClick={(e) => e.stopPropagation()}
+          className={cellSelect}
         >
-          <Trash2 className="h-4 w-4" />
-        </button>
+          {TYPE_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
       ),
     },
-  ];
-
-  // Item columns
-  const itemColumns: Column<Item>[] = [
-    { key: "code", header: "상품코드" },
-    { key: "name", header: "상품명" },
     {
-      key: "weight",
-      header: "무게오차허용범위Kg",
-      render: (row) => <span className="text-sm">{row.weight ?? "-"}</span>,
+      key: "code",
+      header: "상품군코드",
+      render: (row) => (
+        <input
+          type="text"
+          value={row.code}
+          onChange={(e) => handleCellChange(row.id, "code", e.target.value)}
+          onClick={(e) => e.stopPropagation()}
+          placeholder="코드 입력"
+          className={cellInput}
+          disabled={!row.isNew}
+        />
+      ),
+    },
+    {
+      key: "name",
+      header: "상품군명",
+      render: (row) => (
+        <input
+          type="text"
+          value={row.name}
+          onChange={(e) => handleCellChange(row.id, "name", e.target.value)}
+          onClick={(e) => e.stopPropagation()}
+          placeholder="상품군명 입력"
+          className={cellInput}
+        />
+      ),
+    },
+    {
+      key: "inboundZone",
+      header: "입고존",
+      render: (row) => (
+        <select
+          value={row.inboundZone}
+          onChange={(e) => handleCellChange(row.id, "inboundZone", e.target.value)}
+          onClick={(e) => e.stopPropagation()}
+          className={cellSelect}
+        >
+          <option value="">선택</option>
+          {ZONE_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      ),
     },
   ];
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumb Title */}
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs text-[#8B95A1]">기준관리 &gt; 상품군관리</p>
-          <h1 className="text-2xl font-bold text-[#191F28]">상품군관리 / 화주별거래처상품</h1>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={handleCreate} className="rounded-xl bg-[#3182F6] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#1B64DA]">
-            <Plus className="mr-1 inline h-4 w-4" />
-            상품군 등록
-          </button>
-          <button onClick={() => downloadExcel("/export/item-groups", "item_groups.xlsx")} className="rounded-xl bg-[#1FC47D] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#17A86B]">엑셀</button>
+          <h1 className="text-2xl font-bold text-[#191F28]">상품군관리</h1>
         </div>
       </div>
 
       {/* Search */}
       <div className="rounded-2xl bg-white p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-        <div className="relative max-w-md">
-          <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8B95A1]" />
-          <input
-            type="text"
-            placeholder="상품군코드, 상품군명 검색..."
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            className="w-full rounded-xl border-0 bg-[#F7F8FA] py-3 pl-11 pr-4 text-sm text-[#191F28] placeholder-[#8B95A1] outline-none transition-colors focus:bg-[#F2F4F6] focus:ring-2 focus:ring-[#3182F6]/20"
+        <div className="flex items-end gap-4">
+          <div className="flex-1 max-w-md">
+            <label className="mb-1 block text-sm font-medium text-[#4E5968]">상품군명</label>
+            <input
+              type="text"
+              placeholder="상품군명 검색..."
+              value={search}
+              onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              className={inputBase}
+            />
+          </div>
+          <button
+            onClick={() => setPage(1)}
+            className="flex h-[46px] items-center gap-2 rounded-xl bg-[#3182F6] px-6 text-sm font-semibold text-white transition-colors hover:bg-[#1B64DA]"
+          >
+            <Search className="h-4 w-4" />
+            조회
+          </button>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex justify-end gap-2">
+        <button
+          onClick={handleSave}
+          className="rounded-xl bg-[#F04452] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#E03340]"
+        >
+          저장
+        </button>
+        <button
+          onClick={handleAddNew}
+          className="rounded-xl bg-[#3182F6] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#1B64DA]"
+        >
+          신규
+        </button>
+        <button
+          onClick={handleDeleteClick}
+          className="rounded-xl bg-[#8B95A1] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#6B7684]"
+        >
+          삭제
+        </button>
+        <button
+          onClick={() => downloadExcel("/export/item-groups", `item_groups_${new Date().toISOString().slice(0, 10).replace(/-/g, "")}.xlsx`)}
+          className="rounded-xl bg-[#1FC47D] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#17A86B]"
+        >
+          엑셀
+        </button>
+      </div>
+
+      {/* Grid */}
+      <div className="rounded-2xl bg-white p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+        <div className="mb-4 rounded-lg bg-[#4A5568] px-4 py-2">
+          <h2 className="text-sm font-bold text-white">상품군목록</h2>
+        </div>
+        {error ? (
+          <div className="flex items-center gap-3 rounded-xl bg-red-50 p-5 text-sm text-red-600">
+            <AlertCircle className="h-5 w-5 shrink-0" />
+            데이터를 불러오는 중 오류가 발생했습니다.
+          </div>
+        ) : (
+          <Table
+            columns={columns}
+            data={displayRows}
+            isLoading={isLoading}
+            page={page}
+            totalPages={totalPages}
+            total={total}
+            onPageChange={setPage}
+            emptyMessage="상품군 데이터가 없습니다."
           />
-        </div>
+        )}
       </div>
 
-      {/* Three grids */}
-      <div className="space-y-6">
-        {/* Top: Partner list */}
-        <div className="rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-          <div className="rounded-t-2xl bg-[#4A5568] px-4 py-2">
-            <h2 className="text-sm font-bold text-white">화주별거래처목록</h2>
-          </div>
-          <div className="p-4">
-            <Table
-              columns={partnerColumns}
-              data={partners.slice(0, 10)}
-              isLoading={false}
-              onRowClick={(p) => setSelectedPartnerId(p.id)}
-              emptyMessage="화주 데이터가 없습니다."
-            />
-          </div>
-        </div>
-
-        {/* Middle: Item Groups */}
-        <div className="rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-          <div className="rounded-t-2xl bg-[#4A5568] px-4 py-2">
-            <h2 className="text-sm font-bold text-white">상품군목록</h2>
-          </div>
-          <div className="p-4">
-            {error ? (
-              <div className="flex items-center gap-3 rounded-xl bg-red-50 p-5 text-sm text-red-600">
-                <AlertCircle className="h-5 w-5 shrink-0" />
-                데이터를 불러오는 중 오류가 발생했습니다.
-              </div>
-            ) : (
-              <Table
-                columns={groupColumns}
-                data={groups}
-                isLoading={isLoading}
-                page={page}
-                totalPages={totalPages}
-                total={total}
-                onPageChange={setPage}
-                onRowClick={(g) => { setSelectedGroupId(g.id); handleEdit(g); }}
-                emptyMessage="상품군 데이터가 없습니다."
-              />
-            )}
-          </div>
-        </div>
-
-        {/* Bottom: Items */}
-        <div className="rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-          <div className="rounded-t-2xl bg-[#4A5568] px-4 py-2">
-            <h2 className="text-sm font-bold text-white">상품목록</h2>
-          </div>
-          <div className="p-4">
-            <Table
-              columns={itemColumns}
-              data={filteredItems}
-              isLoading={false}
-              emptyMessage="상품 데이터가 없습니다."
-            />
-          </div>
-        </div>
-      </div>
-
-      <ItemGroupFormModal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} group={editingGroup} />
-
+      {/* Delete Confirm */}
       <ConfirmModal
-        isOpen={!!deletingGroup}
-        onClose={() => setDeletingGroup(undefined)}
+        isOpen={deletingIds.length > 0}
+        onClose={() => setDeletingIds([])}
         onConfirm={handleDeleteConfirm}
         title="상품군 삭제"
-        message={`"${deletingGroup?.name}" 상품군을 삭제하시겠습니까?`}
+        message={`선택된 ${deletingIds.length}건을 삭제하시겠습니까?`}
         confirmText="삭제"
         isLoading={deleteMutation.isPending}
       />
     </div>
-  );
-}
-
-function ItemGroupFormModal({ isOpen, onClose, group }: { isOpen: boolean; onClose: () => void; group?: ItemGroup }) {
-  const isEdit = !!group;
-  const addToast = useToastStore((s) => s.addToast);
-  const createMutation = useCreateItemGroup();
-  const updateMutation = useUpdateItemGroup();
-
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<ItemGroupFormData>({
-    resolver: zodResolver(itemGroupSchema),
-    defaultValues: { code: "", name: "", type: "", description: "" },
-  });
-
-  useEffect(() => {
-    if (isOpen) {
-      if (group) {
-        reset({ code: group.code, name: group.name, type: group.type, description: group.description ?? "" });
-      } else {
-        reset({ code: "", name: "", type: "", description: "" });
-      }
-    }
-  }, [isOpen, group, reset]);
-
-  const onSubmit = async (data: ItemGroupFormData) => {
-    try {
-      if (isEdit && group) {
-        await updateMutation.mutateAsync({ id: group.id, payload: data });
-        addToast({ type: "success", message: "상품군이 수정되었습니다." });
-      } else {
-        await createMutation.mutateAsync(data);
-        addToast({ type: "success", message: "상품군이 등록되었습니다." });
-      }
-      onClose();
-    } catch {
-      addToast({ type: "error", message: "오류가 발생했습니다." });
-    }
-  };
-
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} title={isEdit ? "상품군 수정" : "상품군 등록"} size="md">
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="mb-2 block text-sm font-medium text-[#4E5968]">상품군코드 <span className="text-red-500">*</span></label>
-            <input {...register("code")} placeholder="GRP-001" className={inputBase} disabled={isEdit} />
-            {errors.code && <p className="mt-1.5 text-xs text-red-500">{errors.code.message}</p>}
-          </div>
-          <div>
-            <label className="mb-2 block text-sm font-medium text-[#4E5968]">상품군명 <span className="text-red-500">*</span></label>
-            <input {...register("name")} placeholder="상품군명" className={inputBase} />
-            {errors.name && <p className="mt-1.5 text-xs text-red-500">{errors.name.message}</p>}
-          </div>
-        </div>
-        <div>
-          <label className="mb-2 block text-sm font-medium text-[#4E5968]">타입 <span className="text-red-500">*</span></label>
-          <input {...register("type")} placeholder="타입" className={inputBase} />
-          {errors.type && <p className="mt-1.5 text-xs text-red-500">{errors.type.message}</p>}
-        </div>
-        <div>
-          <label className="mb-2 block text-sm font-medium text-[#4E5968]">설명</label>
-          <textarea {...register("description")} placeholder="설명" rows={3} className={inputBase} />
-        </div>
-        <div className="flex justify-end gap-3 pt-2">
-          <button type="button" onClick={onClose} className="rounded-xl bg-[#F2F4F6] px-6 py-2.5 text-sm font-semibold text-[#4E5968] hover:bg-[#E5E8EB]">취소</button>
-          <button type="submit" disabled={isSubmitting} className="rounded-xl bg-[#3182F6] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#1B64DA] disabled:opacity-50">
-            {isSubmitting ? "처리중..." : isEdit ? "수정" : "등록"}
-          </button>
-        </div>
-      </form>
-    </Modal>
   );
 }

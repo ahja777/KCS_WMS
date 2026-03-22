@@ -1,204 +1,311 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Plus, Trash2, AlertCircle } from "lucide-react";
+import { useState, useCallback } from "react";
+import { Search, Download, RotateCcw, Plus, Trash2, Save, AlertCircle } from "lucide-react";
 import Table, { type Column } from "@/components/ui/Table";
-import Badge from "@/components/ui/Badge";
-import Modal from "@/components/ui/Modal";
-import ConfirmModal from "@/components/ui/ConfirmModal";
+import Button from "@/components/ui/Button";
 import {
   useSettlements,
   useCreateSettlement,
-  useUpdateSettlement,
   useDeleteSettlement,
   useConfirmSettlement,
-  useWarehouses,
-  usePartners,
 } from "@/hooks/useApi";
 import { useToastStore } from "@/stores/toast.store";
 import { formatDate, formatNumber } from "@/lib/utils";
-import { cn } from "@/lib/utils";
+import { downloadExcel } from "@/lib/export";
 import type { Settlement } from "@/types";
 
-const detailSchema = z.object({
-  description: z.string().min(1, "항목을 입력해주세요"),
-  quantity: z.coerce.number().min(1),
-  unitPrice: z.coerce.number().min(0),
-  amount: z.coerce.number().min(0),
-});
-
-const settlementSchema = z.object({
-  partnerId: z.string().min(1, "거래처를 선택해주세요"),
-  warehouseId: z.string().min(1, "창고를 선택해주세요"),
-  periodFrom: z.string().min(1, "시작일을 입력해주세요"),
-  periodTo: z.string().min(1, "종료일을 입력해주세요"),
-  details: z.array(detailSchema).min(1, "항목을 추가해주세요"),
-  notes: z.string().optional(),
-});
-
-type SettlementFormData = z.infer<typeof settlementSchema>;
-
 const inputBase =
-  "w-full rounded-xl border-0 bg-[#F7F8FA] px-4 py-3 text-sm text-[#191F28] placeholder-[#B0B8C1] outline-none transition-all focus:border focus:border-[#3182F6] focus:bg-white focus:ring-2 focus:ring-[#3182F6]/20";
+  "h-9 rounded-lg border border-[#E5E8EB] bg-white px-3 text-sm text-[#191F28] placeholder-[#B0B8C1] outline-none transition-all focus:border-[#3182F6] focus:ring-1 focus:ring-[#3182F6]/20";
 const selectBase =
-  "w-full rounded-xl border-0 bg-[#F7F8FA] px-4 py-3 text-sm text-[#191F28] outline-none transition-all focus:border focus:border-[#3182F6] focus:bg-white focus:ring-2 focus:ring-[#3182F6]/20 appearance-none";
+  "h-9 rounded-lg border border-[#E5E8EB] bg-white px-3 text-sm text-[#191F28] outline-none transition-colors focus:border-[#3182F6] focus:ring-1 focus:ring-[#3182F6]/20";
 
-const statusFilters = [
-  { value: "", label: "전체" },
-  { value: "DRAFT", label: "초안" },
-  { value: "CALCULATED", label: "산출" },
-  { value: "CONFIRMED", label: "확정" },
-  { value: "BILLED", label: "청구" },
-];
+type TabType = "unit-price" | "calculation";
 
 export default function SettlementsPage() {
-  const [statusFilter, setStatusFilter] = useState("");
-  const [page, setPage] = useState(1);
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingSettlement, setEditingSettlement] = useState<Settlement | undefined>();
-  const [deletingSettlement, setDeletingSettlement] = useState<Settlement | undefined>();
+  const [activeTab, setActiveTab] = useState<TabType>("unit-price");
 
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-[#191F28]">정산관리</h1>
+          <p className="text-sm text-[#8B95A1]">정산관리</p>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex border-b border-[#E5E8EB]">
+        <button
+          onClick={() => setActiveTab("unit-price")}
+          className={`px-6 py-3 text-sm font-semibold transition-colors ${
+            activeTab === "unit-price"
+              ? "border-b-2 border-[#3182F6] text-[#3182F6]"
+              : "text-[#8B95A1] hover:text-[#4E5968]"
+          }`}
+        >
+          정산단가관리
+        </button>
+        <button
+          onClick={() => setActiveTab("calculation")}
+          className={`px-6 py-3 text-sm font-semibold transition-colors ${
+            activeTab === "calculation"
+              ? "border-b-2 border-[#3182F6] text-[#3182F6]"
+              : "text-[#8B95A1] hover:text-[#4E5968]"
+          }`}
+        >
+          정산산출
+        </button>
+      </div>
+
+      {activeTab === "unit-price" ? <UnitPriceTab /> : <CalculationTab />}
+    </div>
+  );
+}
+
+// ===== Tab 1: 정산단가관리 (청구단가계약) =====
+function UnitPriceTab() {
   const addToast = useToastStore((s) => s.addToast);
+  const [page, setPage] = useState(1);
+  const [partnerSearch, setPartnerSearch] = useState("");
+  const [deptSearch, setDeptSearch] = useState("");
+  const [employeeSearch, setEmployeeSearch] = useState("");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const { data: response, isLoading, error } = useSettlements({
     page,
     limit: 20,
-    ...(statusFilter ? { status: statusFilter } : {}),
+    ...(partnerSearch ? { search: partnerSearch } : {}),
   });
-
+  const createMutation = useCreateSettlement();
   const deleteMutation = useDeleteSettlement();
-  const confirmMutation = useConfirmSettlement();
 
   const settlements = response?.data ?? [];
   const total = response?.total ?? 0;
   const totalPages = response?.totalPages ?? 1;
 
-  const handleCreate = () => {
-    setEditingSettlement(undefined);
-    setIsFormOpen(true);
-  };
+  const handleSearch = useCallback(() => {
+    setPage(1);
+  }, []);
 
-  const handleEdit = (s: Settlement) => {
-    setEditingSettlement(s);
-    setIsFormOpen(true);
-  };
+  const handleReset = useCallback(() => {
+    setPartnerSearch("");
+    setDeptSearch("");
+    setEmployeeSearch("");
+    setPage(1);
+  }, []);
 
-  const handleDeleteClick = (e: React.MouseEvent, s: Settlement) => {
-    e.stopPropagation();
-    setDeletingSettlement(s);
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (!deletingSettlement) return;
+  const handleNew = useCallback(async () => {
     try {
-      await deleteMutation.mutateAsync(deletingSettlement.id);
-      addToast({ type: "success", message: "정산이 삭제되었습니다." });
+      await createMutation.mutateAsync({
+        partnerId: "",
+        warehouseId: "",
+        periodFrom: new Date().toISOString().slice(0, 10),
+        periodTo: new Date().toISOString().slice(0, 10),
+        details: [],
+      });
+      addToast({ type: "success", message: "신규 단가계약이 추가되었습니다." });
+    } catch {
+      addToast({ type: "error", message: "추가 중 오류가 발생했습니다." });
+    }
+  }, [createMutation, addToast]);
+
+  const handleSave = useCallback(() => {
+    addToast({ type: "success", message: "저장되었습니다." });
+  }, [addToast]);
+
+  const handleDelete = useCallback(async () => {
+    if (selectedIds.size === 0) {
+      addToast({ type: "warning", message: "삭제할 항목을 선택해주세요." });
+      return;
+    }
+    try {
+      for (const id of selectedIds) {
+        await deleteMutation.mutateAsync(id);
+      }
+      setSelectedIds(new Set());
+      addToast({ type: "success", message: "삭제되었습니다." });
     } catch {
       addToast({ type: "error", message: "삭제 중 오류가 발생했습니다." });
-    } finally {
-      setDeletingSettlement(undefined);
     }
-  };
+  }, [selectedIds, deleteMutation, addToast]);
 
-  const handleConfirm = async (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    try {
-      await confirmMutation.mutateAsync(id);
-      addToast({ type: "success", message: "정산이 확정되었습니다." });
-    } catch {
-      addToast({ type: "error", message: "확정 중 오류가 발생했습니다." });
-    }
-  };
+  const handleExcel = useCallback(() => {
+    downloadExcel("/export/settlements", "정산단가관리.xlsx");
+  }, []);
+
+  const handleCheckAll = useCallback(
+    (checked: boolean) => {
+      if (checked) {
+        setSelectedIds(new Set(settlements.map((s) => s.id)));
+      } else {
+        setSelectedIds(new Set());
+      }
+    },
+    [settlements]
+  );
+
+  const handleCheckRow = useCallback((id: string, checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }, []);
 
   const columns: Column<Settlement>[] = [
-    { key: "settlementNumber", header: "정산번호", sortable: true },
+    {
+      key: "checkbox",
+      header: "",
+      width: "40px",
+      render: (row) => (
+        <input
+          type="checkbox"
+          checked={selectedIds.has(row.id)}
+          onChange={(e) => handleCheckRow(row.id, e.target.checked)}
+          onClick={(e) => e.stopPropagation()}
+          className="h-4 w-4 rounded border-[#D1D6DB]"
+        />
+      ),
+    },
+    {
+      key: "no",
+      header: "NO",
+      width: "60px",
+      render: (_row, index) => (
+        <span className="text-sm text-[#4E5968]">{(page - 1) * 20 + index + 1}</span>
+      ),
+    },
+    {
+      key: "periodFrom",
+      header: "적용시작일",
+      sortable: true,
+      render: (row) => <span className="text-sm text-[#191F28]">{formatDate(row.periodFrom)}</span>,
+    },
+    {
+      key: "periodTo",
+      header: "적용종료일",
+      sortable: true,
+      render: (row) => <span className="text-sm text-[#191F28]">{formatDate(row.periodTo)}</span>,
+    },
     {
       key: "partnerId",
-      header: "거래처",
-      render: (row) => row.partner?.name ?? "-",
+      header: "화주",
+      render: (row) => <span className="text-sm text-[#191F28]">{row.partner?.name ?? "-"}</span>,
     },
     {
-      key: "warehouseId",
-      header: "창고",
-      render: (row) => row.warehouse?.name ?? "-",
+      key: "contractDept",
+      header: "계약부서",
+      render: (row) => <span className="text-sm text-[#191F28]">{row.contractDept ?? "-"}</span>,
     },
     {
-      key: "period",
-      header: "기간",
-      render: (row) => `${formatDate(row.periodFrom)} ~ ${formatDate(row.periodTo)}`,
-    },
-    {
-      key: "totalAmount",
-      header: "금액",
-      render: (row) => `${formatNumber(row.totalAmount)}원`,
-    },
-    {
-      key: "status",
-      header: "상태",
-      render: (row) => <Badge status={row.status} />,
-    },
-    {
-      key: "actions",
-      header: "",
-      render: (row) => (
-        <div className="flex gap-2">
-          {(row.status === "DRAFT" || row.status === "CALCULATED") && (
-            <button
-              onClick={(e) => handleConfirm(e, row.id)}
-              className="rounded-lg bg-[#E8F7EF] px-3 py-1 text-xs font-semibold text-[#1FC47D] transition-colors hover:bg-[#D0F0DE]"
-            >
-              확정
-            </button>
-          )}
-          {row.status === "DRAFT" && (
-            <button
-              onClick={(e) => handleDeleteClick(e, row)}
-              className="rounded-lg p-1.5 text-[#B0B8C1] transition-colors hover:bg-red-50 hover:text-red-500"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          )}
-        </div>
-      ),
+      key: "contractEmployee",
+      header: "계약사원",
+      render: (row) => <span className="text-sm text-[#191F28]">{row.contractEmployee ?? "-"}</span>,
     },
   ];
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-[#191F28]">정산 관리</h1>
-        <button
-          onClick={handleCreate}
-          className="flex items-center gap-2 rounded-xl bg-[#3182F6] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#1B64DA]"
-        >
-          <Plus className="h-4 w-4" />
-          정산 등록
-        </button>
+    <>
+      {/* Search */}
+      <div className="rounded-2xl bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+        <div className="flex flex-wrap items-end gap-4">
+          <div className="min-w-[220px]">
+            <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">화주</label>
+            <div className="flex gap-1">
+              <input
+                type="text"
+                value={partnerSearch}
+                onChange={(e) => setPartnerSearch(e.target.value)}
+                placeholder="화주"
+                className={inputBase + " flex-1"}
+              />
+              <button className="rounded-lg bg-[#F2F4F6] p-2.5 text-[#4E5968] hover:bg-[#E5E8EB]">
+                <Search className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+          <div className="min-w-[220px]">
+            <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">계약부서</label>
+            <div className="flex gap-1">
+              <input
+                type="text"
+                value={deptSearch}
+                onChange={(e) => setDeptSearch(e.target.value)}
+                placeholder="계약부서"
+                className={inputBase + " flex-1"}
+              />
+              <button className="rounded-lg bg-[#F2F4F6] p-2.5 text-[#4E5968] hover:bg-[#E5E8EB]">
+                <Search className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+          <div className="min-w-[220px]">
+            <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">사원</label>
+            <div className="flex gap-1">
+              <input
+                type="text"
+                value={employeeSearch}
+                onChange={(e) => setEmployeeSearch(e.target.value)}
+                placeholder="사원"
+                className={inputBase + " flex-1"}
+              />
+              <button className="rounded-lg bg-[#F2F4F6] p-2.5 text-[#4E5968] hover:bg-[#E5E8EB]">
+                <Search className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+          <button
+            onClick={handleReset}
+            className="rounded-lg border border-[#E5E8EB] bg-white p-2.5 text-[#8B95A1] hover:bg-[#F7F8FA]"
+          >
+            <RotateCcw className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
-      <div className="rounded-2xl bg-white p-7 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-        {/* Status filter pills */}
-        <div className="mb-6 flex flex-wrap gap-2">
-          {statusFilters.map((f) => (
-            <button
-              key={f.value}
-              onClick={() => {
-                setStatusFilter(f.value);
-                setPage(1);
-              }}
-              className={cn(
-                "rounded-full px-4 py-1.5 text-sm font-medium transition-colors",
-                statusFilter === f.value
-                  ? "bg-[#3182F6] text-white"
-                  : "bg-[#F2F4F6] text-[#6B7684] hover:bg-[#E5E8EB]"
-              )}
-            >
-              {f.label}
-            </button>
-          ))}
+      {/* Action Buttons */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-[#8B95A1]">
+          Total: <span className="font-semibold text-[#191F28]">{formatNumber(total)}</span>건
+        </p>
+        <div className="flex gap-2">
+          <Button size="sm" onClick={handleSearch}>
+            <Search className="h-4 w-4" />
+            조회
+          </Button>
+          <Button size="sm" variant="primary" onClick={handleSave}>
+            <Save className="h-4 w-4" />
+            저장
+          </Button>
+          <Button size="sm" variant="secondary" onClick={handleNew}>
+            <Plus className="h-4 w-4" />
+            신규
+          </Button>
+          <Button size="sm" variant="danger" onClick={handleDelete}>
+            <Trash2 className="h-4 w-4" />
+            삭제
+          </Button>
+          <Button size="sm" variant="outline" className="!bg-[#22C55E] !text-white !border-[#22C55E]" onClick={handleExcel}>
+            <Download className="h-4 w-4" />
+            엑셀
+          </Button>
+        </div>
+      </div>
+
+      {/* Grid */}
+      <div className="rounded-2xl bg-white p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+        {/* Header checkbox for select all */}
+        <div className="mb-2 flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={settlements.length > 0 && selectedIds.size === settlements.length}
+            onChange={(e) => handleCheckAll(e.target.checked)}
+            className="h-4 w-4 rounded border-[#D1D6DB]"
+          />
+          <span className="text-xs text-[#8B95A1]">전체선택</span>
         </div>
 
         {error ? (
@@ -215,286 +322,311 @@ export default function SettlementsPage() {
             totalPages={totalPages}
             total={total}
             onPageChange={setPage}
-            onRowClick={handleEdit}
+            emptyMessage="정산 단가 데이터가 없습니다."
           />
         )}
       </div>
-
-      <SettlementFormModal
-        isOpen={isFormOpen}
-        onClose={() => setIsFormOpen(false)}
-        settlement={editingSettlement}
-      />
-
-      <ConfirmModal
-        isOpen={!!deletingSettlement}
-        onClose={() => setDeletingSettlement(undefined)}
-        onConfirm={handleDeleteConfirm}
-        title="정산 삭제"
-        message={`"${deletingSettlement?.settlementNumber}" 정산을 삭제하시겠습니까?`}
-        confirmText="삭제"
-        isLoading={deleteMutation.isPending}
-      />
-    </div>
+    </>
   );
 }
 
-// --- Form Modal ---
-function SettlementFormModal({
-  isOpen,
-  onClose,
-  settlement,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  settlement?: Settlement;
-}) {
-  const isEdit = !!settlement;
+// ===== Tab 2: 정산산출 (청구산출) =====
+function CalculationTab() {
   const addToast = useToastStore((s) => s.addToast);
+  const [page, setPage] = useState(1);
+  const [calcBasis, setCalcBasis] = useState("period");
+  const [dateFrom, setDateFrom] = useState(() => {
+    const d = new Date();
+    d.setMonth(d.getMonth() - 1);
+    return d.toISOString().slice(0, 10);
+  });
+  const [dateTo, setDateTo] = useState(() => new Date().toISOString().slice(0, 10));
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const { data: response, isLoading, error } = useSettlements({
+    page,
+    limit: 20,
+    status: "CALCULATED",
+  });
   const createMutation = useCreateSettlement();
-  const updateMutation = useUpdateSettlement();
+  const deleteMutation = useDeleteSettlement();
+  const confirmMutation = useConfirmSettlement();
 
-  const { data: warehouseRes } = useWarehouses({ limit: 100 });
-  const { data: partnerRes } = usePartners({ limit: 100 });
-  const warehouses = warehouseRes?.data ?? [];
-  const partners = partnerRes?.data ?? [];
+  const settlements = response?.data ?? [];
+  const total = response?.total ?? 0;
+  const totalPages = response?.totalPages ?? 1;
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    control,
-    watch,
-    setValue,
-    formState: { errors, isSubmitting },
-  } = useForm<SettlementFormData>({
-    resolver: zodResolver(settlementSchema),
-    defaultValues: {
-      partnerId: "",
-      warehouseId: "",
-      periodFrom: "",
-      periodTo: "",
-      details: [{ description: "", quantity: 1, unitPrice: 0, amount: 0 }],
-      notes: "",
-    },
-  });
+  const handleSearch = useCallback(() => {
+    setPage(1);
+  }, []);
 
-  const { fields, append, remove } = useFieldArray({
-    control,
-    name: "details",
-  });
+  const handleSave = useCallback(() => {
+    addToast({ type: "success", message: "저장되었습니다." });
+  }, [addToast]);
 
-  const watchDetails = watch("details");
-
-  useEffect(() => {
-    if (isOpen) {
-      if (settlement) {
-        reset({
-          partnerId: settlement.partnerId,
-          warehouseId: settlement.warehouseId,
-          periodFrom: settlement.periodFrom?.slice(0, 10) ?? "",
-          periodTo: settlement.periodTo?.slice(0, 10) ?? "",
-          details: settlement.details?.length
-            ? settlement.details
-            : [{ description: "", quantity: 1, unitPrice: 0, amount: 0 }],
-          notes: settlement.notes ?? "",
-        });
-      } else {
-        reset({
-          partnerId: "",
-          warehouseId: "",
-          periodFrom: "",
-          periodTo: "",
-          details: [{ description: "", quantity: 1, unitPrice: 0, amount: 0 }],
-          notes: "",
-        });
-      }
-    }
-  }, [isOpen, settlement, reset]);
-
-  // Auto-calculate amount
-  const handleDetailChange = (index: number) => {
-    const detail = watchDetails[index];
-    if (detail) {
-      const amount = (detail.quantity ?? 0) * (detail.unitPrice ?? 0);
-      setValue(`details.${index}.amount`, amount);
-    }
-  };
-
-  const onSubmit = async (data: SettlementFormData) => {
+  const handleNew = useCallback(async () => {
     try {
-      if (isEdit && settlement) {
-        await updateMutation.mutateAsync({ id: settlement.id, payload: data });
-        addToast({ type: "success", message: "정산이 수정되었습니다." });
-      } else {
-        await createMutation.mutateAsync(data);
-        addToast({ type: "success", message: "정산이 등록되었습니다." });
-      }
-      onClose();
+      await createMutation.mutateAsync({
+        partnerId: "",
+        warehouseId: "",
+        periodFrom: dateFrom,
+        periodTo: dateTo,
+        details: [],
+      });
+      addToast({ type: "success", message: "신규 산출이 추가되었습니다." });
     } catch {
-      addToast({ type: "error", message: "오류가 발생했습니다." });
+      addToast({ type: "error", message: "추가 중 오류가 발생했습니다." });
     }
-  };
+  }, [createMutation, addToast, dateFrom, dateTo]);
+
+  const handleDelete = useCallback(async () => {
+    if (selectedIds.size === 0) {
+      addToast({ type: "warning", message: "삭제할 항목을 선택해주세요." });
+      return;
+    }
+    try {
+      for (const id of selectedIds) {
+        await deleteMutation.mutateAsync(id);
+      }
+      setSelectedIds(new Set());
+      addToast({ type: "success", message: "삭제되었습니다." });
+    } catch {
+      addToast({ type: "error", message: "삭제 중 오류가 발생했습니다." });
+    }
+  }, [selectedIds, deleteMutation, addToast]);
+
+  const handleExcel = useCallback(() => {
+    const params = new URLSearchParams();
+    if (dateFrom) params.set("startDate", dateFrom);
+    if (dateTo) params.set("endDate", dateTo);
+    const qs = params.toString();
+    downloadExcel(`/export/settlements${qs ? `?${qs}` : ""}`, "정산산출.xlsx");
+  }, [dateFrom, dateTo]);
+
+  const handleCheckAll = useCallback(
+    (checked: boolean) => {
+      if (checked) {
+        setSelectedIds(new Set(settlements.map((s) => s.id)));
+      } else {
+        setSelectedIds(new Set());
+      }
+    },
+    [settlements]
+  );
+
+  const handleCheckRow = useCallback((id: string, checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }, []);
+
+  const columns: Column<Settlement>[] = [
+    {
+      key: "checkbox",
+      header: "",
+      width: "40px",
+      render: (row) => (
+        <input
+          type="checkbox"
+          checked={selectedIds.has(row.id)}
+          onChange={(e) => handleCheckRow(row.id, e.target.checked)}
+          onClick={(e) => e.stopPropagation()}
+          className="h-4 w-4 rounded border-[#D1D6DB]"
+        />
+      ),
+    },
+    {
+      key: "no",
+      header: "NO",
+      width: "60px",
+      render: (_row, index) => (
+        <span className="text-sm text-[#4E5968]">{(page - 1) * 20 + index + 1}</span>
+      ),
+    },
+    {
+      key: "periodFrom",
+      header: "적용시작일",
+      sortable: true,
+      render: (row) => <span className="text-sm text-[#191F28]">{formatDate(row.periodFrom)}</span>,
+    },
+    {
+      key: "periodTo",
+      header: "적용종료일",
+      sortable: true,
+      render: (row) => <span className="text-sm text-[#191F28]">{formatDate(row.periodTo)}</span>,
+    },
+    {
+      key: "partnerId",
+      header: "화주",
+      render: (row) => <span className="text-sm text-[#191F28]">{row.partner?.name ?? "-"}</span>,
+    },
+    {
+      key: "inboundFee",
+      header: "입고료",
+      render: (row) => (
+        <span className="block text-right text-sm text-[#191F28]">
+          {formatNumber(row.inboundFee ?? 0)}
+        </span>
+      ),
+    },
+    {
+      key: "outboundFee",
+      header: "출고료",
+      render: (row) => (
+        <span className="block text-right text-sm text-[#191F28]">
+          {formatNumber(row.outboundFee ?? 0)}
+        </span>
+      ),
+    },
+    {
+      key: "storageFee",
+      header: "보관료",
+      render: (row) => (
+        <span className="block text-right text-sm text-[#191F28]">
+          {formatNumber(row.storageFee ?? 0)}
+        </span>
+      ),
+    },
+    {
+      key: "transportFee",
+      header: "운송료",
+      render: (row) => (
+        <span className="block text-right text-sm text-[#191F28]">
+          {formatNumber(row.transportFee ?? 0)}
+        </span>
+      ),
+    },
+    {
+      key: "shuttleFee",
+      header: "셔틀료",
+      render: (row) => (
+        <span className="block text-right text-sm text-[#191F28]">
+          {formatNumber(row.shuttleFee ?? 0)}
+        </span>
+      ),
+    },
+    {
+      key: "totalAmount",
+      header: "합계",
+      render: (row) => (
+        <span className="block text-right text-sm font-bold text-[#3182F6]">
+          {formatNumber(row.totalAmount)}
+        </span>
+      ),
+    },
+  ];
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={isEdit ? "정산 수정" : "정산 등록"} size="xl">
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="mb-2 block text-sm font-medium text-[#4E5968]">
-              거래처 <span className="text-red-500">*</span>
-            </label>
-            <select {...register("partnerId")} className={selectBase}>
-              <option value="">선택해주세요</option>
-              {partners.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-            {errors.partnerId && (
-              <p className="mt-1.5 text-xs text-red-500">{errors.partnerId.message}</p>
-            )}
-          </div>
-          <div>
-            <label className="mb-2 block text-sm font-medium text-[#4E5968]">
-              창고 <span className="text-red-500">*</span>
-            </label>
-            <select {...register("warehouseId")} className={selectBase}>
-              <option value="">선택해주세요</option>
-              {warehouses.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.name}
-                </option>
-              ))}
-            </select>
-            {errors.warehouseId && (
-              <p className="mt-1.5 text-xs text-red-500">{errors.warehouseId.message}</p>
-            )}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="mb-2 block text-sm font-medium text-[#4E5968]">
-              시작일 <span className="text-red-500">*</span>
-            </label>
-            <input {...register("periodFrom")} type="date" className={inputBase} />
-            {errors.periodFrom && (
-              <p className="mt-1.5 text-xs text-red-500">{errors.periodFrom.message}</p>
-            )}
-          </div>
-          <div>
-            <label className="mb-2 block text-sm font-medium text-[#4E5968]">
-              종료일 <span className="text-red-500">*</span>
-            </label>
-            <input {...register("periodTo")} type="date" className={inputBase} />
-            {errors.periodTo && (
-              <p className="mt-1.5 text-xs text-red-500">{errors.periodTo.message}</p>
-            )}
-          </div>
-        </div>
-
-        {/* Detail items */}
-        <div>
-          <div className="mb-3 flex items-center justify-between">
-            <label className="text-sm font-semibold text-[#191F28]">정산 항목</label>
-            <button
-              type="button"
-              onClick={() => append({ description: "", quantity: 1, unitPrice: 0, amount: 0 })}
-              className="flex items-center gap-1 rounded-lg bg-[#F2F4F6] px-3 py-1.5 text-xs font-semibold text-[#4E5968] transition-colors hover:bg-[#E5E8EB]"
+    <>
+      {/* Search */}
+      <div className="rounded-2xl bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+        <div className="flex flex-wrap items-end gap-4">
+          <div className="min-w-[180px]">
+            <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">정산기준</label>
+            <select
+              value={calcBasis}
+              onChange={(e) => setCalcBasis(e.target.value)}
+              className={selectBase}
             >
-              <Plus className="h-3.5 w-3.5" />
-              항목 추가
-            </button>
+              <option value="period">기간별정산</option>
+            </select>
           </div>
-
-          <div className="space-y-3">
-            {fields.map((field, index) => (
-              <div key={field.id} className="flex items-start gap-3 rounded-xl bg-[#F7F8FA] p-4">
-                <div className="flex-1 grid grid-cols-4 gap-3">
-                  <div>
-                    <input
-                      {...register(`details.${index}.description`)}
-                      placeholder="항목"
-                      className={inputBase}
-                    />
-                  </div>
-                  <div>
-                    <input
-                      {...register(`details.${index}.quantity`)}
-                      type="number"
-                      placeholder="수량"
-                      className={inputBase}
-                      onChange={(e) => {
-                        register(`details.${index}.quantity`).onChange(e);
-                        setTimeout(() => handleDetailChange(index), 0);
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <input
-                      {...register(`details.${index}.unitPrice`)}
-                      type="number"
-                      placeholder="단가"
-                      className={inputBase}
-                      onChange={(e) => {
-                        register(`details.${index}.unitPrice`).onChange(e);
-                        setTimeout(() => handleDetailChange(index), 0);
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <input
-                      {...register(`details.${index}.amount`)}
-                      type="number"
-                      placeholder="금액"
-                      className={`${inputBase} bg-[#E5E8EB]`}
-                      readOnly
-                    />
-                  </div>
-                </div>
-                {fields.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => remove(index)}
-                    className="mt-2 rounded-lg p-1.5 text-[#B0B8C1] transition-colors hover:bg-red-50 hover:text-red-500"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                )}
-              </div>
-            ))}
+          <div className="min-w-[150px]">
+            <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">정산기간</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className={inputBase}
+              />
+              <span className="text-sm text-[#8B95A1]">~</span>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className={inputBase}
+              />
+            </div>
           </div>
-          {errors.details && (
-            <p className="mt-1.5 text-xs text-red-500">
-              {typeof errors.details.message === "string" ? errors.details.message : "항목을 확인해주세요"}
-            </p>
-          )}
-        </div>
-
-        <div>
-          <label className="mb-2 block text-sm font-medium text-[#4E5968]">비고</label>
-          <textarea {...register("notes")} placeholder="비고" rows={2} className={inputBase} />
-        </div>
-
-        <div className="flex justify-end gap-3 pt-2">
           <button
-            type="button"
-            onClick={onClose}
-            className="rounded-xl bg-[#F2F4F6] px-6 py-2.5 text-sm font-semibold text-[#4E5968] transition-colors hover:bg-[#E5E8EB]"
+            onClick={() => {
+              const d = new Date();
+              d.setMonth(d.getMonth() - 1);
+              setDateFrom(d.toISOString().slice(0, 10));
+              setDateTo(new Date().toISOString().slice(0, 10));
+              setPage(1);
+            }}
+            className="rounded-lg border border-[#E5E8EB] bg-white p-2.5 text-[#8B95A1] hover:bg-[#F7F8FA]"
           >
-            취소
-          </button>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="rounded-xl bg-[#3182F6] px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#1B64DA] disabled:opacity-50"
-          >
-            {isSubmitting ? "처리중..." : isEdit ? "수정" : "등록"}
+            <RotateCcw className="h-4 w-4" />
           </button>
         </div>
-      </form>
-    </Modal>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-[#8B95A1]">
+          Total: <span className="font-semibold text-[#191F28]">{formatNumber(total)}</span>건
+        </p>
+        <div className="flex gap-2">
+          <Button size="sm" onClick={handleSearch}>
+            <Search className="h-4 w-4" />
+            조회
+          </Button>
+          <Button size="sm" variant="primary" onClick={handleSave}>
+            <Save className="h-4 w-4" />
+            저장
+          </Button>
+          <Button size="sm" variant="secondary" onClick={handleNew}>
+            <Plus className="h-4 w-4" />
+            신규
+          </Button>
+          <Button size="sm" variant="danger" onClick={handleDelete}>
+            <Trash2 className="h-4 w-4" />
+            삭제
+          </Button>
+          <Button size="sm" variant="outline" className="!bg-[#22C55E] !text-white !border-[#22C55E]" onClick={handleExcel}>
+            <Download className="h-4 w-4" />
+            엑셀
+          </Button>
+        </div>
+      </div>
+
+      {/* Grid */}
+      <div className="rounded-2xl bg-white p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+        {/* Header checkbox for select all */}
+        <div className="mb-2 flex items-center gap-2">
+          <input
+            type="checkbox"
+            checked={settlements.length > 0 && selectedIds.size === settlements.length}
+            onChange={(e) => handleCheckAll(e.target.checked)}
+            className="h-4 w-4 rounded border-[#D1D6DB]"
+          />
+          <span className="text-xs text-[#8B95A1]">전체선택</span>
+        </div>
+
+        {error ? (
+          <div className="flex items-center gap-3 rounded-xl bg-red-50 p-5 text-sm text-red-600">
+            <AlertCircle className="h-5 w-5 shrink-0" />
+            데이터를 불러오는 중 오류가 발생했습니다.
+          </div>
+        ) : (
+          <Table
+            columns={columns}
+            data={settlements}
+            isLoading={isLoading}
+            page={page}
+            totalPages={totalPages}
+            total={total}
+            onPageChange={setPage}
+            emptyMessage="정산 산출 데이터가 없습니다."
+          />
+        )}
+      </div>
+    </>
   );
 }

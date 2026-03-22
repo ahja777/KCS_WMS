@@ -5,9 +5,11 @@ import Link from "next/link";
 import { ArrowLeft, Search, Download, AlertCircle } from "lucide-react";
 import Table, { type Column } from "@/components/ui/Table";
 import Button from "@/components/ui/Button";
+import ItemSearchPopup from "@/components/ui/ItemSearchPopup";
 import { formatNumber } from "@/lib/utils";
-import { useWarehouses, useInventoryList } from "@/hooks/useApi";
+import { useWarehouses, useInventoryList, usePartners, useItems } from "@/hooks/useApi";
 import { downloadExcel } from "@/lib/export";
+import type { Item } from "@/types";
 
 const CATEGORY_LABELS: Record<string, string> = {
   GENERAL: "일반",
@@ -19,23 +21,39 @@ const CATEGORY_LABELS: Record<string, string> = {
   OVERSIZED: "대형화물",
 };
 
+const inputBase =
+  "w-full rounded-xl border-0 bg-[#F7F8FA] px-4 py-3 text-sm text-[#191F28] placeholder-[#B0B8C1] outline-none transition-all focus:border focus:border-[#3182F6] focus:bg-white focus:ring-2 focus:ring-[#3182F6]/20";
+
 interface CategoryRow {
   id: string;
   category: string;
   categoryLabel: string;
   warehouseName: string;
-  usageArea: number;
-  usageRate: number;
+  ownerName: string;
+  location: string;
+  itemName: string;
   stockQty: number;
+  uom: string;
+  isDeleted: boolean;
 }
 
 export default function CategoryStockPage() {
   const [warehouseId, setWarehouseId] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
+  const [ownerFilter, setOwnerFilter] = useState("");
+  const [locationFilter, setLocationFilter] = useState("");
+  const [selectedItem, setSelectedItem] = useState<Item | null>(null);
   const [page, setPage] = useState(1);
+
+  // Popup states
+  const [itemPopupOpen, setItemPopupOpen] = useState(false);
 
   const { data: warehouseResponse } = useWarehouses({ limit: 100 });
   const warehouses = warehouseResponse?.data ?? [];
+
+  const { data: partnerRes } = usePartners({ limit: 200 });
+  const allPartners = partnerRes?.data ?? [];
+  const owners = allPartners.filter((p) => (p.type as string) === "OWNER" || p.type === "SUPPLIER");
 
   const { data: inventoryResponse, isLoading, error } = useInventoryList({
     limit: 500,
@@ -44,49 +62,31 @@ export default function CategoryStockPage() {
 
   const inventoryItems = inventoryResponse?.data ?? [];
 
-  // Group by category + warehouse
+  // Build category stock rows
   const categoryData = useMemo(() => {
-    const map = new Map<
-      string,
-      { category: string; warehouseName: string; items: Set<string>; totalQty: number }
-    >();
+    const rows: CategoryRow[] = [];
 
     inventoryItems.forEach((inv) => {
       const cat = inv.item?.category ?? "GENERAL";
-      const whName = inv.warehouse?.name ?? "-";
-      const key = `${cat}_${whName}`;
-      const existing = map.get(key);
-      if (existing) {
-        existing.items.add(inv.itemId);
-        existing.totalQty += inv.quantity;
-      } else {
-        map.set(key, {
-          category: cat,
-          warehouseName: whName,
-          items: new Set([inv.itemId]),
-          totalQty: inv.quantity,
-        });
-      }
-    });
+      if (categoryFilter && cat !== categoryFilter) return;
+      if (selectedItem && inv.itemId !== selectedItem.id) return;
 
-    const totalQtyAll = inventoryItems.reduce((s, i) => s + i.quantity, 0);
-
-    const rows: CategoryRow[] = [];
-    map.forEach((val, key) => {
-      if (categoryFilter && val.category !== categoryFilter) return;
       rows.push({
-        id: key,
-        category: val.category,
-        categoryLabel: CATEGORY_LABELS[val.category] ?? val.category,
-        warehouseName: val.warehouseName,
-        usageArea: val.items.size * 10, // estimated area per item type
-        usageRate: totalQtyAll > 0 ? Math.round((val.totalQty / totalQtyAll) * 100) : 0,
-        stockQty: val.totalQty,
+        id: inv.id,
+        category: cat,
+        categoryLabel: CATEGORY_LABELS[cat] ?? cat,
+        warehouseName: inv.warehouse?.name ?? "-",
+        ownerName: "-",
+        location: inv.locationCode ?? "-",
+        itemName: inv.item?.name ?? "-",
+        stockQty: inv.quantity,
+        uom: inv.item?.uom ?? "-",
+        isDeleted: !inv.item?.isActive,
       });
     });
 
     return rows.sort((a, b) => b.stockQty - a.stockQty);
-  }, [inventoryItems, categoryFilter]);
+  }, [inventoryItems, categoryFilter, selectedItem]);
 
   const pageSize = 20;
   const totalPages = Math.max(1, Math.ceil(categoryData.length / pageSize));
@@ -100,7 +100,7 @@ export default function CategoryStockPage() {
     const params = new URLSearchParams();
     if (warehouseId) params.set("warehouseId", warehouseId);
     const qs = params.toString();
-    downloadExcel(`/export/inventory${qs ? `?${qs}` : ""}`, "제품군별창고사용현황.xlsx");
+    downloadExcel(`/export/inventory${qs ? `?${qs}` : ""}`, "제품군별재고현황.xlsx");
   }, [warehouseId]);
 
   const columns: Column<CategoryRow>[] = [
@@ -120,31 +120,43 @@ export default function CategoryStockPage() {
       render: (row) => <span className="text-sm text-[#191F28]">{row.warehouseName}</span>,
     },
     {
-      key: "usageArea",
-      header: "사용면적",
-      render: (row) => <span className="text-sm text-[#4E5968]">{formatNumber(row.usageArea)} m2</span>,
+      key: "ownerName",
+      header: "화주",
+      render: (row) => <span className="text-sm text-[#4E5968]">{row.ownerName}</span>,
     },
     {
-      key: "usageRate",
-      header: "사용률",
-      sortable: true,
-      render: (row) => (
-        <div className="flex items-center gap-2">
-          <div className="h-2 w-20 overflow-hidden rounded-full bg-[#F2F4F6]">
-            <div
-              className="h-full rounded-full bg-[#3182F6]"
-              style={{ width: `${Math.min(row.usageRate, 100)}%` }}
-            />
-          </div>
-          <span className="text-sm font-semibold text-[#191F28]">{row.usageRate}%</span>
-        </div>
-      ),
+      key: "location",
+      header: "로케이션",
+      render: (row) => <span className="text-sm font-mono text-[#4E5968]">{row.location}</span>,
+    },
+    {
+      key: "itemName",
+      header: "상품",
+      render: (row) => <span className="text-sm text-[#191F28]">{row.itemName}</span>,
     },
     {
       key: "stockQty",
-      header: "재고수량",
+      header: "수량",
       sortable: true,
       render: (row) => <span className="text-sm font-bold text-[#191F28]">{formatNumber(row.stockQty)}</span>,
+    },
+    {
+      key: "uom",
+      header: "UOM",
+      render: (row) => (
+        <span className="inline-flex items-center rounded-full bg-[#F2F4F6] px-2.5 py-0.5 text-xs font-medium text-[#4E5968]">
+          {row.uom}
+        </span>
+      ),
+    },
+    {
+      key: "isDeleted",
+      header: "삭제여부",
+      render: (row) => (
+        <span className={`text-sm font-medium ${row.isDeleted ? "text-[#F04452]" : "text-[#4E5968]"}`}>
+          {row.isDeleted ? "Y" : "N"}
+        </span>
+      ),
     },
   ];
 
@@ -166,8 +178,8 @@ export default function CategoryStockPage() {
             <ArrowLeft className="h-5 w-5" />
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-[#191F28]">제품군별창고사용현황</h1>
-            <p className="text-sm text-[#8B95A1]">리포트 &gt; 제품군별창고사용현황</p>
+            <h1 className="text-2xl font-bold text-[#191F28]">제품군별재고현황</h1>
+            <p className="text-sm text-[#8B95A1]">리포트 &gt; 제품군별재고현황</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -178,15 +190,39 @@ export default function CategoryStockPage() {
         </div>
       </div>
 
-      {/* Search Filters */}
+      {/* Search Filters - 2 rows */}
       <div className="rounded-2xl bg-white p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+        {/* Row 1 */}
         <div className="flex flex-wrap items-end gap-4">
+          <div className="min-w-[180px] flex-1">
+            <label className="mb-2 block text-sm font-medium text-[#4E5968]">상품군</label>
+            <select
+              value={categoryFilter}
+              onChange={(e) => { setCategoryFilter(e.target.value); setPage(1); }}
+              className={inputBase}
+            >
+              <option value="">전체</option>
+              {categoryOptions.map((o) => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
+          </div>
+          <div className="min-w-[180px] flex-1">
+            <label className="mb-2 block text-sm font-medium text-[#4E5968]">로케이션</label>
+            <input
+              type="text"
+              value={locationFilter}
+              onChange={(e) => { setLocationFilter(e.target.value); setPage(1); }}
+              placeholder="로케이션 검색..."
+              className={inputBase}
+            />
+          </div>
           <div className="min-w-[180px] flex-1">
             <label className="mb-2 block text-sm font-medium text-[#4E5968]">창고</label>
             <select
               value={warehouseId}
               onChange={(e) => { setWarehouseId(e.target.value); setPage(1); }}
-              className="w-full rounded-xl border-0 bg-[#F7F8FA] px-4 py-3 text-sm text-[#191F28] outline-none focus:ring-2 focus:ring-[#3182F6]/20"
+              className={inputBase}
             >
               <option value="">전체 창고</option>
               {warehouses.map((w) => (
@@ -194,18 +230,31 @@ export default function CategoryStockPage() {
               ))}
             </select>
           </div>
+        </div>
+
+        {/* Row 2 */}
+        <div className="mt-4 flex flex-wrap items-end gap-4">
           <div className="min-w-[180px] flex-1">
-            <label className="mb-2 block text-sm font-medium text-[#4E5968]">제품군</label>
+            <label className="mb-2 block text-sm font-medium text-[#4E5968]">화주</label>
             <select
-              value={categoryFilter}
-              onChange={(e) => { setCategoryFilter(e.target.value); setPage(1); }}
-              className="w-full rounded-xl border-0 bg-[#F7F8FA] px-4 py-3 text-sm text-[#191F28] outline-none focus:ring-2 focus:ring-[#3182F6]/20"
+              value={ownerFilter}
+              onChange={(e) => { setOwnerFilter(e.target.value); setPage(1); }}
+              className={inputBase}
             >
               <option value="">전체</option>
-              {categoryOptions.map((o) => (
-                <option key={o.value} value={o.value}>{o.label}</option>
+              {owners.map((o) => (
+                <option key={o.id} value={o.id}>{o.name}</option>
               ))}
             </select>
+          </div>
+          <div className="min-w-[180px] flex-1">
+            <label className="mb-2 block text-sm font-medium text-[#4E5968]">상품</label>
+            <div
+              onClick={() => setItemPopupOpen(true)}
+              className={`${inputBase} cursor-pointer truncate`}
+            >
+              {selectedItem ? `${selectedItem.name} (${selectedItem.code})` : "상품 검색..."}
+            </div>
           </div>
           <Button size="sm" onClick={handleSearch}>
             <Search className="h-4 w-4" />
@@ -234,6 +283,13 @@ export default function CategoryStockPage() {
           />
         )}
       </div>
+
+      {/* Item Search Popup */}
+      <ItemSearchPopup
+        isOpen={itemPopupOpen}
+        onClose={() => setItemPopupOpen(false)}
+        onSelect={(item) => setSelectedItem(item)}
+      />
     </div>
   );
 }

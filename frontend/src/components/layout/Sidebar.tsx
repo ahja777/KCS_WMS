@@ -172,6 +172,7 @@ const menuItems: MenuItem[] = [
     roles: ["ADMIN", "MANAGER"],
     children: [
       { href: "/settlements", label: "정산 관리", icon: Calculator },
+      { href: "/settlements/period-close", label: "기간마감", icon: Calculator },
     ],
   },
 ];

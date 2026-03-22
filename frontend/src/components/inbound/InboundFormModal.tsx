@@ -105,7 +105,7 @@ export default function InboundFormModal({
   const onSubmit = async (data: InboundFormData) => {
     try {
       await createMutation.mutateAsync({
-        orderNumber: data.orderNumber,
+        ...(data.orderNumber ? { orderNumber: data.orderNumber } : {}),
         partnerId: data.partnerId,
         warehouseId: data.warehouseId,
         expectedDate: new Date(data.expectedDate).toISOString(),
@@ -147,12 +147,8 @@ export default function InboundFormModal({
       return;
     }
 
-    const now = new Date();
-    const orderNumber = `IB-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}-${String(now.getHours()).padStart(2, "0")}${String(now.getMinutes()).padStart(2, "0")}${String(now.getSeconds()).padStart(2, "0")}`;
-
     try {
       await createMutation.mutateAsync({
-        orderNumber,
         partnerId: quickPartnerId,
         warehouseId: quickWarehouseId,
         expectedDate: new Date(quickExpectedDate).toISOString(),
@@ -221,16 +217,14 @@ export default function InboundFormModal({
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className="text-sm font-medium text-[#4E5968]">
-                주문번호 <span className="text-[#F04452]">*</span>
+                주문번호
               </label>
               <input
-                {...register("orderNumber", { required: "주문번호를 입력해주세요" })}
-                placeholder="예: IB-20260321-0001"
+                {...register("orderNumber")}
+                placeholder="자동생성 (미입력시)"
                 className="mt-2 w-full rounded-xl border-none bg-[#F7F8FA] px-4 py-3 text-sm text-[#191F28] placeholder:text-[#B0B8C1] outline-none transition-all focus:bg-white focus:ring-2 focus:ring-[#3182F6]/20"
               />
-              {errors.orderNumber && (
-                <p className="mt-1 text-xs text-[#F04452]">{errors.orderNumber.message}</p>
-              )}
+              <p className="mt-1 text-xs text-[#8B95A1]">비워두면 IB-YYYYMMDD-NNNN 형식으로 자동생성됩니다</p>
             </div>
 
             <div>

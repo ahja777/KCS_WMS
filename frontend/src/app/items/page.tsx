@@ -7,7 +7,6 @@ import { z } from "zod";
 import { useDebounce } from "@/hooks/useDebounce";
 import { Search, AlertCircle } from "lucide-react";
 import Table, { type Column } from "@/components/ui/Table";
-import Badge from "@/components/ui/Badge";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import { downloadExcel } from "@/lib/export";
 import {
@@ -109,6 +108,19 @@ const selectBase =
   "w-full rounded-lg border border-[#E5E8EB] bg-white px-3 py-2 text-sm text-[#191F28] outline-none transition-all focus:border-[#3182F6] focus:ring-1 focus:ring-[#3182F6]/20 appearance-none";
 
 const labelClass = "mb-1 block text-xs font-medium text-[#6B7684]";
+
+const sectionTitleClass =
+  "mb-2 text-xs font-bold text-[#3182F6] uppercase tracking-wide border-b border-[#E5E8EB] pb-1";
+
+// UOM conversion history mock data (read-only display)
+interface UomConversion {
+  id: string;
+  quantity: number;
+  baseUom: string;
+  convertUom: string;
+  startDate: string;
+  endDate: string;
+}
 
 export default function ItemsPage() {
   const [search, setSearch] = useState("");
@@ -238,38 +250,51 @@ export default function ItemsPage() {
     }
   };
 
+  // Master grid columns per design: 상품군, 상품코드, 상품명, UOM, 적정재고(minStock), 유통기간(expiryDays)
   const columns: Column<Item>[] = [
-    { key: "code", header: "상품코드", sortable: true },
-    { key: "name", header: "상품명", sortable: true },
     {
-      key: "category",
+      key: "itemGroupId",
       header: "상품군",
       sortable: true,
       render: (row) => {
-        const cat = categoryOptions.find((c) => c.value === row.category);
-        return cat?.label ?? row.category;
+        const group = itemGroups.find((g: any) => g.id === row.itemGroupId);
+        return group?.name ?? "-";
       },
     },
-    {
-      key: "unitPrice",
-      header: "단가",
-      render: (row) =>
-        row.unitPrice != null
-          ? row.unitPrice.toLocaleString()
-          : "-",
-    },
-    {
-      key: "inboundZone",
-      header: "입고존",
-      render: (row) => row.inboundZone || "-",
-    },
+    { key: "code", header: "상품코드", sortable: true },
+    { key: "name", header: "상품명", sortable: true },
     { key: "uom", header: "UOM" },
     {
-      key: "barcode",
-      header: "바코드",
-      render: (row) => row.barcode || "-",
+      key: "minStock",
+      header: "적정재고",
+      render: (row) =>
+        row.minStock != null ? row.minStock.toLocaleString() : "-",
+    },
+    {
+      key: "expiryDays",
+      header: "유통기간",
+      render: (row) =>
+        row.expiryDays != null && row.expiryDays > 0
+          ? `${row.expiryDays}일`
+          : "-",
     },
   ];
+
+  // UOM conversion history columns (read-only)
+  const uomConversionColumns: Column<UomConversion>[] = [
+    {
+      key: "quantity",
+      header: "수량",
+      render: (row) => row.quantity.toLocaleString(),
+    },
+    { key: "baseUom", header: "기준UOM" },
+    { key: "convertUom", header: "변환UOM" },
+    { key: "startDate", header: "적용시작일" },
+    { key: "endDate", header: "적용종료일" },
+  ];
+
+  // Placeholder: UOM conversion history data (would come from API when available)
+  const uomConversions: UomConversion[] = [];
 
   return (
     <div className="space-y-4">
@@ -305,9 +330,9 @@ export default function ItemsPage() {
         </div>
       </div>
 
-      {/* Master-Detail Layout */}
+      {/* Master-Detail Layout (TOP) */}
       <div className="grid grid-cols-12 gap-4">
-        {/* Left: Grid (상품목록) */}
+        {/* TOP-LEFT: 상품목록 Grid */}
         <div className="col-span-7 rounded-xl bg-white shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
           <div className="border-b border-[#F2F4F6] px-5 py-3">
             <h2 className="text-sm font-semibold text-[#191F28]">상품목록</h2>
@@ -334,301 +359,365 @@ export default function ItemsPage() {
           </div>
         </div>
 
-        {/* Right: Detail Form (상품정보) */}
+        {/* TOP-RIGHT: 상품정보 Detail Form */}
         <div className="col-span-5 rounded-xl bg-white shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
-          <div className="border-b border-[#F2F4F6] px-5 py-3">
+          <div className="border-b border-[#F2F4F6] px-5 py-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-[#191F28]">상품정보</h2>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleNew}
+                className="rounded-lg bg-[#3182F6] px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#1B64DA]"
+              >
+                신규
+              </button>
+              {isEdit && perm.canDelete && (
+                <button
+                  type="button"
+                  onClick={handleDeleteClick}
+                  className="rounded-lg bg-[#6B7684] px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#4E5968]"
+                >
+                  삭제
+                </button>
+              )}
+              {perm.canExport && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    downloadExcel(
+                      "/export/items",
+                      `상품목록_${new Date().toISOString().slice(0, 10)}.xlsx`
+                    )
+                  }
+                  className="rounded-lg bg-[#22C55E] px-4 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#16A34A]"
+                >
+                  엑셀
+                </button>
+              )}
+            </div>
           </div>
-          <div className="p-5">
+          <div className="p-5 overflow-y-auto max-h-[calc(100vh-320px)]">
             {!selectedItem && !isNewMode ? (
               <div className="flex h-64 items-center justify-center text-sm text-[#8B95A1]">
                 좌측 목록에서 상품을 선택하거나, 신규 버튼을 클릭하세요.
               </div>
             ) : (
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-3">
-                {/* Row 1: 상품코드, 상품명 */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className={labelClass}>상품코드</label>
-                    <input
-                      {...register("code")}
-                      placeholder="상품코드"
-                      className={inputBase}
-                      disabled={isEdit}
-                    />
-                    {errors.code && (
-                      <p className="mt-0.5 text-xs text-red-500">
-                        {errors.code.message}
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <label className={labelClass}>상품명</label>
-                    <input
-                      {...register("name")}
-                      placeholder="상품명"
-                      className={inputBase}
-                    />
-                    {errors.name && (
-                      <p className="mt-0.5 text-xs text-red-500">
-                        {errors.name.message}
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Row 2: 상품군, 카테고리 */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className={labelClass}>상품군</label>
-                    <select {...register("itemGroupId")} className={selectBase}>
-                      <option value="">선택</option>
-                      {itemGroups.map((g: any) => (
-                        <option key={g.id} value={g.id}>
-                          {g.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className={labelClass}>카테고리</label>
-                    <select {...register("category")} className={selectBase}>
-                      {categoryOptions.map((c) => (
-                        <option key={c.value} value={c.value}>
-                          {c.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Row 3: 바코드, 단위 */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className={labelClass}>바코드</label>
-                    <input
-                      {...register("barcode")}
-                      placeholder="바코드"
-                      className={inputBase}
-                    />
-                  </div>
-                  <div>
-                    <label className={labelClass}>단위 (UOM)</label>
-                    <select {...register("uom")} className={selectBase}>
-                      {uomOptions.map((u) => (
-                        <option key={u.value} value={u.value}>
-                          {u.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Row 4: 무게, 길이, 폭, 높이 */}
-                <div className="grid grid-cols-4 gap-3">
-                  <div>
-                    <label className={labelClass}>무게(kg)</label>
-                    <input
-                      {...register("weight")}
-                      type="number"
-                      step="0.01"
-                      placeholder="0"
-                      className={inputBase}
-                    />
-                  </div>
-                  <div>
-                    <label className={labelClass}>길이(cm)</label>
-                    <input
-                      {...register("length")}
-                      type="number"
-                      step="0.01"
-                      placeholder="0"
-                      className={inputBase}
-                    />
-                  </div>
-                  <div>
-                    <label className={labelClass}>폭(cm)</label>
-                    <input
-                      {...register("width")}
-                      type="number"
-                      step="0.01"
-                      placeholder="0"
-                      className={inputBase}
-                    />
-                  </div>
-                  <div>
-                    <label className={labelClass}>높이(cm)</label>
-                    <input
-                      {...register("height")}
-                      type="number"
-                      step="0.01"
-                      placeholder="0"
-                      className={inputBase}
-                    />
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                {/* Section: 기본정보 */}
+                <div>
+                  <h3 className={sectionTitleClass}>기본정보</h3>
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className={labelClass}>
+                          상품코드 <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          {...register("code")}
+                          placeholder="상품코드"
+                          className={inputBase}
+                          disabled={isEdit}
+                        />
+                        {errors.code && (
+                          <p className="mt-0.5 text-xs text-red-500">
+                            {errors.code.message}
+                          </p>
+                        )}
+                      </div>
+                      <div>
+                        <label className={labelClass}>
+                          상품명 <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          {...register("name")}
+                          placeholder="상품명"
+                          className={inputBase}
+                        />
+                        {errors.name && (
+                          <p className="mt-0.5 text-xs text-red-500">
+                            {errors.name.message}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className={labelClass}>카테고리</label>
+                        <select {...register("category")} className={selectBase}>
+                          {categoryOptions.map((c) => (
+                            <option key={c.value} value={c.value}>
+                              {c.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className={labelClass}>바코드</label>
+                        <input
+                          {...register("barcode")}
+                          placeholder="바코드"
+                          className={inputBase}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className={labelClass}>UOM</label>
+                        <select {...register("uom")} className={selectBase}>
+                          {uomOptions.map((u) => (
+                            <option key={u.value} value={u.value}>
+                              {u.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className={labelClass}>상품군</label>
+                        <select {...register("itemGroupId")} className={selectBase}>
+                          <option value="">선택</option>
+                          {itemGroups.map((g: any) => (
+                            <option key={g.id} value={g.id}>
+                              {g.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                {/* Row 5: 최소재고, 최대재고, 단가 */}
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <label className={labelClass}>최소재고</label>
-                    <input
-                      {...register("minStock")}
-                      type="number"
-                      placeholder="0"
-                      className={inputBase}
-                    />
-                  </div>
-                  <div>
-                    <label className={labelClass}>최대재고</label>
-                    <input
-                      {...register("maxStock")}
-                      type="number"
-                      placeholder="0"
-                      className={inputBase}
-                    />
-                  </div>
-                  <div>
-                    <label className={labelClass}>단가</label>
-                    <input
-                      {...register("unitPrice")}
-                      type="number"
-                      placeholder="0"
-                      className={inputBase}
-                    />
-                  </div>
-                </div>
-
-                {/* Row 6: 보관유형, 입고존 */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className={labelClass}>보관유형</label>
-                    <select {...register("storageType")} className={selectBase}>
-                      {storageTypeOptions.map((s) => (
-                        <option key={s.value} value={s.value}>
-                          {s.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className={labelClass}>입고존</label>
-                    <input
-                      {...register("inboundZone")}
-                      placeholder="입고존"
-                      className={inputBase}
-                    />
+                {/* Section: 치수/중량 */}
+                <div>
+                  <h3 className={sectionTitleClass}>치수/중량</h3>
+                  <div className="grid grid-cols-4 gap-3">
+                    <div>
+                      <label className={labelClass}>무게(kg)</label>
+                      <input
+                        {...register("weight")}
+                        type="number"
+                        step="0.01"
+                        placeholder="0"
+                        className={inputBase}
+                      />
+                    </div>
+                    <div>
+                      <label className={labelClass}>길이(cm)</label>
+                      <input
+                        {...register("length")}
+                        type="number"
+                        step="0.01"
+                        placeholder="0"
+                        className={inputBase}
+                      />
+                    </div>
+                    <div>
+                      <label className={labelClass}>너비(cm)</label>
+                      <input
+                        {...register("width")}
+                        type="number"
+                        step="0.01"
+                        placeholder="0"
+                        className={inputBase}
+                      />
+                    </div>
+                    <div>
+                      <label className={labelClass}>높이(cm)</label>
+                      <input
+                        {...register("height")}
+                        type="number"
+                        step="0.01"
+                        placeholder="0"
+                        className={inputBase}
+                      />
+                    </div>
                   </div>
                 </div>
 
-                {/* Row 7: LOT관리, 유효기간관리, 유효기간일수 */}
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="flex items-center gap-2 pt-5">
-                    <input
-                      type="checkbox"
-                      checked={lotControl ?? false}
-                      onChange={(e) => setValue("lotControl", e.target.checked)}
-                      className="h-4 w-4 rounded border-[#D1D6DB] text-[#3182F6] focus:ring-[#3182F6]/20"
-                    />
+                {/* Section: 재고관리 */}
+                <div>
+                  <h3 className={sectionTitleClass}>재고관리</h3>
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <label className={labelClass}>안전재고</label>
+                        <input
+                          {...register("minStock")}
+                          type="number"
+                          placeholder="0"
+                          className={inputBase}
+                        />
+                      </div>
+                      <div>
+                        <label className={labelClass}>최대재고</label>
+                        <input
+                          {...register("maxStock")}
+                          type="number"
+                          placeholder="0"
+                          className={inputBase}
+                        />
+                      </div>
+                      <div>
+                        <label className={labelClass}>단가</label>
+                        <input
+                          {...register("unitPrice")}
+                          type="number"
+                          placeholder="0"
+                          className={inputBase}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className={labelClass}>입고존</label>
+                        <input
+                          {...register("inboundZone")}
+                          placeholder="입고존"
+                          className={inputBase}
+                        />
+                      </div>
+                      <div>
+                        <label className={labelClass}>보관유형</label>
+                        <select {...register("storageType")} className={selectBase}>
+                          {storageTypeOptions.map((s) => (
+                            <option key={s.value} value={s.value}>
+                              {s.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section: 유효기간관리 */}
+                <div>
+                  <h3 className={sectionTitleClass}>유효기간관리</h3>
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="flex items-center gap-2 pt-1">
+                        <input
+                          type="checkbox"
+                          checked={expiryControl ?? false}
+                          onChange={(e) =>
+                            setValue("expiryControl", e.target.checked)
+                          }
+                          className="h-4 w-4 rounded border-[#D1D6DB] text-[#3182F6] focus:ring-[#3182F6]/20"
+                        />
+                        <label className="text-xs font-medium text-[#6B7684]">
+                          유효기간통제
+                        </label>
+                      </div>
+                      <div className="flex items-center gap-2 pt-1">
+                        <input
+                          type="checkbox"
+                          checked={lotControl ?? false}
+                          onChange={(e) => setValue("lotControl", e.target.checked)}
+                          className="h-4 w-4 rounded border-[#D1D6DB] text-[#3182F6] focus:ring-[#3182F6]/20"
+                        />
+                        <label className="text-xs font-medium text-[#6B7684]">
+                          LOT관리
+                        </label>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className={labelClass}>유효기간(일)</label>
+                        <input
+                          {...register("expiryDays")}
+                          type="number"
+                          placeholder="0"
+                          className={inputBase}
+                          disabled={!expiryControl}
+                        />
+                      </div>
+                      <div>
+                        <label className={labelClass}>소비기한</label>
+                        <input
+                          type="text"
+                          placeholder="유효기간 기반 자동산출"
+                          className={`${inputBase} bg-[#F7F8FA]`}
+                          disabled
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section: 추가항목 */}
+                <div>
+                  <h3 className={sectionTitleClass}>추가항목</h3>
+                  <div className="flex items-center gap-3">
                     <label className="text-xs font-medium text-[#6B7684]">
-                      LOT관리
+                      상태
                     </label>
-                  </div>
-                  <div className="flex items-center gap-2 pt-5">
-                    <input
-                      type="checkbox"
-                      checked={expiryControl ?? false}
-                      onChange={(e) =>
-                        setValue("expiryControl", e.target.checked)
-                      }
-                      className="h-4 w-4 rounded border-[#D1D6DB] text-[#3182F6] focus:ring-[#3182F6]/20"
-                    />
-                    <label className="text-xs font-medium text-[#6B7684]">
-                      유효기간관리
-                    </label>
-                  </div>
-                  <div>
-                    <label className={labelClass}>유효기간일수</label>
-                    <input
-                      {...register("expiryDays")}
-                      type="number"
-                      placeholder="0"
-                      className={inputBase}
-                      disabled={!expiryControl}
-                    />
+                    <button
+                      type="button"
+                      onClick={() => setValue("isActive", !isActive)}
+                      className={`relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ${
+                        isActive ? "bg-[#3182F6]" : "bg-[#D1D6DB]"
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${
+                          isActive ? "translate-x-[22px]" : "translate-x-0.5"
+                        } mt-0.5`}
+                      />
+                    </button>
+                    <span className="text-xs text-[#4E5968]">
+                      {isActive ? "활성" : "비활성"}
+                    </span>
                   </div>
                 </div>
 
-                {/* Row 8: 상태 */}
-                <div className="flex items-center gap-3 pt-1">
-                  <label className="text-xs font-medium text-[#6B7684]">
-                    상태
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setValue("isActive", !isActive)}
-                    className={`relative inline-flex h-5 w-10 shrink-0 cursor-pointer rounded-full transition-colors duration-200 ${
-                      isActive ? "bg-[#3182F6]" : "bg-[#D1D6DB]"
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${
-                        isActive ? "translate-x-[22px]" : "translate-x-0.5"
-                      } mt-0.5`}
-                    />
-                  </button>
-                  <span className="text-xs text-[#4E5968]">
-                    {isActive ? "활성" : "비활성"}
-                  </span>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex items-center gap-2 border-t border-[#F2F4F6] pt-4">
+                {/* Save Button */}
+                <div className="border-t border-[#F2F4F6] pt-4">
                   <button
                     type="submit"
                     disabled={
                       createMutation.isPending || updateMutation.isPending
                     }
-                    className="rounded-lg bg-[#DC2626] px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#B91C1C] disabled:opacity-50"
+                    className="w-full rounded-lg bg-[#DC2626] px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#B91C1C] disabled:opacity-50"
                   >
                     {createMutation.isPending || updateMutation.isPending
                       ? "처리중..."
-                      : "저장"}
+                      : isEdit
+                        ? "수정"
+                        : "저장"}
                   </button>
-                  <button
-                    type="button"
-                    onClick={handleNew}
-                    className="rounded-lg bg-[#3182F6] px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#1B64DA]"
-                  >
-                    신규
-                  </button>
-                  {isEdit && perm.canDelete && (
-                    <button
-                      type="button"
-                      onClick={handleDeleteClick}
-                      className="rounded-lg bg-[#6B7684] px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#4E5968]"
-                    >
-                      삭제
-                    </button>
-                  )}
-                  {perm.canExport && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        downloadExcel(
-                          "/export/items",
-                          `상품목록_${new Date().toISOString().slice(0, 10)}.xlsx`
-                        )
-                      }
-                      className="rounded-lg bg-[#22C55E] px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#16A34A]"
-                    >
-                      엑셀
-                    </button>
-                  )}
                 </div>
               </form>
             )}
           </div>
+        </div>
+      </div>
+
+      {/* BOTTOM: UOM환산이력 Grid */}
+      <div className="rounded-xl bg-white shadow-[0_1px_4px_rgba(0,0,0,0.04)]">
+        <div className="border-b border-[#F2F4F6] px-5 py-3">
+          <h2 className="text-sm font-semibold text-[#191F28]">UOM환산이력</h2>
+        </div>
+        <div className="p-4">
+          {selectedItem ? (
+            uomConversions.length > 0 ? (
+              <Table
+                columns={uomConversionColumns}
+                data={uomConversions}
+                isLoading={false}
+                page={1}
+                totalPages={1}
+                total={uomConversions.length}
+                onPageChange={() => {}}
+              />
+            ) : (
+              <div className="flex h-24 items-center justify-center text-sm text-[#8B95A1]">
+                UOM환산이력이 없습니다.
+              </div>
+            )
+          ) : (
+            <div className="flex h-24 items-center justify-center text-sm text-[#8B95A1]">
+              상품을 선택하면 UOM환산이력이 표시됩니다.
+            </div>
+          )}
         </div>
       </div>
 

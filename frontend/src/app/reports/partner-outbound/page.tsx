@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { ArrowLeft, Search, Download, AlertCircle } from "lucide-react";
 import Table, { type Column } from "@/components/ui/Table";
 import Button from "@/components/ui/Button";
+import ItemSearchPopup from "@/components/ui/ItemSearchPopup";
 import { formatNumber, formatDate } from "@/lib/utils";
 import { useOutboundOrders, usePartners } from "@/hooks/useApi";
 import { downloadExcel } from "@/lib/export";
-import type { OutboundOrder } from "@/types";
+import type { OutboundOrder, Item } from "@/types";
 
 function getDefaultDates() {
   const end = new Date();
@@ -20,20 +21,32 @@ function getDefaultDates() {
   };
 }
 
+const inputBase =
+  "w-full rounded-xl border-0 bg-[#F7F8FA] px-4 py-3 text-sm text-[#191F28] placeholder-[#B0B8C1] outline-none transition-all focus:border focus:border-[#3182F6] focus:bg-white focus:ring-2 focus:ring-[#3182F6]/20";
+
 export default function PartnerOutboundReportPage() {
   const defaults = getDefaultDates();
-  const [partnerId, setPartnerId] = useState("");
   const [startDate, setStartDate] = useState(defaults.startDate);
   const [endDate, setEndDate] = useState(defaults.endDate);
+  const [carrierId, setCarrierId] = useState("");
+  const [selectedItem, setSelectedItem] = useState<Item | null>(null);
+  const [ownerFilter, setOwnerFilter] = useState("");
+  const [partnerFilter, setPartnerFilter] = useState("");
   const [page, setPage] = useState(1);
 
-  const { data: partnerResponse } = usePartners({ limit: 100, type: "CUSTOMER" });
-  const partners = partnerResponse?.data ?? [];
+  // Popup states
+  const [itemPopupOpen, setItemPopupOpen] = useState(false);
+
+  const { data: partnerResponse } = usePartners({ limit: 200 });
+  const allPartners = partnerResponse?.data ?? [];
+  const carriers = allPartners.filter((p) => p.type === "CARRIER" || p.type === "SUPPLIER");
+  const customers = allPartners.filter((p) => p.type === "CUSTOMER");
+  const owners = allPartners.filter((p) => (p.type as string) === "OWNER" || p.type === "SUPPLIER");
 
   const { data: outboundResponse, isLoading, error } = useOutboundOrders({
     page,
     limit: 50,
-    ...(partnerId ? { partnerId } : {}),
+    ...(carrierId ? { carrierId } : {}),
     ...(startDate ? { startDate } : {}),
     ...(endDate ? { endDate } : {}),
   });
@@ -42,69 +55,73 @@ export default function PartnerOutboundReportPage() {
   const total = outboundResponse?.total ?? 0;
   const totalPages = outboundResponse?.totalPages ?? 1;
 
+  // Calculate totals for footer
+  const totals = useMemo(() => {
+    let totalQty = 0;
+    orders.forEach((o) => {
+      totalQty += o.lines?.reduce((s, l) => s + l.orderedQty, 0) ?? 0;
+    });
+    return { totalQty };
+  }, [orders]);
+
   const handleSearch = useCallback(() => {
     setPage(1);
   }, []);
 
   const handleExcel = useCallback(() => {
     const params = new URLSearchParams();
-    if (partnerId) params.set("partnerId", partnerId);
+    if (carrierId) params.set("carrierId", carrierId);
     if (startDate) params.set("startDate", startDate);
     if (endDate) params.set("endDate", endDate);
     const qs = params.toString();
     downloadExcel(`/export/outbound${qs ? `?${qs}` : ""}`, "거래처별출고내역.xlsx");
-  }, [partnerId, startDate, endDate]);
+  }, [carrierId, startDate, endDate]);
 
   const columns: Column<OutboundOrder>[] = [
     {
-      key: "partnerCode",
-      header: "거래처코드",
-      render: (row) => <span className="text-sm font-mono text-[#4E5968]">{row.partner?.code ?? "-"}</span>,
-    },
-    {
-      key: "partnerName",
-      header: "거래처명",
+      key: "carrier",
+      header: "운송사",
       render: (row) => <span className="text-sm text-[#191F28]">{row.partner?.name ?? "-"}</span>,
     },
     {
-      key: "orderNumber",
-      header: "주문번호",
+      key: "orderDate",
+      header: "주문요청일",
       sortable: true,
-      render: (row) => <span className="text-sm font-medium text-[#3182F6]">{row.orderNumber}</span>,
+      render: (row) => <span className="text-sm text-[#4E5968]">{formatDate(row.createdAt)}</span>,
     },
     {
-      key: "shipDate",
-      header: "출고일",
-      sortable: true,
-      render: (row) => <span className="text-sm text-[#4E5968]">{formatDate(row.shipDate)}</span>,
-    },
-    {
-      key: "itemCode",
-      header: "상품코드",
+      key: "destination",
+      header: "상차지/배송처",
       render: (row) => (
-        <span className="text-sm font-mono text-[#4E5968]">
-          {row.lines?.[0]?.item?.code ?? "-"}
+        <span className="text-sm text-[#191F28]">
+          {row.partner?.name || "-"}
+        </span>
+      ),
+    },
+    {
+      key: "owner",
+      header: "화주",
+      render: (row) => <span className="text-sm text-[#4E5968]">{row.partner?.name ?? "-"}</span>,
+    },
+    {
+      key: "itemName",
+      header: "상품",
+      render: (row) => (
+        <span className="text-sm text-[#191F28]">
+          {row.lines?.[0]?.item?.name ?? "-"}
           {(row.lines?.length ?? 0) > 1 && ` 외 ${(row.lines?.length ?? 1) - 1}건`}
         </span>
       ),
     },
     {
-      key: "itemName",
-      header: "상품명",
-      render: (row) => (
-        <span className="text-sm text-[#191F28]">
-          {row.lines?.[0]?.item?.name ?? "-"}
-        </span>
-      ),
+      key: "inboundDispatch",
+      header: "입고배차",
+      render: () => <span className="text-sm text-[#4E5968]">-</span>,
     },
     {
-      key: "quantity",
-      header: "수량",
-      render: (row) => (
-        <span className="text-sm font-bold text-[#191F28]">
-          {formatNumber(row.lines?.reduce((s, l) => s + l.orderedQty, 0) ?? 0)}
-        </span>
-      ),
+      key: "outboundDispatch",
+      header: "출고배차",
+      render: () => <span className="text-sm text-[#4E5968]">-</span>,
     },
     {
       key: "uom",
@@ -141,47 +158,78 @@ export default function PartnerOutboundReportPage() {
         </div>
       </div>
 
-      {/* Search Filters */}
+      {/* Search Filters - 2 rows */}
       <div className="rounded-2xl bg-white p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+        {/* Row 1 */}
         <div className="flex flex-wrap items-end gap-4">
           <div className="min-w-[150px]">
-            <label className="mb-2 block text-sm font-medium text-[#4E5968]">기간(From)</label>
+            <label className="mb-2 block text-sm font-medium text-[#4E5968]">주문일자(From)</label>
             <input
               type="date"
               value={startDate}
               onChange={(e) => { setStartDate(e.target.value); setPage(1); }}
-              className="w-full rounded-xl border-0 bg-[#F7F8FA] px-4 py-3 text-sm text-[#191F28] outline-none focus:ring-2 focus:ring-[#3182F6]/20"
+              className={inputBase}
             />
           </div>
           <div className="min-w-[150px]">
-            <label className="mb-2 block text-sm font-medium text-[#4E5968]">기간(To)</label>
+            <label className="mb-2 block text-sm font-medium text-[#4E5968]">주문일자(To)</label>
             <input
               type="date"
               value={endDate}
               onChange={(e) => { setEndDate(e.target.value); setPage(1); }}
-              className="w-full rounded-xl border-0 bg-[#F7F8FA] px-4 py-3 text-sm text-[#191F28] outline-none focus:ring-2 focus:ring-[#3182F6]/20"
+              className={inputBase}
             />
           </div>
           <div className="min-w-[180px] flex-1">
-            <label className="mb-2 block text-sm font-medium text-[#4E5968]">거래처</label>
+            <label className="mb-2 block text-sm font-medium text-[#4E5968]">운송사</label>
             <select
-              value={partnerId}
-              onChange={(e) => { setPartnerId(e.target.value); setPage(1); }}
-              className="w-full rounded-xl border-0 bg-[#F7F8FA] px-4 py-3 text-sm text-[#191F28] outline-none focus:ring-2 focus:ring-[#3182F6]/20"
+              value={carrierId}
+              onChange={(e) => { setCarrierId(e.target.value); setPage(1); }}
+              className={inputBase}
             >
-              <option value="">전체 거래처</option>
-              {partners.map((p) => (
-                <option key={p.id} value={p.id}>{p.name} ({p.code})</option>
+              <option value="">ALL</option>
+              {carriers.map((c) => (
+                <option key={c.id} value={c.id}>{c.name} ({c.code})</option>
               ))}
             </select>
+          </div>
+        </div>
+
+        {/* Row 2 */}
+        <div className="mt-4 flex flex-wrap items-end gap-4">
+          <div className="min-w-[180px] flex-1">
+            <label className="mb-2 block text-sm font-medium text-[#4E5968]">상품</label>
+            <div
+              onClick={() => setItemPopupOpen(true)}
+              className={`${inputBase} cursor-pointer truncate`}
+            >
+              {selectedItem ? `${selectedItem.name} (${selectedItem.code})` : "상품 검색..."}
+            </div>
           </div>
           <div className="min-w-[180px] flex-1">
             <label className="mb-2 block text-sm font-medium text-[#4E5968]">화주</label>
             <select
-              className="w-full rounded-xl border-0 bg-[#F7F8FA] px-4 py-3 text-sm text-[#191F28] outline-none focus:ring-2 focus:ring-[#3182F6]/20"
-              defaultValue=""
+              value={ownerFilter}
+              onChange={(e) => { setOwnerFilter(e.target.value); setPage(1); }}
+              className={inputBase}
             >
               <option value="">전체</option>
+              {owners.map((o) => (
+                <option key={o.id} value={o.id}>{o.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="min-w-[180px] flex-1">
+            <label className="mb-2 block text-sm font-medium text-[#4E5968]">거래처</label>
+            <select
+              value={partnerFilter}
+              onChange={(e) => { setPartnerFilter(e.target.value); setPage(1); }}
+              className={inputBase}
+            >
+              <option value="">전체</option>
+              {customers.map((c) => (
+                <option key={c.id} value={c.id}>{c.name} ({c.code})</option>
+              ))}
             </select>
           </div>
           <Button size="sm" onClick={handleSearch}>
@@ -199,18 +247,35 @@ export default function PartnerOutboundReportPage() {
             데이터를 불러오는 중 오류가 발생했습니다.
           </div>
         ) : (
-          <Table
-            columns={columns}
-            data={orders}
-            isLoading={isLoading}
-            page={page}
-            totalPages={totalPages}
-            total={total}
-            onPageChange={setPage}
-            emptyMessage="출고 데이터가 없습니다."
-          />
+          <>
+            <Table
+              columns={columns}
+              data={orders}
+              isLoading={isLoading}
+              page={page}
+              totalPages={totalPages}
+              total={total}
+              onPageChange={setPage}
+              emptyMessage="출고 데이터가 없습니다."
+            />
+            {/* Footer totals */}
+            {orders.length > 0 && (
+              <div className="mt-3 flex items-center justify-end gap-6 border-t border-[#F2F4F6] pt-3">
+                <span className="text-sm font-semibold text-[#4E5968]">
+                  합계: <span className="text-[#191F28]">{formatNumber(totals.totalQty)}</span>
+                </span>
+              </div>
+            )}
+          </>
         )}
       </div>
+
+      {/* Item Search Popup */}
+      <ItemSearchPopup
+        isOpen={itemPopupOpen}
+        onClose={() => setItemPopupOpen(false)}
+        onSelect={(item) => setSelectedItem(item)}
+      />
     </div>
   );
 }

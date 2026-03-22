@@ -4,10 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Search, AlertCircle, Download } from "lucide-react";
-import Table, { type Column } from "@/components/ui/Table";
-import Badge from "@/components/ui/Badge";
-import Button from "@/components/ui/Button";
+import { Search, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import {
@@ -17,14 +14,13 @@ import {
   useDeleteCommonCode,
 } from "@/hooks/useApi";
 import { useToastStore } from "@/stores/toast.store";
-import { useDebounce } from "@/hooks/useDebounce";
 import type { CommonCode } from "@/types";
 
 const codeSchema = z.object({
-  groupCode: z.string().min(1, "코드유형을 입력해주세요"),
-  groupName: z.string().optional(),
+  codeType: z.string().min(1, "코드유형을 입력해주세요"),
+  typeNm: z.string().optional(),
   code: z.string().min(1, "코드를 입력해주세요"),
-  codeName: z.string().min(1, "코드명을 입력해주세요"),
+  codeNm: z.string().min(1, "코드명을 입력해주세요"),
   value: z.string().optional(),
   sortOrder: z.coerce.number().min(0),
   isActive: z.boolean(),
@@ -33,10 +29,17 @@ const codeSchema = z.object({
 type CodeFormData = z.infer<typeof codeSchema>;
 
 const inputBase =
-  "w-full rounded-xl border-0 bg-[#F7F8FA] px-4 py-3 text-sm text-[#191F28] placeholder-[#B0B8C1] outline-none transition-all focus:border focus:border-[#3182F6] focus:bg-white focus:ring-2 focus:ring-[#3182F6]/20";
+  "w-full rounded border border-[#D1D6DB] bg-white px-3 py-2 text-sm text-[#191F28] placeholder-[#B0B8C1] outline-none focus:border-[#3182F6] focus:ring-1 focus:ring-[#3182F6]/20";
 
 const selectBase =
-  "rounded-xl border-0 bg-[#F7F8FA] px-4 py-3 text-sm text-[#191F28] outline-none transition-colors focus:bg-[#F2F4F6] focus:ring-2 focus:ring-[#3182F6]/20";
+  "rounded border border-[#D1D6DB] bg-white px-3 py-2 text-sm text-[#191F28] outline-none focus:border-[#3182F6] focus:ring-1 focus:ring-[#3182F6]/20";
+
+type GroupRow = {
+  codeType: string;
+  typeNm: string;
+  userType: string;
+  codeLevel: string;
+};
 
 export default function CommonCodesPage() {
   const [searchGroupCode, setSearchGroupCode] = useState("");
@@ -49,6 +52,8 @@ export default function CommonCodesPage() {
   const [isRightFormOpen, setIsRightFormOpen] = useState(false);
   const [editingCode, setEditingCode] = useState<CommonCode | undefined>();
   const [deletingCode, setDeletingCode] = useState<CommonCode | undefined>();
+  const [leftChecked, setLeftChecked] = useState<Set<string>>(new Set());
+  const [rightChecked, setRightChecked] = useState<Set<string>>(new Set());
 
   const addToast = useToastStore((s) => s.addToast);
 
@@ -61,53 +66,59 @@ export default function CommonCodesPage() {
 
   const codes = response?.data ?? [];
 
-  // Build left-panel group rows: unique groupCodes with their info
+  // Build left-panel group rows
   const groupRows = useMemo(() => {
-    const map = new Map<string, { groupCode: string; groupName: string; userType: string; codeLevel: string }>();
+    const map = new Map<string, GroupRow>();
     for (const c of codes) {
-      if (!map.has(c.groupCode)) {
-        map.set(c.groupCode, {
-          groupCode: c.groupCode,
-          groupName: c.groupName ?? "",
+      if (!map.has(c.codeType)) {
+        map.set(c.codeType, {
+          codeType: c.codeType,
+          typeNm: c.typeNm ?? "",
           userType: "마스터",
           codeLevel: "삭제불가",
         });
       }
     }
     let result = Array.from(map.values());
-    // Apply search filters
     if (searchGroupCode) {
-      result = result.filter((r) => r.groupCode.toLowerCase().includes(searchGroupCode.toLowerCase()));
+      result = result.filter((r) => r.codeType.toLowerCase().includes(searchGroupCode.toLowerCase()));
     }
     if (searchGroupName) {
-      result = result.filter((r) => r.groupName.toLowerCase().includes(searchGroupName.toLowerCase()));
+      result = result.filter((r) => r.typeNm.toLowerCase().includes(searchGroupName.toLowerCase()));
+    }
+    if (searchUserType) {
+      result = result.filter((r) => r.userType === searchUserType);
     }
     return result;
-  }, [codes, searchGroupCode, searchGroupName]);
+  }, [codes, searchGroupCode, searchGroupName, searchUserType]);
 
   // Right panel: codes filtered by selected group
   const rightCodes = useMemo(() => {
     if (!selectedGroup) return [];
-    return codes.filter((c) => c.groupCode === selectedGroup);
+    return codes.filter((c) => c.codeType === selectedGroup);
   }, [codes, selectedGroup]);
 
-  // Pagination for left
+  // Pagination
   const leftPerPage = 20;
   const leftTotalPages = Math.max(1, Math.ceil(groupRows.length / leftPerPage));
   const leftPagedData = groupRows.slice((leftPage - 1) * leftPerPage, leftPage * leftPerPage);
+  const leftStart = groupRows.length > 0 ? (leftPage - 1) * leftPerPage + 1 : 0;
+  const leftEnd = Math.min(leftPage * leftPerPage, groupRows.length);
 
-  // Pagination for right
   const rightPerPage = 20;
   const rightTotalPages = Math.max(1, Math.ceil(rightCodes.length / rightPerPage));
   const rightPagedData = rightCodes.slice((rightPage - 1) * rightPerPage, rightPage * rightPerPage);
+  const rightStart = rightCodes.length > 0 ? (rightPage - 1) * rightPerPage + 1 : 0;
+  const rightEnd = Math.min(rightPage * rightPerPage, rightCodes.length);
 
   const handleSearch = () => {
     setLeftPage(1);
   };
 
-  const handleGroupClick = (groupCode: string) => {
-    setSelectedGroup(groupCode);
+  const handleGroupClick = (codeType: string) => {
+    setSelectedGroup(codeType);
     setRightPage(1);
+    setRightChecked(new Set());
   };
 
   const handleCreateLeft = () => {
@@ -120,20 +131,11 @@ export default function CommonCodesPage() {
     setIsRightFormOpen(true);
   };
 
-  const handleEditRight = (code: CommonCode) => {
-    setEditingCode(code);
-    setIsRightFormOpen(true);
-  };
-
-  const handleDeleteClick = (code: CommonCode) => {
-    setDeletingCode(code);
-  };
-
   const handleDeleteConfirm = async () => {
     if (!deletingCode) return;
     try {
       await deleteMutation.mutateAsync(deletingCode.id);
-      addToast({ type: "success", message: `"${deletingCode.codeName}" 코드가 삭제되었습니다.` });
+      addToast({ type: "success", message: `"${deletingCode.codeNm}" 코드가 삭제되었습니다.` });
     } catch {
       addToast({ type: "error", message: "삭제 중 오류가 발생했습니다." });
     } finally {
@@ -141,35 +143,53 @@ export default function CommonCodesPage() {
     }
   };
 
-  // Left grid columns: 사용자구분, 유형코드, 유형명, 코드레벨
-  const leftColumns: Column<typeof groupRows[number]>[] = [
-    { key: "userType", header: "*사용자구분" },
-    { key: "groupCode", header: "*유형코드", sortable: true },
-    { key: "groupName", header: "*유형명", sortable: true },
-    { key: "codeLevel", header: "*코드레벨" },
-  ];
+  const toggleLeftCheck = (codeType: string) => {
+    setLeftChecked((prev) => {
+      const next = new Set(prev);
+      if (next.has(codeType)) next.delete(codeType);
+      else next.add(codeType);
+      return next;
+    });
+  };
 
-  // Right grid columns: 기초코드, 기초코드명, 값, 순서
-  const rightColumns: Column<CommonCode>[] = [
-    { key: "code", header: "기초코드", sortable: true },
-    { key: "codeName", header: "*기초코드명", sortable: true },
-    { key: "value", header: "값" },
-    { key: "sortOrder", header: "순서", sortable: true },
-  ];
+  const toggleLeftAll = () => {
+    if (leftChecked.size === leftPagedData.length) {
+      setLeftChecked(new Set());
+    } else {
+      setLeftChecked(new Set(leftPagedData.map((r) => r.codeType)));
+    }
+  };
+
+  const toggleRightCheck = (id: string) => {
+    setRightChecked((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleRightAll = () => {
+    if (rightChecked.size === rightPagedData.length) {
+      setRightChecked(new Set());
+    } else {
+      setRightChecked(new Set(rightPagedData.map((r) => r.id)));
+    }
+  };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Page header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-[#191F28]">기준관리</h1>
+        <h1 className="text-xl font-bold text-[#191F28]">기준관리</h1>
         <p className="text-sm text-[#8B95A1]">시스템관리 &gt; 기준코드</p>
       </div>
 
       {/* Search area */}
-      <div className="rounded-2xl bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-        <div className="flex flex-wrap items-end gap-4">
-          <div className="min-w-[200px]">
-            <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">유형코드</label>
+      <div className="rounded-lg bg-white p-4 shadow-sm border border-[#E5E8EB]">
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="min-w-[160px]">
+            <label className="mb-1 block text-xs font-medium text-[#6B7684]">유형코드</label>
             <input
               type="text"
               value={searchGroupCode}
@@ -178,8 +198,8 @@ export default function CommonCodesPage() {
               placeholder="유형코드"
             />
           </div>
-          <div className="min-w-[200px]">
-            <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">유형명</label>
+          <div className="min-w-[160px]">
+            <label className="mb-1 block text-xs font-medium text-[#6B7684]">유형명</label>
             <input
               type="text"
               value={searchGroupName}
@@ -188,12 +208,12 @@ export default function CommonCodesPage() {
               placeholder="유형명"
             />
           </div>
-          <div className="min-w-[160px]">
-            <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">사용자구분</label>
+          <div className="min-w-[140px]">
+            <label className="mb-1 block text-xs font-medium text-[#6B7684]">사용자구분</label>
             <select
               value={searchUserType}
               onChange={(e) => setSearchUserType(e.target.value)}
-              className={selectBase}
+              className={selectBase + " w-full"}
             >
               <option value="">전체</option>
               <option value="마스터">마스터</option>
@@ -202,7 +222,7 @@ export default function CommonCodesPage() {
           </div>
           <button
             onClick={handleSearch}
-            className="flex items-center gap-1.5 rounded-xl bg-[#3182F6] px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-[#1B64DA]"
+            className="flex items-center gap-1.5 rounded bg-[#3182F6] px-4 py-2 text-sm font-medium text-white hover:bg-[#1B64DA]"
           >
             <Search className="h-4 w-4" />
             검색
@@ -210,103 +230,283 @@ export default function CommonCodesPage() {
         </div>
       </div>
 
-      {/* Two-panel layout */}
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-        {/* Left panel: 코드유형 목록 */}
-        <div className="rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-          {/* Left action buttons */}
-          <div className="flex items-center justify-end gap-2 px-5 pt-5">
-            <Button variant="danger" size="sm" onClick={() => addToast({ type: "info", message: "저장되었습니다." })}>
-              저장
-            </Button>
-            <Button size="sm" onClick={handleCreateLeft}>
-              신규
-            </Button>
-            <Button variant="secondary" size="sm" onClick={() => addToast({ type: "warning", message: "삭제할 항목을 선택해주세요." })}>
-              삭제
-            </Button>
-          </div>
+      {/* Top action buttons (for left panel) */}
+      <div className="flex items-center justify-end gap-2">
+        <button
+          onClick={() => addToast({ type: "info", message: "저장되었습니다." })}
+          className="rounded px-4 py-1.5 text-xs font-semibold text-white bg-[#F04452] hover:bg-[#E03340]"
+        >
+          저장
+        </button>
+        <button
+          onClick={handleCreateLeft}
+          className="rounded px-4 py-1.5 text-xs font-semibold text-white bg-[#3182F6] hover:bg-[#1B64DA]"
+        >
+          신규
+        </button>
+        <button
+          onClick={() => addToast({ type: "warning", message: "삭제할 항목을 선택해주세요." })}
+          className="rounded px-4 py-1.5 text-xs font-semibold text-white bg-[#6B7684] hover:bg-[#4E5968]"
+        >
+          삭제
+        </button>
+      </div>
 
+      {/* Two-panel layout */}
+      <div className="grid grid-cols-2 gap-4">
+        {/* Left panel: 코드유형 목록 */}
+        <div className="rounded-lg bg-white border border-[#E5E8EB] overflow-hidden">
           {/* Left grid header */}
-          <div className="mx-5 mt-4 rounded-t-xl bg-[#4A5568] px-4 py-2.5">
+          <div className="bg-[#4A5568] px-4 py-2.5">
             <h2 className="text-sm font-semibold text-white">코드유형 목록</h2>
           </div>
 
-          <div className="px-5 pb-5">
-            {error ? (
-              <div className="flex items-center gap-3 rounded-xl bg-red-50 p-5 text-sm text-red-600">
-                <AlertCircle className="h-5 w-5 shrink-0" />
-                데이터를 불러오는 중 오류가 발생했습니다.
+          {error ? (
+            <div className="flex items-center gap-3 p-5 text-sm text-red-600">
+              <AlertCircle className="h-5 w-5 shrink-0" />
+              데이터를 불러오는 중 오류가 발생했습니다.
+            </div>
+          ) : (
+            <div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-[#F7F8FA] border-b border-[#E5E8EB]">
+                    <tr>
+                      <th className="px-3 py-2.5 text-xs font-medium text-[#8B95A1] w-[50px] text-center">No</th>
+                      <th className="px-3 py-2.5 text-xs font-medium text-[#8B95A1] w-[40px] text-center">
+                        <input
+                          type="checkbox"
+                          checked={leftPagedData.length > 0 && leftChecked.size === leftPagedData.length}
+                          onChange={toggleLeftAll}
+                          className="h-3.5 w-3.5 rounded border-gray-300"
+                        />
+                      </th>
+                      <th className="px-3 py-2.5 text-xs font-medium text-[#8B95A1]">*사용자구분</th>
+                      <th className="px-3 py-2.5 text-xs font-medium text-[#8B95A1]">*유형코드</th>
+                      <th className="px-3 py-2.5 text-xs font-medium text-[#8B95A1]">*유형명</th>
+                      <th className="px-3 py-2.5 text-xs font-medium text-[#8B95A1]">*코드레벨</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {isLoading ? (
+                      Array.from({ length: 5 }).map((_, i) => (
+                        <tr key={i} className="border-b border-[#F2F4F6]">
+                          {Array.from({ length: 6 }).map((_, j) => (
+                            <td key={j} className="px-3 py-3">
+                              <div className="h-4 w-full animate-pulse rounded bg-[#F2F4F6]" />
+                            </td>
+                          ))}
+                        </tr>
+                      ))
+                    ) : leftPagedData.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-3 py-12 text-center text-sm text-[#B0B8C1]">
+                          코드유형이 없습니다.
+                        </td>
+                      </tr>
+                    ) : (
+                      leftPagedData.map((row, idx) => (
+                        <tr
+                          key={row.codeType}
+                          className={`border-b border-[#F2F4F6] cursor-pointer transition-colors hover:bg-[#F7F8FA] ${
+                            selectedGroup === row.codeType ? "bg-[#EBF5FF] hover:bg-[#EBF5FF]" : ""
+                          }`}
+                          onClick={() => handleGroupClick(row.codeType)}
+                        >
+                          <td className="px-3 py-2.5 text-center text-sm text-[#4E5968]">
+                            {(leftPage - 1) * leftPerPage + idx + 1}
+                          </td>
+                          <td className="px-3 py-2.5 text-center" onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="checkbox"
+                              checked={leftChecked.has(row.codeType)}
+                              onChange={() => toggleLeftCheck(row.codeType)}
+                              className="h-3.5 w-3.5 rounded border-gray-300"
+                            />
+                          </td>
+                          <td className="px-3 py-2.5 text-sm text-[#4E5968]">{row.userType}</td>
+                          <td className="px-3 py-2.5 text-sm text-[#191F28] font-medium">{row.codeType}</td>
+                          <td className="px-3 py-2.5 text-sm text-[#4E5968]">{row.typeNm}</td>
+                          <td className="px-3 py-2.5 text-sm text-[#4E5968]">{row.codeLevel}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
-            ) : (
-              <Table
-                columns={leftColumns}
-                data={leftPagedData}
-                isLoading={isLoading}
-                page={leftPage}
-                totalPages={leftTotalPages}
-                total={groupRows.length}
-                onPageChange={setLeftPage}
-                onRowClick={(row) => handleGroupClick(row.groupCode)}
-                emptyMessage="코드유형이 없습니다."
-              />
-            )}
-          </div>
+
+              {/* Pagination */}
+              <div className="flex items-center justify-between px-4 py-3 border-t border-[#E5E8EB]">
+                <p className="text-xs text-[#8B95A1]">
+                  View {leftStart}-{leftEnd} of {groupRows.length}
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    disabled={leftPage <= 1}
+                    onClick={() => setLeftPage(leftPage - 1)}
+                    className="p-1 rounded border border-[#E5E8EB] text-[#8B95A1] hover:bg-[#F7F8FA] disabled:opacity-40"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <span className="text-xs text-[#4E5968]">
+                    Page {leftPage} of {leftTotalPages}
+                  </span>
+                  <button
+                    disabled={leftPage >= leftTotalPages}
+                    onClick={() => setLeftPage(leftPage + 1)}
+                    className="p-1 rounded border border-[#E5E8EB] text-[#8B95A1] hover:bg-[#F7F8FA] disabled:opacity-40"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right panel: 기초코드 목록 */}
-        <div className="rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+        <div className="rounded-lg bg-white border border-[#E5E8EB] overflow-hidden">
           {/* Right action buttons */}
-          <div className="flex items-center justify-end gap-2 px-5 pt-5">
-            <Button variant="danger" size="sm" onClick={() => addToast({ type: "info", message: "저장되었습니다." })}>
+          <div className="flex items-center justify-end gap-2 px-4 py-2.5">
+            <button
+              onClick={() => addToast({ type: "info", message: "저장되었습니다." })}
+              className="rounded px-4 py-1.5 text-xs font-semibold text-white bg-[#F04452] hover:bg-[#E03340]"
+            >
               저장
-            </Button>
-            <Button size="sm" onClick={handleCreateRight}>
+            </button>
+            <button
+              onClick={handleCreateRight}
+              className="rounded px-4 py-1.5 text-xs font-semibold text-white bg-[#3182F6] hover:bg-[#1B64DA]"
+            >
               신규
-            </Button>
-            <Button variant="secondary" size="sm" onClick={() => {
-              if (rightPagedData.length > 0) {
-                handleDeleteClick(rightPagedData[0]);
-              } else {
-                addToast({ type: "warning", message: "삭제할 항목을 선택해주세요." });
-              }
-            }}>
+            </button>
+            <button
+              onClick={() => {
+                if (rightChecked.size > 0) {
+                  const code = rightPagedData.find((c) => rightChecked.has(c.id));
+                  if (code) setDeletingCode(code);
+                } else {
+                  addToast({ type: "warning", message: "삭제할 항목을 선택해주세요." });
+                }
+              }}
+              className="rounded px-4 py-1.5 text-xs font-semibold text-white bg-[#6B7684] hover:bg-[#4E5968]"
+            >
               삭제
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
+            </button>
+            <button
               onClick={() => addToast({ type: "info", message: "엑셀 다운로드" })}
-              className="!bg-[#22C55E] !text-white !border-[#22C55E] hover:!bg-[#16A34A]"
+              className="rounded px-4 py-1.5 text-xs font-semibold text-white bg-[#22C55E] hover:bg-[#16A34A]"
             >
               엑셀
-            </Button>
+            </button>
           </div>
 
           {/* Right grid header */}
-          <div className="mx-5 mt-4 rounded-t-xl bg-[#4A5568] px-4 py-2.5">
+          <div className="bg-[#4A5568] px-4 py-2.5">
             <h2 className="text-sm font-semibold text-white">기초코드 목록</h2>
           </div>
 
-          <div className="px-5 pb-5">
-            {!selectedGroup ? (
-              <div className="py-16 text-center text-sm text-[#8B95A1]">
-                좌측에서 코드유형을 선택해주세요.
+          {!selectedGroup ? (
+            <div className="py-16 text-center text-sm text-[#8B95A1]">
+              좌측에서 코드유형을 선택해주세요.
+            </div>
+          ) : (
+            <div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm">
+                  <thead className="bg-[#F7F8FA] border-b border-[#E5E8EB]">
+                    <tr>
+                      <th className="px-3 py-2.5 text-xs font-medium text-[#8B95A1] w-[50px] text-center">No</th>
+                      <th className="px-3 py-2.5 text-xs font-medium text-[#8B95A1] w-[40px] text-center">
+                        <input
+                          type="checkbox"
+                          checked={rightPagedData.length > 0 && rightChecked.size === rightPagedData.length}
+                          onChange={toggleRightAll}
+                          className="h-3.5 w-3.5 rounded border-gray-300"
+                        />
+                      </th>
+                      <th className="px-3 py-2.5 text-xs font-medium text-[#8B95A1]">기초코드</th>
+                      <th className="px-3 py-2.5 text-xs font-medium text-[#8B95A1]">*기초코드명</th>
+                      <th className="px-3 py-2.5 text-xs font-medium text-[#8B95A1]">값</th>
+                      <th className="px-3 py-2.5 text-xs font-medium text-[#8B95A1]">순서</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {isLoading ? (
+                      Array.from({ length: 5 }).map((_, i) => (
+                        <tr key={i} className="border-b border-[#F2F4F6]">
+                          {Array.from({ length: 6 }).map((_, j) => (
+                            <td key={j} className="px-3 py-3">
+                              <div className="h-4 w-full animate-pulse rounded bg-[#F2F4F6]" />
+                            </td>
+                          ))}
+                        </tr>
+                      ))
+                    ) : rightPagedData.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="px-3 py-12 text-center text-sm text-[#B0B8C1]">
+                          기초코드가 없습니다.
+                        </td>
+                      </tr>
+                    ) : (
+                      rightPagedData.map((row, idx) => (
+                        <tr
+                          key={row.id}
+                          className="border-b border-[#F2F4F6] transition-colors hover:bg-[#F7F8FA] cursor-pointer"
+                          onClick={() => {
+                            setEditingCode(row);
+                            setIsRightFormOpen(true);
+                          }}
+                        >
+                          <td className="px-3 py-2.5 text-center text-sm text-[#4E5968]">
+                            {(rightPage - 1) * rightPerPage + idx + 1}
+                          </td>
+                          <td className="px-3 py-2.5 text-center" onClick={(e) => e.stopPropagation()}>
+                            <input
+                              type="checkbox"
+                              checked={rightChecked.has(row.id)}
+                              onChange={() => toggleRightCheck(row.id)}
+                              className="h-3.5 w-3.5 rounded border-gray-300"
+                            />
+                          </td>
+                          <td className="px-3 py-2.5 text-sm text-[#191F28] font-medium">{row.code}</td>
+                          <td className="px-3 py-2.5 text-sm text-[#4E5968]">{row.codeNm}</td>
+                          <td className="px-3 py-2.5 text-sm text-[#4E5968]">{row.value ?? "-"}</td>
+                          <td className="px-3 py-2.5 text-sm text-[#4E5968]">{row.sortOrder}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
               </div>
-            ) : (
-              <Table
-                columns={rightColumns}
-                data={rightPagedData}
-                isLoading={isLoading}
-                page={rightPage}
-                totalPages={rightTotalPages}
-                total={rightCodes.length}
-                onPageChange={setRightPage}
-                onRowClick={handleEditRight}
-                emptyMessage="기초코드가 없습니다."
-              />
-            )}
-          </div>
+
+              {/* Pagination */}
+              <div className="flex items-center justify-between px-4 py-3 border-t border-[#E5E8EB]">
+                <p className="text-xs text-[#8B95A1]">
+                  View {rightStart}-{rightEnd} of {rightCodes.length}
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    disabled={rightPage <= 1}
+                    onClick={() => setRightPage(rightPage - 1)}
+                    className="p-1 rounded border border-[#E5E8EB] text-[#8B95A1] hover:bg-[#F7F8FA] disabled:opacity-40"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+                  <span className="text-xs text-[#4E5968]">
+                    Page {rightPage} of {rightTotalPages}
+                  </span>
+                  <button
+                    disabled={rightPage >= rightTotalPages}
+                    onClick={() => setRightPage(rightPage + 1)}
+                    className="p-1 rounded border border-[#E5E8EB] text-[#8B95A1] hover:bg-[#F7F8FA] disabled:opacity-40"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -331,7 +531,7 @@ export default function CommonCodesPage() {
         onClose={() => setDeletingCode(undefined)}
         onConfirm={handleDeleteConfirm}
         title="코드 삭제"
-        message={`"${deletingCode?.codeName}" 코드를 삭제하시겠습니까?`}
+        message={`"${deletingCode?.codeNm}" 코드를 삭제하시겠습니까?`}
         confirmText="삭제"
         isLoading={deleteMutation.isPending}
       />
@@ -366,10 +566,10 @@ function CommonCodeFormModal({
   } = useForm<CodeFormData>({
     resolver: zodResolver(codeSchema),
     defaultValues: {
-      groupCode: "",
-      groupName: "",
+      codeType: "",
+      typeNm: "",
       code: "",
-      codeName: "",
+      codeNm: "",
       value: "",
       sortOrder: 0,
       isActive: true,
@@ -382,20 +582,20 @@ function CommonCodeFormModal({
     if (isOpen) {
       if (code) {
         reset({
-          groupCode: code.groupCode,
-          groupName: code.groupName ?? "",
+          codeType: code.codeType,
+          typeNm: code.typeNm ?? "",
           code: code.code,
-          codeName: code.codeName,
+          codeNm: code.codeNm,
           value: code.value ?? "",
           sortOrder: code.sortOrder,
           isActive: code.isActive,
         });
       } else {
         reset({
-          groupCode: defaultGroupCode ?? "",
-          groupName: "",
+          codeType: defaultGroupCode ?? "",
+          typeNm: "",
           code: "",
-          codeName: "",
+          codeNm: "",
           value: "",
           sortOrder: 0,
           isActive: true,
@@ -427,14 +627,14 @@ function CommonCodeFormModal({
             <label className="mb-2 block text-sm font-medium text-[#4E5968]">
               코드유형 <span className="text-red-500">*</span>
             </label>
-            <input {...register("groupCode")} placeholder="GROUP_CODE" className={inputBase} />
-            {errors.groupCode && (
-              <p className="mt-1.5 text-xs text-red-500">{errors.groupCode.message}</p>
+            <input {...register("codeType")} placeholder="GROUP_CODE" className={inputBase} />
+            {errors.codeType && (
+              <p className="mt-1.5 text-xs text-red-500">{errors.codeType.message}</p>
             )}
           </div>
           <div>
             <label className="mb-2 block text-sm font-medium text-[#4E5968]">유형명</label>
-            <input {...register("groupName")} placeholder="유형명" className={inputBase} />
+            <input {...register("typeNm")} placeholder="유형명" className={inputBase} />
           </div>
         </div>
 
@@ -452,9 +652,9 @@ function CommonCodeFormModal({
             <label className="mb-2 block text-sm font-medium text-[#4E5968]">
               코드명 <span className="text-red-500">*</span>
             </label>
-            <input {...register("codeName")} placeholder="코드명" className={inputBase} />
-            {errors.codeName && (
-              <p className="mt-1.5 text-xs text-red-500">{errors.codeName.message}</p>
+            <input {...register("codeNm")} placeholder="코드명" className={inputBase} />
+            {errors.codeNm && (
+              <p className="mt-1.5 text-xs text-red-500">{errors.codeNm.message}</p>
             )}
           </div>
         </div>

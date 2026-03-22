@@ -138,6 +138,15 @@ export interface Partner {
   contactEmail?: string;
   isActive: boolean;
   notes?: string;
+  businessNo?: string;
+  president?: string;
+  faxNumber?: string;
+  website?: string;
+  businessType?: string;
+  businessKind?: string;
+  creditRating?: string;
+  shipControl?: boolean;
+  zipCode?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -389,10 +398,10 @@ export interface ItemGroup {
 
 export interface CommonCode {
   id: string;
-  groupCode: string;
-  groupName?: string;
+  codeType: string;
+  typeNm?: string;
   code: string;
-  codeName: string;
+  codeNm: string;
   value?: string;
   sortOrder: number;
   isActive: boolean;
@@ -421,8 +430,16 @@ export interface Settlement {
   periodFrom: string;
   periodTo: string;
   totalAmount: number;
+  inboundFee?: number;
+  outboundFee?: number;
+  storageFee?: number;
+  handlingFee?: number;
+  transportFee?: number;
+  shuttleFee?: number;
   status: SettlementStatus;
   details: SettlementDetail[];
+  contractDept?: string;
+  contractEmployee?: string;
   notes?: string;
   createdAt: string;
   updatedAt: string;

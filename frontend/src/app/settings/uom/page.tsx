@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Search, Plus, Trash2, AlertCircle, Download } from "lucide-react";
+import { Search, AlertCircle } from "lucide-react";
 import Table, { type Column } from "@/components/ui/Table";
-import Modal from "@/components/ui/Modal";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import { useUoms, useCreateUom, useUpdateUom, useDeleteUom } from "@/hooks/useApi";
 import { useToastStore } from "@/stores/toast.store";
@@ -17,27 +16,25 @@ interface UomItem {
   id: string;
   code: string;
   name: string;
+  isNew?: boolean;
+  isEdited?: boolean;
   [key: string]: unknown;
 }
 
-const uomSchema = z.object({
-  code: z.string().min(1, "UOM코드를 입력해주세요"),
-  name: z.string().min(1, "UOM명을 입력해주세요"),
-});
-
-type UomFormData = z.infer<typeof uomSchema>;
-
 const inputBase =
   "w-full rounded-xl border-0 bg-[#F7F8FA] px-4 py-3 text-sm text-[#191F28] placeholder-[#B0B8C1] outline-none transition-all focus:border focus:border-[#3182F6] focus:bg-white focus:ring-2 focus:ring-[#3182F6]/20";
+
+const cellInput =
+  "w-full border-0 bg-transparent px-2 py-1 text-sm text-[#191F28] outline-none focus:bg-[#F7F8FA] focus:ring-1 focus:ring-[#3182F6]/30 rounded";
 
 export default function UomPage() {
   const [search, setSearch] = useState("");
   const debouncedSearch = useDebounce(search);
   const [page, setPage] = useState(1);
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [editingUom, setEditingUom] = useState<UomItem | undefined>();
-  const [deletingUom, setDeletingUom] = useState<UomItem | undefined>();
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+  const [editedRows, setEditedRows] = useState<Map<string, { code: string; name: string }>>(new Map());
+  const [newRows, setNewRows] = useState<UomItem[]>([]);
+  const [deletingIds, setDeletingIds] = useState<string[]>([]);
 
   const addToast = useToastStore((s) => s.addToast);
 
@@ -47,20 +44,82 @@ export default function UomPage() {
     ...(debouncedSearch ? { search: debouncedSearch } : {}),
   });
 
+  const createMutation = useCreateUom();
+  const updateMutation = useUpdateUom();
   const deleteMutation = useDeleteUom();
 
   const uoms = (response?.data ?? []) as UomItem[];
   const total = response?.total ?? 0;
   const totalPages = response?.totalPages ?? 1;
 
-  const handleCreate = () => {
-    setEditingUom(undefined);
-    setIsFormOpen(true);
+  // Combine server data with new rows for display
+  const displayData = [...newRows, ...uoms];
+
+  const handleNew = () => {
+    const tempId = `new-${Date.now()}`;
+    setNewRows((prev) => [
+      ...prev,
+      { id: tempId, code: "", name: "", isNew: true },
+    ]);
   };
 
-  const handleEdit = (u: UomItem) => {
-    setEditingUom(u);
-    setIsFormOpen(true);
+  const handleCellEdit = (id: string, field: "code" | "name", value: string) => {
+    // Check if it's a new row
+    const newRowIdx = newRows.findIndex((r) => r.id === id);
+    if (newRowIdx >= 0) {
+      setNewRows((prev) => {
+        const next = [...prev];
+        next[newRowIdx] = { ...next[newRowIdx], [field]: value };
+        return next;
+      });
+      return;
+    }
+
+    // Existing row - track edits
+    setEditedRows((prev) => {
+      const next = new Map(prev);
+      const existing = next.get(id) ?? {
+        code: uoms.find((u) => u.id === id)?.code ?? "",
+        name: uoms.find((u) => u.id === id)?.name ?? "",
+      };
+      next.set(id, { ...existing, [field]: value });
+      return next;
+    });
+  };
+
+  const handleSave = async () => {
+    let hasError = false;
+
+    // Save new rows
+    for (const row of newRows) {
+      if (!row.code || !row.name) {
+        addToast({ type: "error", message: "UOM코드와 UOM명을 모두 입력해주세요." });
+        hasError = true;
+        continue;
+      }
+      try {
+        await createMutation.mutateAsync({ code: row.code, name: row.name });
+      } catch {
+        addToast({ type: "error", message: `"${row.code}" 등록 중 오류가 발생했습니다.` });
+        hasError = true;
+      }
+    }
+
+    // Save edited rows
+    for (const [id, data] of editedRows) {
+      try {
+        await updateMutation.mutateAsync({ id, payload: data });
+      } catch {
+        addToast({ type: "error", message: `"${data.code}" 수정 중 오류가 발생했습니다.` });
+        hasError = true;
+      }
+    }
+
+    if (!hasError) {
+      addToast({ type: "success", message: "저장되었습니다." });
+    }
+    setNewRows([]);
+    setEditedRows(new Map());
   };
 
   const handleDeleteClick = () => {
@@ -68,21 +127,38 @@ export default function UomPage() {
       addToast({ type: "error", message: "삭제할 항목을 선택해주세요." });
       return;
     }
-    const firstId = Array.from(selectedRows)[0];
-    const uom = uoms.find((u) => u.id === firstId);
-    if (uom) setDeletingUom(uom);
+
+    // Filter out new rows that haven't been saved
+    const newRowIds = newRows.map((r) => r.id);
+    const serverIds = Array.from(selectedRows).filter((id) => !newRowIds.includes(id));
+
+    // Remove new rows immediately
+    const removedNewRows = Array.from(selectedRows).filter((id) => newRowIds.includes(id));
+    if (removedNewRows.length > 0) {
+      setNewRows((prev) => prev.filter((r) => !removedNewRows.includes(r.id)));
+      setSelectedRows((prev) => {
+        const next = new Set(prev);
+        removedNewRows.forEach((id) => next.delete(id));
+        return next;
+      });
+    }
+
+    if (serverIds.length > 0) {
+      setDeletingIds(serverIds);
+    }
   };
 
   const handleDeleteConfirm = async () => {
-    if (!deletingUom) return;
     try {
-      await deleteMutation.mutateAsync(deletingUom.id);
-      addToast({ type: "success", message: `"${deletingUom.name}" UOM이 삭제되었습니다.` });
+      for (const id of deletingIds) {
+        await deleteMutation.mutateAsync(id);
+      }
+      addToast({ type: "success", message: `${deletingIds.length}건이 삭제되었습니다.` });
       setSelectedRows(new Set());
     } catch {
       addToast({ type: "error", message: "삭제 중 오류가 발생했습니다." });
     } finally {
-      setDeletingUom(undefined);
+      setDeletingIds([]);
     }
   };
 
@@ -95,10 +171,26 @@ export default function UomPage() {
     });
   };
 
+  const toggleAll = () => {
+    if (selectedRows.size === displayData.length) {
+      setSelectedRows(new Set());
+    } else {
+      setSelectedRows(new Set(displayData.map((r) => r.id)));
+    }
+  };
+
+  const getRowValue = (row: UomItem, field: "code" | "name") => {
+    if (row.isNew) return row[field] as string;
+    const edited = editedRows.get(row.id);
+    if (edited) return edited[field];
+    return row[field] as string;
+  };
+
   const columns: Column<UomItem>[] = [
     {
       key: "select",
       header: "",
+      width: "w-[50px]",
       render: (row) => (
         <input
           type="checkbox"
@@ -113,13 +205,32 @@ export default function UomPage() {
       key: "code",
       header: "UOM코드",
       sortable: true,
-      render: (row) => <span className="text-sm font-medium text-[#191F28]">{row.code}</span>,
+      render: (row) => (
+        <input
+          type="text"
+          value={getRowValue(row, "code")}
+          onChange={(e) => handleCellEdit(row.id, "code", e.target.value)}
+          onClick={(e) => e.stopPropagation()}
+          disabled={!row.isNew && !editedRows.has(row.id) && false}
+          className={cellInput}
+          placeholder="UOM코드"
+        />
+      ),
     },
     {
       key: "name",
       header: "UOM명",
       sortable: true,
-      render: (row) => <span className="text-sm text-[#4E5968]">{row.name}</span>,
+      render: (row) => (
+        <input
+          type="text"
+          value={getRowValue(row, "name")}
+          onChange={(e) => handleCellEdit(row.id, "name", e.target.value)}
+          onClick={(e) => e.stopPropagation()}
+          className={cellInput}
+          placeholder="UOM명"
+        />
+      ),
     },
   ];
 
@@ -159,13 +270,13 @@ export default function UomPage() {
       {/* Actions */}
       <div className="flex justify-end gap-2">
         <button
-          onClick={() => addToast({ type: "success", message: "저장되었습니다." })}
+          onClick={handleSave}
           className="rounded-xl bg-[#F04452] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#E03340]"
         >
           저장
         </button>
         <button
-          onClick={handleCreate}
+          onClick={handleNew}
           className="rounded-xl bg-[#3182F6] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#1B64DA]"
         >
           신규
@@ -186,8 +297,9 @@ export default function UomPage() {
 
       {/* Grid */}
       <div className="rounded-2xl bg-white p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-        <div className="mb-4 rounded-lg bg-[#4A5568] px-4 py-2">
+        <div className="mb-4 flex items-center justify-between rounded-lg bg-[#4A5568] px-4 py-2">
           <h2 className="text-sm font-bold text-white">UOM목록</h2>
+          <span className="text-xs text-gray-300">총 {total + newRows.length}건</span>
         </div>
         {error ? (
           <div className="flex items-center gap-3 rounded-xl bg-red-50 p-5 text-sm text-red-600">
@@ -195,115 +307,121 @@ export default function UomPage() {
             데이터를 불러오는 중 오류가 발생했습니다.
           </div>
         ) : (
-          <Table
-            columns={columns}
-            data={uoms}
-            isLoading={isLoading}
-            page={page}
-            totalPages={totalPages}
-            total={total}
-            onPageChange={setPage}
-            onRowClick={handleEdit}
-            emptyMessage="UOM 데이터가 없습니다."
-          />
+          <>
+            {/* Custom table for inline editing */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm">
+                <thead className="bg-[#F7F8FA]">
+                  <tr>
+                    <th className="w-[50px] px-5 py-4 text-xs font-medium uppercase tracking-wider text-[#8B95A1]">
+                      <input
+                        type="checkbox"
+                        checked={displayData.length > 0 && selectedRows.size === displayData.length}
+                        onChange={toggleAll}
+                        className="h-4 w-4 rounded border-[#D1D6DB] text-[#3182F6]"
+                      />
+                    </th>
+                    <th className="px-5 py-4 text-xs font-medium uppercase tracking-wider text-[#8B95A1]">UOM코드</th>
+                    <th className="px-5 py-4 text-xs font-medium uppercase tracking-wider text-[#8B95A1]">UOM명</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {isLoading ? (
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <tr key={i} className="border-b border-[#F2F4F6]">
+                        <td className="px-5 py-4"><div className="h-4 w-4 animate-pulse rounded bg-[#F2F4F6]" /></td>
+                        <td className="px-5 py-4"><div className="h-4 w-full animate-pulse rounded-lg bg-[#F2F4F6]" /></td>
+                        <td className="px-5 py-4"><div className="h-4 w-full animate-pulse rounded-lg bg-[#F2F4F6]" /></td>
+                      </tr>
+                    ))
+                  ) : displayData.length === 0 ? (
+                    <tr>
+                      <td colSpan={3} className="px-5 py-16 text-center text-[#B0B8C1]">
+                        UOM 데이터가 없습니다.
+                      </td>
+                    </tr>
+                  ) : (
+                    displayData.map((row) => (
+                      <tr
+                        key={row.id}
+                        className={`border-b border-[#F2F4F6] transition-colors duration-200 hover:bg-[#F7F8FA] ${
+                          row.isNew ? "bg-[#FFFDE7]" : editedRows.has(row.id) ? "bg-[#FFF8E1]" : ""
+                        }`}
+                      >
+                        <td className="px-5 py-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedRows.has(row.id)}
+                            onChange={() => toggleRow(row.id)}
+                            className="h-4 w-4 rounded border-[#D1D6DB] text-[#3182F6]"
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <input
+                            type="text"
+                            value={getRowValue(row, "code")}
+                            onChange={(e) => handleCellEdit(row.id, "code", e.target.value)}
+                            disabled={!row.isNew}
+                            className={`${cellInput} ${row.isNew ? "" : "text-[#191F28] font-medium"}`}
+                            placeholder="UOM코드 입력"
+                          />
+                        </td>
+                        <td className="px-3 py-2">
+                          <input
+                            type="text"
+                            value={getRowValue(row, "name")}
+                            onChange={(e) => handleCellEdit(row.id, "name", e.target.value)}
+                            className={cellInput}
+                            placeholder="UOM명 입력"
+                          />
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="mt-5 flex items-center justify-between">
+                <p className="text-sm text-[#8B95A1]">
+                  총 <span className="font-semibold text-[#191F28]">{total}</span>건
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    disabled={page <= 1}
+                    onClick={() => setPage(page - 1)}
+                    className="rounded-lg border border-[#E5E8EB] px-3 py-1.5 text-sm text-[#4E5968] hover:bg-[#F7F8FA] disabled:opacity-40"
+                  >
+                    이전
+                  </button>
+                  <span className="rounded-xl bg-[#F7F8FA] px-4 py-1.5 text-sm font-medium text-[#4E5968]">
+                    {page} / {totalPages}
+                  </span>
+                  <button
+                    disabled={page >= totalPages}
+                    onClick={() => setPage(page + 1)}
+                    className="rounded-lg border border-[#E5E8EB] px-3 py-1.5 text-sm text-[#4E5968] hover:bg-[#F7F8FA] disabled:opacity-40"
+                  >
+                    다음
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 
-      {/* Form Modal */}
-      <UomFormModal
-        isOpen={isFormOpen}
-        onClose={() => setIsFormOpen(false)}
-        uom={editingUom}
-      />
-
       <ConfirmModal
-        isOpen={!!deletingUom}
-        onClose={() => setDeletingUom(undefined)}
+        isOpen={deletingIds.length > 0}
+        onClose={() => setDeletingIds([])}
         onConfirm={handleDeleteConfirm}
         title="UOM 삭제"
-        message={`"${deletingUom?.name}" UOM을 삭제하시겠습니까?`}
+        message={`선택한 ${deletingIds.length}건의 UOM을 삭제하시겠습니까?`}
         confirmText="삭제"
         isLoading={deleteMutation.isPending}
       />
     </div>
-  );
-}
-
-function UomFormModal({
-  isOpen,
-  onClose,
-  uom,
-}: {
-  isOpen: boolean;
-  onClose: () => void;
-  uom?: UomItem;
-}) {
-  const isEdit = !!uom;
-  const addToast = useToastStore((s) => s.addToast);
-  const createMutation = useCreateUom();
-  const updateMutation = useUpdateUom();
-
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<UomFormData>({
-    resolver: zodResolver(uomSchema),
-    defaultValues: { code: "", name: "" },
-  });
-
-  useEffect(() => {
-    if (isOpen) {
-      if (uom) {
-        reset({ code: uom.code, name: uom.name });
-      } else {
-        reset({ code: "", name: "" });
-      }
-    }
-  }, [isOpen, uom, reset]);
-
-  const onSubmit = async (data: UomFormData) => {
-    try {
-      if (isEdit && uom) {
-        await updateMutation.mutateAsync({ id: uom.id, payload: data });
-        addToast({ type: "success", message: "UOM이 수정되었습니다." });
-      } else {
-        await createMutation.mutateAsync(data);
-        addToast({ type: "success", message: "UOM이 등록되었습니다." });
-      }
-      onClose();
-    } catch {
-      addToast({ type: "error", message: "오류가 발생했습니다." });
-    }
-  };
-
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} title={isEdit ? "UOM 수정" : "UOM 등록"} size="sm">
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-        <div>
-          <label className="mb-2 block text-sm font-medium text-[#4E5968]">
-            UOM코드 <span className="text-red-500">*</span>
-          </label>
-          <input {...register("code")} placeholder="EA" className={inputBase} disabled={isEdit} />
-          {errors.code && <p className="mt-1.5 text-xs text-red-500">{errors.code.message}</p>}
-        </div>
-        <div>
-          <label className="mb-2 block text-sm font-medium text-[#4E5968]">
-            UOM명 <span className="text-red-500">*</span>
-          </label>
-          <input {...register("name")} placeholder="UOM명" className={inputBase} />
-          {errors.name && <p className="mt-1.5 text-xs text-red-500">{errors.name.message}</p>}
-        </div>
-        <div className="flex justify-end gap-3 pt-2">
-          <button type="button" onClick={onClose} className="rounded-xl bg-[#F2F4F6] px-6 py-2.5 text-sm font-semibold text-[#4E5968] transition-colors hover:bg-[#E5E8EB]">
-            취소
-          </button>
-          <button type="submit" disabled={isSubmitting} className="rounded-xl bg-[#3182F6] px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#1B64DA] disabled:opacity-50">
-            {isSubmitting ? "처리중..." : isEdit ? "수정" : "등록"}
-          </button>
-        </div>
-      </form>
-    </Modal>
   );
 }

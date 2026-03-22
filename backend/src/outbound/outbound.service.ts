@@ -63,6 +63,29 @@ export class OutboundService {
     return order;
   }
 
+  private async generateOrderNumber(prefix: string): Promise<string> {
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+    const todayPrefix = `${prefix}-${dateStr}`;
+
+    const lastOrder = await this.prisma.outboundOrder.findFirst({
+      where: { orderNumber: { startsWith: todayPrefix } },
+      orderBy: { orderNumber: 'desc' },
+      select: { orderNumber: true },
+    });
+
+    let nextSeq = 1;
+    if (lastOrder) {
+      const parts = lastOrder.orderNumber.split('-');
+      const lastSeq = parseInt(parts[parts.length - 1], 10);
+      if (!isNaN(lastSeq)) {
+        nextSeq = lastSeq + 1;
+      }
+    }
+
+    return `${todayPrefix}-${String(nextSeq).padStart(4, '0')}`;
+  }
+
   async create(dto: CreateOutboundOrderDto) {
     // H-12: Deadline check - reject if shipDate is in the past
     if (dto.shipDate) {
@@ -74,16 +97,22 @@ export class OutboundService {
       }
     }
 
+    // 주문번호 자동생성
+    if (!dto.orderNumber) {
+      dto.orderNumber = await this.generateOrderNumber('OB');
+    }
+
     const existing = await this.prisma.outboundOrder.findUnique({
       where: { orderNumber: dto.orderNumber },
     });
     if (existing) throw new ConflictException('이미 존재하는 주문번호입니다');
 
-    const { items, ...orderData } = dto;
+    const { items, orderNumber, shipDate, ...orderData } = dto;
     return this.prisma.outboundOrder.create({
       data: {
         ...orderData,
-        shipDate: dto.shipDate ? new Date(dto.shipDate) : null,
+        orderNumber: orderNumber!,
+        shipDate: shipDate ? new Date(shipDate) : null,
         items: {
           create: items.map((item) => ({
             itemId: item.itemId,

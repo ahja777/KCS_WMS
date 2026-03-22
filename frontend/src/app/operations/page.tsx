@@ -1,23 +1,15 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
-import {
-  Search,
-  AlertCircle,
-  Download,
-  RotateCcw,
-  ChevronDown,
-  CheckSquare,
-  XCircle,
-} from "lucide-react";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { Search, Download, RotateCcw } from "lucide-react";
 import Badge from "@/components/ui/Badge";
-import Button from "@/components/ui/Button";
 import { cn, formatDate, formatNumber, getStatusLabel } from "@/lib/utils";
 import {
   useInboundOrders,
   useOutboundOrders,
   useConfirmInbound,
   useConfirmOutbound,
+  useWarehouses,
 } from "@/hooks/useApi";
 import { downloadExcel } from "@/lib/export";
 import { useToastStore } from "@/stores/toast.store";
@@ -32,34 +24,38 @@ import type {
 interface UnifiedRow {
   type: "INBOUND" | "OUTBOUND";
   id: string;
+  realId: string;
   orderNumber: string;
   orderType: string;
   workStatus: string;
-  orderDetail: string;
+  status: string;
   partnerName: string;
   requestDate: string;
   workDate: string;
   warehouseName: string;
   deliveryTo: string;
-  isUrgent: string;
-  status: string;
+  isUrgent: boolean;
+  blNumber: string;
   lines: (InboundOrderLine | OutboundOrderLine)[];
   raw: InboundOrder | OutboundOrder;
 }
 
 const selectBase =
-  "rounded-xl border-0 bg-[#F7F8FA] px-4 py-3 text-sm text-[#191F28] outline-none transition-colors focus:bg-[#F2F4F6] focus:ring-2 focus:ring-[#3182F6]/20";
+  "h-9 rounded-lg border border-[#E5E8EB] bg-white px-3 text-sm text-[#191F28] outline-none transition-colors focus:border-[#3182F6] focus:ring-1 focus:ring-[#3182F6]/20";
 
 const inputBase =
-  "w-full rounded-xl border-0 bg-[#F7F8FA] px-4 py-3 text-sm text-[#191F28] placeholder-[#B0B8C1] outline-none transition-all focus:border focus:border-[#3182F6] focus:bg-white focus:ring-2 focus:ring-[#3182F6]/20";
+  "h-9 rounded-lg border border-[#E5E8EB] bg-white px-3 text-sm text-[#191F28] placeholder-[#B0B8C1] outline-none transition-all focus:border-[#3182F6] focus:ring-1 focus:ring-[#3182F6]/20";
+
+type IOFilter = "ALL" | "INBOUND" | "OUTBOUND";
 
 export default function OperationsPage() {
   const addToast = useToastStore((s) => s.addToast);
 
-  // Search state matching slide 16
-  const [ioType, setIoType] = useState("INBOUND"); // 입출고구분
-  const [workType, setWorkType] = useState(""); // 작업구분
-  const [approvalStatus, setApprovalStatus] = useState(""); // 승인여부
+  // Search state
+  const [ioType, setIoType] = useState<IOFilter>("ALL");
+  const [workType, setWorkType] = useState("");
+  const [approvalStatus, setApprovalStatus] = useState("");
+  const [warehouseId, setWarehouseId] = useState("");
   const [dateFrom, setDateFrom] = useState(() => {
     const d = new Date();
     d.setMonth(d.getMonth() - 1);
@@ -78,13 +74,17 @@ export default function OperationsPage() {
     sortBy: "createdAt",
     sortOrder: "desc",
     ...(searchOrderNo ? { search: searchOrderNo } : {}),
+    ...(warehouseId ? { warehouseId } : {}),
   });
   const { data: outboundData, isLoading: outboundLoading } = useOutboundOrders({
     limit: 100,
     sortBy: "createdAt",
     sortOrder: "desc",
     ...(searchOrderNo ? { search: searchOrderNo } : {}),
+    ...(warehouseId ? { warehouseId } : {}),
   });
+  const { data: warehouseData } = useWarehouses({ limit: 100 });
+  const warehouses = warehouseData?.data ?? [];
 
   const confirmInbound = useConfirmInbound();
   const confirmOutbound = useConfirmOutbound();
@@ -100,17 +100,18 @@ export default function OperationsPage() {
         rows.push({
           type: "INBOUND",
           id: `in-${order.id}`,
-          status: order.status === "CONFIRMED" ? "승인" : order.status === "COMPLETED" ? "완료" : order.status,
+          realId: order.id,
+          status: order.status,
           orderNumber: order.orderNumber,
           orderType: "입고",
           workStatus: getStatusLabel(order.status),
-          orderDetail: "정상입고",
           partnerName: order.partner?.name ?? "-",
           requestDate: formatDate(order.expectedDate),
           workDate: formatDate(order.completedDate ?? ""),
           warehouseName: order.warehouse?.name ?? "-",
-          deliveryTo: "",
-          isUrgent: "N",
+          deliveryTo: "-",
+          isUrgent: false,
+          blNumber: "-",
           lines: order.lines ?? [],
           raw: order,
         });
@@ -122,17 +123,18 @@ export default function OperationsPage() {
         rows.push({
           type: "OUTBOUND",
           id: `out-${order.id}`,
-          status: order.status === "CONFIRMED" ? "승인" : order.status === "DELIVERED" ? "완료" : order.status,
+          realId: order.id,
+          status: order.status,
           orderNumber: order.orderNumber,
           orderType: "출고",
           workStatus: getStatusLabel(order.status),
-          orderDetail: "정상출고",
           partnerName: order.partner?.name ?? "-",
           requestDate: formatDate(order.shipDate ?? order.createdAt),
           workDate: formatDate(order.completedDate ?? ""),
           warehouseName: order.warehouse?.name ?? "-",
-          deliveryTo: order.partner?.name ?? "",
-          isUrgent: "N",
+          deliveryTo: order.partner?.name ?? "-",
+          isUrgent: false,
+          blNumber: order.trackingNumber ?? "-",
           lines: order.lines ?? [],
           raw: order,
         });
@@ -143,18 +145,41 @@ export default function OperationsPage() {
     return rows;
   }, [ioType, inboundData, outboundData]);
 
-  const handleRowClick = (row: UnifiedRow) => {
-    setSelectedRow(row);
-  };
+  // Filter by workType and approvalStatus client-side
+  const filteredRows = useMemo(() => {
+    let rows = unifiedRows;
+    if (workType) {
+      rows = rows.filter((r) => r.status === workType);
+    }
+    if (approvalStatus === "approved") {
+      rows = rows.filter((r) => r.status === "CONFIRMED" || r.status === "COMPLETED" || r.status === "SHIPPED" || r.status === "DELIVERED");
+    } else if (approvalStatus === "pending") {
+      rows = rows.filter((r) => r.status === "DRAFT");
+    }
+    return rows;
+  }, [unifiedRows, workType, approvalStatus]);
 
-  const toggleSelect = (id: string) => {
+  const handleRowClick = useCallback((row: UnifiedRow) => {
+    setSelectedRow((prev) => (prev?.id === row.id ? null : row));
+  }, []);
+
+  const toggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
-  };
+  }, []);
+
+  const toggleSelectAll = useCallback(() => {
+    setSelectedIds((prev) => {
+      if (prev.size === filteredRows.length && filteredRows.length > 0) {
+        return new Set();
+      }
+      return new Set(filteredRows.map((r) => r.id));
+    });
+  }, [filteredRows]);
 
   const handleApprove = async () => {
     if (selectedIds.size === 0) {
@@ -163,26 +188,37 @@ export default function OperationsPage() {
     }
     let success = 0;
     for (const id of selectedIds) {
-      const row = unifiedRows.find((r) => r.id === id);
+      const row = filteredRows.find((r) => r.id === id);
       if (!row) continue;
-      const realId = row.id.replace(/^(in-|out-)/, "");
       try {
         if (row.type === "INBOUND") {
-          await confirmInbound.mutateAsync(realId);
+          await confirmInbound.mutateAsync(row.realId);
         } else {
-          await confirmOutbound.mutateAsync(realId);
+          await confirmOutbound.mutateAsync(row.realId);
         }
         success++;
-      } catch { /* skip */ }
+      } catch {
+        /* skip */
+      }
     }
     if (success > 0) addToast({ type: "success", message: `${success}건 승인 처리되었습니다.` });
     setSelectedIds(new Set());
   };
 
+  const handleReject = () => {
+    if (selectedIds.size === 0) {
+      addToast({ type: "warning", message: "불가 처리할 주문을 선택해주세요." });
+      return;
+    }
+    addToast({ type: "warning", message: `${selectedIds.size}건 승인불가 처리되었습니다.` });
+    setSelectedIds(new Set());
+  };
+
   const handleReset = () => {
-    setIoType("INBOUND");
+    setIoType("ALL");
     setWorkType("");
     setApprovalStatus("");
+    setWarehouseId("");
     setDateFrom(new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10));
     setDateTo(new Date().toISOString().slice(0, 10));
     setSearchOrderNo("");
@@ -205,164 +241,190 @@ export default function OperationsPage() {
         orderedQty = outLine.orderedQty ?? 0;
         workedQty = outLine.pickedQty ?? outLine.shippedQty ?? 0;
       }
-      return { id: line.id ?? idx, itemCode, itemName, workStatus: selectedRow.workStatus, orderUOM: "", orderedQty, workedQty, lotNo: "", pdaStatus: "", pdaCode: "", locAssign: "", workAssign: "" };
+      return {
+        id: line.id ?? idx,
+        itemCode,
+        itemName,
+        workStatus: selectedRow.workStatus,
+        orderUOM: line.item?.uom ?? "EA",
+        orderedQty,
+        workedQty,
+      };
     });
   }, [selectedRow]);
 
-  return (
-    <div className="space-y-5">
-      {/* Page header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-[#191F28]">입출고현황</h1>
-        <p className="text-sm text-[#8B95A1]">주문 &gt; 입출고현황</p>
-      </div>
+  const ioFilterOptions: { label: string; value: IOFilter }[] = [
+    { label: "전체", value: "ALL" },
+    { label: "입고", value: "INBOUND" },
+    { label: "출고", value: "OUTBOUND" },
+  ];
 
-      {/* Search filters - matching slide 16 layout */}
-      <div className="rounded-2xl bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-        <div className="space-y-3">
-          {/* Row 1 */}
-          <div className="flex flex-wrap items-end gap-4">
-            <div className="min-w-[140px]">
-              <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">입출고구분</label>
-              <select value={ioType} onChange={(e) => setIoType(e.target.value)} className={selectBase}>
-                <option value="INBOUND">입고</option>
-                <option value="OUTBOUND">출고</option>
-                <option value="">전체</option>
-              </select>
-            </div>
-            <div className="min-w-[180px]">
-              <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">작업구분</label>
-              <select value={workType} onChange={(e) => setWorkType(e.target.value)} className={selectBase}>
-                <option value="">주문전체</option>
-                <option value="NORMAL">정상</option>
-                <option value="RETURN">반품</option>
-              </select>
-            </div>
-            <div className="min-w-[160px]">
-              <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">화주</label>
-              <div className="flex gap-1">
-                <input type="text" className={inputBase + " max-w-[100px]"} />
-                <button className="rounded-lg bg-[#F2F4F6] p-2.5 text-[#4E5968] hover:bg-[#E5E8EB]">
-                  <Search className="h-4 w-4" />
+  return (
+    <div className="flex flex-col h-[calc(100vh-140px)]">
+      {/* Search bar */}
+      <div className="rounded-2xl bg-white p-5 shadow-sm mb-4">
+        <div className="flex flex-wrap items-end gap-3">
+          {/* 입출고구분 - pills */}
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">입출고구분</label>
+            <div className="flex rounded-lg border border-[#E5E8EB] overflow-hidden">
+              {ioFilterOptions.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setIoType(opt.value)}
+                  className={cn(
+                    "px-4 h-9 text-sm font-medium transition-colors",
+                    ioType === opt.value
+                      ? "bg-[#3182F6] text-white"
+                      : "bg-white text-[#4E5968] hover:bg-[#F7F8FA]"
+                  )}
+                >
+                  {opt.label}
                 </button>
-                <input type="text" className={inputBase + " max-w-[100px]"} />
-              </div>
+              ))}
             </div>
           </div>
-          {/* Row 2 */}
-          <div className="flex flex-wrap items-end gap-4">
-            <div className="min-w-[180px]">
-              <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">승인여부</label>
-              <select value={approvalStatus} onChange={(e) => setApprovalStatus(e.target.value)} className={selectBase}>
-                <option value="">선택</option>
-                <option value="approved">승인</option>
-                <option value="pending">미승인</option>
-              </select>
-            </div>
-            <div className="min-w-[160px]">
-              <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">창고</label>
-              <div className="flex gap-1">
-                <input type="text" className={inputBase + " max-w-[100px]"} />
-                <button className="rounded-lg bg-[#F2F4F6] p-2.5 text-[#4E5968] hover:bg-[#E5E8EB]">
-                  <Search className="h-4 w-4" />
-                </button>
-                <input type="text" className={inputBase + " max-w-[100px]"} />
-              </div>
-            </div>
-            <div>
-              <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">주문일자</label>
-              <div className="flex items-center gap-2">
-                <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className={selectBase} />
-                <span className="text-sm text-[#8B95A1]">~</span>
-                <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className={selectBase} />
-              </div>
-            </div>
-            <button onClick={handleReset} className="rounded-lg border border-[#E5E8EB] bg-white p-3 text-[#8B95A1] hover:bg-[#F7F8FA]">
-              <RotateCcw className="h-4 w-4" />
-            </button>
-            <button className="flex items-center gap-1.5 rounded-xl bg-[#3182F6] px-5 py-3 text-sm font-medium text-white hover:bg-[#1B64DA]">
-              <Search className="h-4 w-4" />
-              검색
-            </button>
+
+          {/* 작업구분 */}
+          <div className="min-w-[130px]">
+            <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">작업구분</label>
+            <select value={workType} onChange={(e) => setWorkType(e.target.value)} className={selectBase + " w-full"}>
+              <option value="">전체</option>
+              <option value="DRAFT">초안</option>
+              <option value="CONFIRMED">확정</option>
+              <option value="COMPLETED">완료</option>
+              <option value="CANCELLED">취소</option>
+            </select>
           </div>
-          {/* Row 3 */}
-          <div className="flex items-end gap-4">
-            <div className="min-w-[300px]">
-              <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">주문번호</label>
+
+          {/* 승인여부 */}
+          <div className="min-w-[120px]">
+            <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">승인여부</label>
+            <select value={approvalStatus} onChange={(e) => setApprovalStatus(e.target.value)} className={selectBase + " w-full"}>
+              <option value="">전체</option>
+              <option value="approved">승인</option>
+              <option value="pending">미승인</option>
+            </select>
+          </div>
+
+          {/* 창고 */}
+          <div className="min-w-[140px]">
+            <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">창고</label>
+            <select value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)} className={selectBase + " w-full"}>
+              <option value="">전체</option>
+              {warehouses.map((w) => (
+                <option key={w.id} value={w.id}>{w.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* 주문일자 */}
+          <div>
+            <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">주문일자</label>
+            <div className="flex items-center gap-1">
+              <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className={selectBase} />
+              <span className="text-sm text-[#8B95A1]">~</span>
+              <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className={selectBase} />
+            </div>
+          </div>
+
+          {/* 주문번호 */}
+          <div className="min-w-[180px]">
+            <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">주문번호</label>
+            <div className="flex gap-1">
               <input
                 type="text"
                 value={searchOrderNo}
                 onChange={(e) => setSearchOrderNo(e.target.value)}
-                className={inputBase}
-                placeholder=""
+                placeholder="주문번호 검색"
+                className={inputBase + " w-full"}
+                onKeyDown={(e) => e.key === "Enter" && e.preventDefault()}
               />
+              <button className="flex h-9 items-center gap-1 rounded-lg bg-[#3182F6] px-3 text-sm font-medium text-white hover:bg-[#1B64DA]">
+                <Search className="h-3.5 w-3.5" />
+              </button>
             </div>
           </div>
+
+          {/* Reset */}
+          <button onClick={handleReset} className="h-9 rounded-lg border border-[#E5E8EB] bg-white px-2.5 text-[#8B95A1] hover:bg-[#F7F8FA]">
+            <RotateCcw className="h-3.5 w-3.5" />
+          </button>
         </div>
       </div>
 
-      {/* Action buttons */}
-      <div className="flex justify-end gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => downloadExcel("/dashboard/export/excel", "입출고현황.xlsx")}
-          className="!bg-[#22C55E] !text-white !border-[#22C55E]"
-        >
-          엑셀
-        </Button>
-        <Button size="sm" onClick={handleApprove}>
-          승인
-        </Button>
-        <Button variant="secondary" size="sm" onClick={() => addToast({ type: "warning", message: "승인불가 처리되었습니다." })}>
-          불가
-        </Button>
-      </div>
-
-      {/* Top grid: 입출고현황 */}
-      <div className="rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-        <div className="rounded-t-xl bg-[#4A5568] px-5 py-2.5">
-          <h2 className="text-sm font-semibold text-white">입출고현황</h2>
+      {/* Master grid */}
+      <div className={cn("rounded-2xl bg-white shadow-sm overflow-hidden flex flex-col", selectedRow ? "flex-1 min-h-0" : "flex-1 min-h-0")}>
+        <div className="px-5 py-3 border-b border-[#F2F4F6] flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-[#191F28]">
+            입출고현황
+            <span className="ml-2 text-xs font-normal text-[#8B95A1]">{filteredRows.length}건</span>
+          </h3>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleApprove}
+              className="h-8 rounded-lg bg-[#3182F6] px-4 text-xs font-medium text-white hover:bg-[#1B64DA]"
+            >
+              승인처리
+            </button>
+            <button
+              onClick={handleReject}
+              className="h-8 rounded-lg border border-[#E5E8EB] bg-white px-4 text-xs font-medium text-[#4E5968] hover:bg-[#F7F8FA]"
+            >
+              불가처리
+            </button>
+            <button
+              onClick={() => downloadExcel("/dashboard/export/excel", "입출고현황.xlsx")}
+              className="h-8 rounded-lg bg-[#22C55E] px-4 text-xs font-medium text-white hover:bg-[#16A34A]"
+            >
+              엑셀
+            </button>
+          </div>
         </div>
-        <div className="overflow-x-auto">
+        <div className="flex-1 overflow-auto">
           <table className="w-full text-left text-sm">
-            <thead className="bg-[#F7F8FA]">
-              <tr>
-                <th className="w-10 px-3 py-3 text-center">
-                  <input type="checkbox" className="h-4 w-4 rounded border-[#D1D6DB]" />
+            <thead className="sticky top-0 z-10">
+              <tr className="bg-[#F7F8FA]">
+                <th className="w-10 px-3 py-2.5 text-center">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.size === filteredRows.length && filteredRows.length > 0}
+                    onChange={toggleSelectAll}
+                    className="h-4 w-4 rounded border-[#D1D6DB]"
+                  />
                 </th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">상태</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">주문번호</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">주문종류</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">작업상태</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">주문상세</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">화주</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">요청일자</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">작업일자</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">창고</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">배송처</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">긴급여부</th>
+                <th className="px-3 py-2.5 text-xs font-semibold text-[#8B95A1]">상태</th>
+                <th className="px-3 py-2.5 text-xs font-semibold text-[#8B95A1]">주문번호</th>
+                <th className="px-3 py-2.5 text-xs font-semibold text-[#8B95A1]">주문종류</th>
+                <th className="px-3 py-2.5 text-xs font-semibold text-[#8B95A1]">작업상태</th>
+                <th className="px-3 py-2.5 text-xs font-semibold text-[#8B95A1]">거래처</th>
+                <th className="px-3 py-2.5 text-xs font-semibold text-[#8B95A1]">요청일자</th>
+                <th className="px-3 py-2.5 text-xs font-semibold text-[#8B95A1]">작업일자</th>
+                <th className="px-3 py-2.5 text-xs font-semibold text-[#8B95A1]">창고</th>
+                <th className="px-3 py-2.5 text-xs font-semibold text-[#8B95A1]">배송처</th>
+                <th className="px-3 py-2.5 text-xs font-semibold text-[#8B95A1]">긴급여부</th>
+                <th className="px-3 py-2.5 text-xs font-semibold text-[#8B95A1]">BL번호</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
-                Array.from({ length: 5 }).map((_, i) => (
+                Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i} className="border-b border-[#F2F4F6]">
                     {Array.from({ length: 12 }).map((_, j) => (
-                      <td key={j} className="px-3 py-3">
+                      <td key={j} className="px-3 py-2.5">
                         <div className="h-4 animate-pulse rounded bg-[#F2F4F6]" />
                       </td>
                     ))}
                   </tr>
                 ))
-              ) : unifiedRows.length === 0 ? (
+              ) : filteredRows.length === 0 ? (
                 <tr>
                   <td colSpan={12} className="py-16 text-center text-sm text-[#8B95A1]">
                     조회된 주문이 없습니다.
                   </td>
                 </tr>
               ) : (
-                unifiedRows.map((row) => (
+                filteredRows.map((row) => (
                   <tr
                     key={row.id}
                     onClick={() => handleRowClick(row)}
@@ -371,7 +433,7 @@ export default function OperationsPage() {
                       selectedRow?.id === row.id ? "bg-[#E8F2FF]" : "hover:bg-[#F7F8FA]"
                     )}
                   >
-                    <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+                    <td className="px-3 py-2.5 text-center" onClick={(e) => e.stopPropagation()}>
                       <input
                         type="checkbox"
                         checked={selectedIds.has(row.id)}
@@ -379,104 +441,92 @@ export default function OperationsPage() {
                         className="h-4 w-4 rounded border-[#D1D6DB]"
                       />
                     </td>
-                    <td className="px-3 py-3 text-sm text-[#4E5968]">{row.status}</td>
-                    <td className="px-3 py-3 text-sm font-medium text-[#191F28]">{row.orderNumber}</td>
-                    <td className="px-3 py-3 text-sm text-[#4E5968]">{row.orderType}</td>
-                    <td className="px-3 py-3 text-sm text-[#4E5968]">{row.workStatus}</td>
-                    <td className="px-3 py-3 text-sm text-[#4E5968]">{row.orderDetail}</td>
-                    <td className="px-3 py-3 text-sm text-[#4E5968]">{row.partnerName}</td>
-                    <td className="px-3 py-3 text-sm text-[#4E5968]">{row.requestDate}</td>
-                    <td className="px-3 py-3 text-sm text-[#4E5968]">{row.workDate}</td>
-                    <td className="px-3 py-3 text-sm text-[#4E5968]">{row.warehouseName}</td>
-                    <td className="px-3 py-3 text-sm text-[#4E5968]">{row.deliveryTo || "-"}</td>
-                    <td className="px-3 py-3 text-sm text-[#4E5968]">{row.isUrgent}</td>
+                    <td className="px-3 py-2.5">
+                      <Badge status={row.status} />
+                    </td>
+                    <td className="px-3 py-2.5 text-sm font-medium text-[#3182F6]">{row.orderNumber}</td>
+                    <td className="px-3 py-2.5 text-sm text-[#4E5968]">
+                      <span className={cn(
+                        "inline-flex items-center rounded px-2 py-0.5 text-xs font-medium",
+                        row.type === "INBOUND" ? "bg-[#E8F2FF] text-[#3182F6]" : "bg-[#FFF3E0] text-[#FF8B00]"
+                      )}>
+                        {row.orderType}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2.5 text-sm text-[#4E5968]">{row.workStatus}</td>
+                    <td className="px-3 py-2.5 text-sm text-[#4E5968]">{row.partnerName}</td>
+                    <td className="px-3 py-2.5 text-sm text-[#4E5968]">{row.requestDate}</td>
+                    <td className="px-3 py-2.5 text-sm text-[#4E5968]">{row.workDate}</td>
+                    <td className="px-3 py-2.5 text-sm text-[#4E5968]">{row.warehouseName}</td>
+                    <td className="px-3 py-2.5 text-sm text-[#4E5968]">{row.deliveryTo}</td>
+                    <td className="px-3 py-2.5 text-sm text-[#4E5968]">{row.isUrgent ? "Y" : "N"}</td>
+                    <td className="px-3 py-2.5 text-sm text-[#4E5968]">{row.blNumber}</td>
                   </tr>
                 ))
               )}
             </tbody>
           </table>
-        </div>
-        <div className="flex items-center justify-between border-t border-[#F2F4F6] px-5 py-3">
-          <p className="text-sm text-[#8B95A1]">Page 1 of 1</p>
-          <p className="text-sm text-[#8B95A1]">View 1 - {unifiedRows.length} of {unifiedRows.length}</p>
         </div>
       </div>
 
-      {/* Bottom grid: 상세목록 */}
-      <div className="rounded-2xl bg-white shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-        <div className="rounded-t-xl bg-[#4A5568] px-5 py-2.5">
-          <h2 className="text-sm font-semibold text-white">상세목록</h2>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-[#F7F8FA]">
-              <tr>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">상품코드</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">상품명</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">작업상태</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">주문UOM</th>
-                <th className="px-3 py-3 text-right text-xs font-medium text-[#8B95A1]">주문수량</th>
-                <th className="px-3 py-3 text-right text-xs font-medium text-[#8B95A1]">작업수량</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">고객사Lot번호</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">PDA작업상태</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">작업PDA코드</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">Loc지시여부</th>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">작업지시여부</th>
-              </tr>
-            </thead>
-            <tbody>
-              {!selectedRow ? (
-                <tr>
-                  <td colSpan={11} className="py-10 text-center text-sm text-[#8B95A1]">
-                    상위 목록에서 주문을 선택해주세요.
-                  </td>
+      {/* Detail grid - appears when row selected */}
+      {selectedRow && (
+        <div className="mt-4 h-[35%] rounded-2xl bg-white shadow-sm overflow-hidden flex flex-col">
+          <div className="px-5 py-3 border-b border-[#F2F4F6]">
+            <h3 className="text-sm font-semibold text-[#191F28]">
+              상세 - {selectedRow.orderNumber}
+              <span className="ml-2 text-xs font-normal text-[#8B95A1]">{detailLines.length}건</span>
+            </h3>
+          </div>
+          <div className="flex-1 overflow-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="sticky top-0 z-10">
+                <tr className="bg-[#F7F8FA]">
+                  <th className="px-3 py-2.5 text-xs font-semibold text-[#8B95A1]">상품코드</th>
+                  <th className="px-3 py-2.5 text-xs font-semibold text-[#8B95A1]">상품명</th>
+                  <th className="px-3 py-2.5 text-xs font-semibold text-[#8B95A1]">작업상태</th>
+                  <th className="px-3 py-2.5 text-xs font-semibold text-[#8B95A1]">주문UOM</th>
+                  <th className="px-3 py-2.5 text-right text-xs font-semibold text-[#8B95A1]">주문수량</th>
+                  <th className="px-3 py-2.5 text-right text-xs font-semibold text-[#8B95A1]">작업수량</th>
                 </tr>
-              ) : detailLines.length === 0 ? (
-                <tr>
-                  <td colSpan={11} className="py-10 text-center text-sm text-[#8B95A1]">
-                    상세 품목 정보가 없습니다.
-                  </td>
-                </tr>
-              ) : (
-                detailLines.map((line) => (
-                  <tr key={line.id} className="border-b border-[#F2F4F6]">
-                    <td className="px-3 py-3 text-sm font-mono text-[#4E5968]">{line.itemCode}</td>
-                    <td className="px-3 py-3 text-sm text-[#191F28]">{line.itemName}</td>
-                    <td className="px-3 py-3 text-sm text-[#4E5968]">{line.workStatus}</td>
-                    <td className="px-3 py-3 text-sm text-[#4E5968]">{line.orderUOM || "-"}</td>
-                    <td className="px-3 py-3 text-right text-sm font-medium text-[#191F28]">{formatNumber(line.orderedQty)}</td>
-                    <td className="px-3 py-3 text-right text-sm font-medium text-[#191F28]">{formatNumber(line.workedQty)}</td>
-                    <td className="px-3 py-3 text-sm text-[#8B95A1]">{line.lotNo || "-"}</td>
-                    <td className="px-3 py-3 text-sm text-[#8B95A1]">{line.pdaStatus || "-"}</td>
-                    <td className="px-3 py-3 text-sm text-[#8B95A1]">{line.pdaCode || "-"}</td>
-                    <td className="px-3 py-3 text-sm text-[#8B95A1]">{line.locAssign || "-"}</td>
-                    <td className="px-3 py-3 text-sm text-[#8B95A1]">{line.workAssign || "-"}</td>
+              </thead>
+              <tbody>
+                {detailLines.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="py-10 text-center text-sm text-[#8B95A1]">
+                      상세 품목 정보가 없습니다.
+                    </td>
                   </tr>
-                ))
+                ) : (
+                  detailLines.map((line) => (
+                    <tr key={line.id} className="border-b border-[#F2F4F6] hover:bg-[#F7F8FA]">
+                      <td className="px-3 py-2.5 text-sm font-mono text-[#4E5968]">{line.itemCode}</td>
+                      <td className="px-3 py-2.5 text-sm text-[#191F28]">{line.itemName}</td>
+                      <td className="px-3 py-2.5 text-sm text-[#4E5968]">{line.workStatus}</td>
+                      <td className="px-3 py-2.5 text-sm text-[#4E5968]">{line.orderUOM}</td>
+                      <td className="px-3 py-2.5 text-right text-sm font-medium text-[#191F28]">{formatNumber(line.orderedQty)}</td>
+                      <td className="px-3 py-2.5 text-right text-sm font-medium text-[#191F28]">{formatNumber(line.workedQty)}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+              {detailLines.length > 0 && (
+                <tfoot>
+                  <tr className="border-t-2 border-[#D1D6DB] bg-[#F7F8FA] font-semibold">
+                    <td colSpan={4} className="px-3 py-2.5 text-right text-sm text-[#191F28]">합계</td>
+                    <td className="px-3 py-2.5 text-right text-sm text-[#191F28]">
+                      {formatNumber(detailLines.reduce((s, l) => s + l.orderedQty, 0))}
+                    </td>
+                    <td className="px-3 py-2.5 text-right text-sm text-[#191F28]">
+                      {formatNumber(detailLines.reduce((s, l) => s + l.workedQty, 0))}
+                    </td>
+                  </tr>
+                </tfoot>
               )}
-            </tbody>
-            {/* Footer totals */}
-            {detailLines.length > 0 && (
-              <tfoot>
-                <tr className="border-t-2 border-[#D1D6DB] bg-[#F7F8FA] font-semibold">
-                  <td colSpan={4} className="px-3 py-3 text-right text-sm text-[#191F28]">합계</td>
-                  <td className="px-3 py-3 text-right text-sm text-[#191F28]">
-                    {formatNumber(detailLines.reduce((s, l) => s + l.orderedQty, 0))}
-                  </td>
-                  <td className="px-3 py-3 text-right text-sm text-[#191F28]">
-                    {formatNumber(detailLines.reduce((s, l) => s + l.workedQty, 0))}
-                  </td>
-                  <td colSpan={5}></td>
-                </tr>
-              </tfoot>
-            )}
-          </table>
+            </table>
+          </div>
         </div>
-        <div className="flex items-center justify-between border-t border-[#F2F4F6] px-5 py-3">
-          <p className="text-sm text-[#8B95A1]">Page 1 of 1</p>
-          <p className="text-sm text-[#8B95A1]">View 1 - {detailLines.length} of {detailLines.length}</p>
-        </div>
-      </div>
+      )}
     </div>
   );
 }

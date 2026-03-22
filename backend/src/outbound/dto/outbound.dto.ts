@@ -29,10 +29,10 @@ export class CreateOutboundOrderItemDto {
 }
 
 export class CreateOutboundOrderDto {
-  @ApiProperty({ example: 'OB-2026-0001' })
+  @ApiPropertyOptional({ example: 'OB-2026-0001', description: '미입력시 자동생성' })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
-  orderNumber: string;
+  orderNumber?: string;
 
   @ApiProperty()
   @IsUUID()

@@ -136,6 +136,11 @@ model User {
   name      String   @db.VarChar(50)
   role      UserRole @default(OPERATOR)
   isActive  Boolean  @default(true)
+  // 화면설계서 TMSYS030: 사용자관리 추가 필드
+  company   String?  @db.VarChar(100)
+  duty      String?  @db.VarChar(50)
+  phone     String?  @db.VarChar(30)
+  mobile    String?  @db.VarChar(30)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -284,6 +289,7 @@ model Partner {
   country      String?     @db.VarChar(50)
   city         String?     @db.VarChar(50)
   address      String?     @db.VarChar(255)
+  zipCode      String?     @db.VarChar(10)
   // ERD 기반 추가: ILCARRIER/ILOWNER - 사업자번호, 대표자
   businessNo   String?     @db.VarChar(30)
   president    String?     @db.VarChar(50)
@@ -395,6 +401,9 @@ model OutboundOrder {
   // 화면설계서 Slide 23: BL번호, 긴급출고
   blNo           String?        @db.VarChar(50)
   isUrgent       Boolean        @default(false)
+  // 화면설계서: 출고 추가 필드
+  orderSeq       Int?
+  deliveryTo     String?        @db.VarChar(200)
   notes          String?        @db.Text
   createdBy      String?        @db.VarChar(36)
   createdAt      DateTime       @default(now())
@@ -421,6 +430,7 @@ model OutboundOrderItem {
   pickedQty       Int      @default(0)
   packedQty       Int      @default(0)
   shippedQty      Int      @default(0)
+  defectiveQty    Int      @default(0)
   // ERD 기반 추가: LOT 지정 출고
   lotNo           String?  @db.VarChar(50)
   notes           String?  @db.Text
@@ -565,15 +575,19 @@ model CommonCode {
   @@map("common_codes")
 }
 
-// 상품군 (화면설계서 Slide 59: WMSMS094)
+// 상품군 (화면설계서 Slide 59/62: WMSMS094)
 model ItemGroup {
-  id          String   @id @default(uuid()) @db.VarChar(36)
-  code        String   @unique @db.VarChar(20)
-  name        String   @db.VarChar(100)
-  groupType   String?  @db.VarChar(20)
-  inboundZone String?  @db.VarChar(20)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                   String   @id @default(uuid()) @db.VarChar(36)
+  code                 String   @unique @db.VarChar(20)
+  name                 String   @db.VarChar(100)
+  groupType            String?  @db.VarChar(20)
+  inboundZone          String?  @db.VarChar(20)
+  // 화면설계서 Slide 62: 상품군 추가 필드
+  weightToleranceRate  Float?
+  minShelfLife         Int?
+  minShelfLifeUnit     String?  @db.VarChar(10)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   items Item[]
 
@@ -1235,14 +1249,20 @@ model LocationProduct {
 
 // 화주별거래처상품 (WMSMS095)
 model PartnerProduct {
-  id                String  @id @default(uuid()) @db.VarChar(36)
-  partnerId         String  @db.VarChar(36)
-  customerPartnerId String  @db.VarChar(36)
-  expiryControl     Boolean @default(false)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id                    String   @id @default(uuid()) @db.VarChar(36)
+  partnerId             String   @db.VarChar(36)
+  customerPartnerId     String   @db.VarChar(36)
+  itemId                String?  @db.VarChar(36)
+  expiryControl         Boolean  @default(false)
+  // 화면설계서 Slide 62: 출하최소유효기간
+  outMinShelfLife       Int?
+  outMinShelfLifeUnit   String?  @db.VarChar(10)
+  weightToleranceKg     Float?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
   @@index([partnerId])
+  @@index([itemId])
   @@map("partner_products")
 }
 
@@ -1293,4 +1313,242 @@ model InterfaceLog {
   @@index([interfaceType])
   @@index([status])
   @@map("interface_logs")
+}
+
+// ═══════════════════════════════════════════════════════════════
+// 화면설계서 기반 신규 테이블 (ERD 재구성)
+// ═══════════════════════════════════════════════════════════════
+
+// 권한관리 (TMSYS020/050: 권한관리)
+model Role {
+  id          String   @id @default(uuid()) @db.VarChar(36)
+  code        String   @unique @db.VarChar(20)
+  name        String   @db.VarChar(100)
+  description String?  @db.VarChar(255)
+  permissions Json?    @db.Json
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  programs RoleProgram[]
+
+  @@map("roles")
+}
+
+// 프로그램관리 (TMSYS040: 프로그램관리/메뉴관리)
+model Program {
+  id          String   @id @default(uuid()) @db.VarChar(36)
+  code        String   @unique @db.VarChar(30)
+  name        String   @db.VarChar(100)
+  programUrl  String?  @db.VarChar(255)
+  parentId    String?  @db.VarChar(36)
+  menuLevel   Int      @default(1)
+  icon        String?  @db.VarChar(50)
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  parent   Program?      @relation("ProgramTree", fields: [parentId], references: [id])
+  children Program[]     @relation("ProgramTree")
+  roles    RoleProgram[]
+
+  @@index([parentId])
+  @@index([sortOrder])
+  @@map("programs")
+}
+
+// 권한-프로그램 매핑 (TMSYS060/070/080)
+model RoleProgram {
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  roleId    String   @db.VarChar(36)
+  programId String   @db.VarChar(36)
+  canRead   Boolean  @default(true)
+  canWrite  Boolean  @default(false)
+  canDelete Boolean  @default(false)
+  canExport Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  role    Role    @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  program Program @relation(fields: [programId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, programId])
+  @@map("role_programs")
+}
+
+// 다국어관리 (WMSYS020)
+model Multilingual {
+  id       String @id @default(uuid()) @db.VarChar(36)
+  langCode String @db.VarChar(10)
+  msgKey   String @db.VarChar(100)
+  msgValue String @db.Text
+  module   String? @db.VarChar(50)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([langCode, msgKey])
+  @@index([module])
+  @@map("multilinguals")
+}
+
+// 템플릿양식 (WMSTP010: 템플릿관리)
+model Template {
+  id            String   @id @default(uuid()) @db.VarChar(36)
+  code          String   @unique @db.VarChar(30)
+  name          String   @db.VarChar(100)
+  templateType  String   @db.VarChar(20)
+  templateFile  String?  @db.VarChar(255)
+  updateAllow   Boolean  @default(true)
+  startRow      Int      @default(1)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  columns        TemplateColumn[]
+  ownerTemplates OwnerTemplate[]
+
+  @@map("templates")
+}
+
+// 템플릿컬럼 (WMSTP020)
+model TemplateColumn {
+  id           String   @id @default(uuid()) @db.VarChar(36)
+  templateId   String   @db.VarChar(36)
+  colSeq       Int
+  colName      String   @db.VarChar(50)
+  colLevel     Int      @default(1)
+  colLoopGroup Int?
+  isMandatory  Boolean  @default(false)
+  mandatoryGroup Int?
+  defaultValue String?  @db.VarChar(255)
+  sampleValue  String?  @db.VarChar(255)
+  bindCol      String?  @db.VarChar(50)
+  colWidth     Int?
+  colAlign     String?  @db.VarChar(20)
+  isUniqueCol  Boolean  @default(false)
+  colType      String?  @db.VarChar(20)
+  colFormat    String?  @db.VarChar(20)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  template Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@index([templateId])
+  @@map("template_columns")
+}
+
+// 화주템플릿 (WMSTP030)
+model OwnerTemplate {
+  id          String   @id @default(uuid()) @db.VarChar(36)
+  templateId  String   @db.VarChar(36)
+  partnerId   String   @db.VarChar(36)
+  centerId    String?  @db.VarChar(36)
+  updateAllow Boolean  @default(true)
+  startRow    Int      @default(1)
+  notes       String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  template Template              @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  columns  OwnerTemplateColumn[]
+
+  @@index([templateId])
+  @@index([partnerId])
+  @@map("owner_templates")
+}
+
+// 화주템플릿컬럼 (WMSTP040)
+model OwnerTemplateColumn {
+  id              String   @id @default(uuid()) @db.VarChar(36)
+  ownerTemplateId String   @db.VarChar(36)
+  colSeq          Int
+  colName         String   @db.VarChar(50)
+  isUsed          Boolean  @default(true)
+  defaultValue    String?  @db.VarChar(255)
+  useSeq          Int?
+  viewSeq         Int?
+  colWidth        Int?
+  colAlign        String?  @db.VarChar(20)
+  isUniqueCol     Boolean  @default(false)
+  useFormat       String?  @db.VarChar(20)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  ownerTemplate OwnerTemplate @relation(fields: [ownerTemplateId], references: [id], onDelete: Cascade)
+
+  @@index([ownerTemplateId])
+  @@map("owner_template_columns")
+}
+
+// 센터별작업정책 (WMSMS020: 센터별작업정책)
+model WorkPolicy {
+  id              String   @id @default(uuid()) @db.VarChar(36)
+  warehouseId     String   @db.VarChar(36)
+  partnerId       String?  @db.VarChar(36)
+  policyType      String   @db.VarChar(30)
+  policyName      String   @db.VarChar(100)
+  // 입고정책
+  inboundAllocRule   String? @db.VarChar(30)
+  lotAutoGenerate    Boolean @default(false)
+  expiryCheckOnRecv  Boolean @default(true)
+  // 출고정책
+  outboundPickRule   String? @db.VarChar(30)
+  fifoEnabled        Boolean @default(true)
+  fefoEnabled        Boolean @default(false)
+  // 재고정책
+  negativeStockAllow Boolean @default(false)
+  autoReplenish      Boolean @default(false)
+  replenishThreshold Int?
+  notes              String? @db.Text
+  isActive           Boolean @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([warehouseId])
+  @@index([policyType])
+  @@map("work_policies")
+}
+
+// HelpDesk (TMSYS130)
+model Helpdesk {
+  id          String    @id @default(uuid()) @db.VarChar(36)
+  ticketNo    String    @unique @db.VarChar(20)
+  title       String    @db.VarChar(200)
+  content     String    @db.Text
+  category    String    @db.VarChar(30)
+  priority    String    @default("MEDIUM") @db.VarChar(10)
+  status      String    @default("OPEN") @db.VarChar(20)
+  requesterId String   @db.VarChar(36)
+  assigneeId  String?   @db.VarChar(36)
+  resolvedAt  DateTime?
+  resolution  String?   @db.Text
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status])
+  @@index([requesterId])
+  @@index([category])
+  @@map("helpdesks")
+}
+
+// 정산단가 (WMSAC010: 정산단가관리)
+model SettlementRate {
+  id              String   @id @default(uuid()) @db.VarChar(36)
+  warehouseId     String   @db.VarChar(36)
+  partnerId       String?  @db.VarChar(36)
+  rateType        String   @db.VarChar(30)
+  rateName        String   @db.VarChar(100)
+  unitPrice       Float    @default(0)
+  currency        String   @default("KRW") @db.VarChar(10)
+  effectiveFrom   DateTime
+  effectiveTo     DateTime?
+  isActive        Boolean  @default(true)
+  notes           String?  @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([warehouseId])
+  @@index([rateType])
+  @@map("settlement_rates")
 }
