@@ -677,6 +677,19 @@ export interface DashboardSummary {
   warehouses: {
     activeCount: number;
   };
+  dispatch?: {
+    statusCounts: Record<string, number>;
+    totalCount: number;
+    todayDispatches: {
+      id: string;
+      status: string;
+      dispatchDate: string;
+      notes?: string;
+      warehouse: { name: string; code: string };
+      vehicle?: { plateNo: string; driverName: string } | null;
+      items: { itemName: string; orderedQty: number; dispatchedQty: number }[];
+    }[];
+  };
 }
 
 export interface Alert {

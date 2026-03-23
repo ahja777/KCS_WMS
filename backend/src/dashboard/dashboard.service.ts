@@ -93,6 +93,9 @@ export class DashboardService {
     // [최적화] Low stock alerts - N+1 → 2 쿼리로 해결
     const lowStockItems = await this.getLowStockItems(warehouseId);
 
+    // 배차 요약
+    const dispatchSummary = await this.getDispatchSummary(warehouseId);
+
     return {
       inventory: {
         totalQuantity: inventorySummary._sum.quantity || 0,
@@ -124,6 +127,49 @@ export class DashboardService {
       warehouses: {
         activeCount: warehouseCount,
       },
+      dispatch: dispatchSummary,
+    };
+  }
+
+  private async getDispatchSummary(warehouseId?: string) {
+    const warehouseFilter = warehouseId ? { warehouseId } : {};
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const [byStatus, todayDispatches] = await Promise.all([
+      this.prisma.dispatch.groupBy({
+        by: ['status'],
+        where: warehouseFilter,
+        _count: true,
+      }),
+      this.prisma.dispatch.findMany({
+        where: {
+          ...warehouseFilter,
+          dispatchDate: { gte: today, lt: tomorrow },
+        },
+        orderBy: { dispatchDate: 'asc' },
+        take: 10,
+        include: {
+          warehouse: { select: { name: true, code: true } },
+          vehicle: { select: { plateNo: true, driverName: true } },
+          items: { select: { itemName: true, orderedQty: true, dispatchedQty: true } },
+        },
+      }),
+    ]);
+
+    const statusCounts = byStatus.reduce(
+      (acc, item) => ({ ...acc, [item.status]: item._count }),
+      {} as Record<string, number>,
+    );
+
+    const totalCount = Object.values(statusCounts).reduce((a, b) => a + b, 0);
+
+    return {
+      statusCounts,
+      totalCount,
+      todayDispatches,
     };
   }
 
