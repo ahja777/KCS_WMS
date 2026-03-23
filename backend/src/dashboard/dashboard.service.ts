@@ -133,10 +133,12 @@ export class DashboardService {
 
   private async getDispatchSummary(warehouseId?: string) {
     const warehouseFilter = warehouseId ? { warehouseId } : {};
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
+    const oneMonthAgo = new Date();
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+    oneMonthAgo.setHours(0, 0, 0, 0);
+    const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(0, 0, 0, 0);
 
     const [byStatus, todayDispatches] = await Promise.all([
       this.prisma.dispatch.groupBy({
@@ -147,7 +149,7 @@ export class DashboardService {
       this.prisma.dispatch.findMany({
         where: {
           ...warehouseFilter,
-          dispatchDate: { gte: today, lt: tomorrow },
+          dispatchDate: { gte: oneMonthAgo, lt: tomorrow },
         },
         orderBy: { dispatchDate: 'asc' },
         take: 10,

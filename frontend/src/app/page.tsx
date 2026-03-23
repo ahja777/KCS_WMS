@@ -344,7 +344,7 @@ export default function DashboardPage() {
         ) : todayDispatches.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-14 text-[#8B95A1]">
             <Truck className="mb-3 h-10 w-10 text-[#D5DAE0]" />
-            <p className="text-sm">오늘 예정된 배송이 없습니다.</p>
+            <p className="text-sm">최근 한 달간 배송 내역이 없습니다.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
