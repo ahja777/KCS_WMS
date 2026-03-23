@@ -6,10 +6,7 @@ import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 
-// ─── 포트 고정 (변경 금지) ───────────────────────────────
 const BACKEND_PORT = 4100;
-const FRONTEND_URL = 'http://localhost:3200';
-// ──────────────────────────────────────────────────────────
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -17,9 +14,9 @@ async function bootstrap() {
   // Global prefix
   app.setGlobalPrefix('api');
 
-  // CORS - 프론트엔드 포트 고정
+  // CORS - 모든 origin 허용 (다른 PC에서도 접속 가능)
   app.enableCors({
-    origin: FRONTEND_URL,
+    origin: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
@@ -50,10 +47,9 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
-  await app.listen(BACKEND_PORT);
-  console.log(`KCS WMS Backend running on http://localhost:${BACKEND_PORT}`);
+  await app.listen(BACKEND_PORT, '0.0.0.0');
+  console.log(`KCS WMS Backend running on http://0.0.0.0:${BACKEND_PORT}`);
   console.log(`Swagger docs: http://localhost:${BACKEND_PORT}/api/docs`);
-  console.log(`CORS allowed: ${FRONTEND_URL}`);
 }
 
 bootstrap();

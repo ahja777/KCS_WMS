@@ -1,8 +1,10 @@
 import axios from "axios";
 
-// ─── 포트 고정 (변경 금지) ───────────────────────────────
-const API_BASE_URL = "http://localhost:4100/api";
-// ──────────────────────────────────────────────────────────
+// 브라우저 hostname 기반으로 백엔드 URL 자동 결정 (다른 PC에서도 접속 가능)
+const API_BASE_URL =
+  typeof window !== "undefined"
+    ? `${window.location.protocol}//${window.location.hostname}:4100/api`
+    : "http://localhost:4100/api";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
