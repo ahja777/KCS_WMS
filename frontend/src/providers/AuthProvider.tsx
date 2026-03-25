@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuthStore } from "@/stores/auth.store";
 import { getCurrentUser, isAuthenticated } from "@/lib/auth";
@@ -36,15 +36,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const init = async () => {
-      if (!isAuthenticated()) {
-        setUser(null);
-        if (!PUBLIC_PATHS.includes(pathname)) {
-          router.push("/login");
-        }
-        return;
-      }
-
       try {
+        if (!isAuthenticated()) {
+          setUser(null);
+          if (!PUBLIC_PATHS.includes(pathname)) {
+            router.push("/login");
+          }
+          return;
+        }
+
         const currentUser = await getCurrentUser();
         setUser(currentUser);
       } catch {
@@ -52,6 +52,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!PUBLIC_PATHS.includes(pathname)) {
           router.push("/login");
         }
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -65,6 +67,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       router.replace("/");
     }
   }, [pathname, user, isLoading, router]);
+
+  // Safety timeout: if loading takes too long, force stop loading
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  useEffect(() => {
+    if (isLoading) {
+      timeoutRef.current = setTimeout(() => {
+        setLoading(false);
+      }, 5000);
+    }
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, [isLoading, setLoading]);
 
   if (isLoading && !PUBLIC_PATHS.includes(pathname)) {
     return (
