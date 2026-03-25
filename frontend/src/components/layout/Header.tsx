@@ -1,18 +1,28 @@
 "use client";
 
-import { Bell, LogOut } from "lucide-react";
+import { Bell, LogOut, Menu } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useAuthStore } from "@/stores/auth.store";
+import { useUIStore } from "@/stores/ui.store";
 import { getStatusLabel } from "@/lib/utils";
 
 export default function Header() {
   const { logout } = useAuth();
   const user = useAuthStore((s) => s.user);
+  const toggleMobileSidebar = useUIStore((s) => s.toggleMobileSidebar);
 
   const initial = user?.name?.charAt(0) || "U";
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center justify-end bg-white px-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)]">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between bg-white px-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] md:px-6 lg:justify-end">
+      {/* Hamburger - mobile & tablet only */}
+      <button
+        onClick={toggleMobileSidebar}
+        className="rounded-xl p-2.5 text-[#4E5968] transition-all duration-200 hover:bg-[#F7F8FA] lg:hidden"
+      >
+        <Menu className="h-5 w-5" />
+      </button>
+
       <div className="flex items-center gap-3">
         {/* Notifications */}
         <button className="relative rounded-xl p-2.5 text-[#B0B8C1] transition-all duration-200 hover:bg-[#F7F8FA] hover:text-[#4E5968]">

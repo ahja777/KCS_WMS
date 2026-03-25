@@ -58,7 +58,7 @@ export default function Modal({
     >
       <div
         className={cn(
-          "w-full rounded-2xl bg-white shadow-[0_8px_32px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.08)] animate-modal-in",
+          "w-full rounded-2xl bg-white shadow-[0_8px_32px_rgba(0,0,0,0.12),0_2px_8px_rgba(0,0,0,0.08)] animate-modal-in max-md:max-w-full max-md:max-h-[90vh] max-md:overflow-y-auto",
           sizeStyles[size],
           className
         )}

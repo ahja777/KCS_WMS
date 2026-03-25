@@ -26,7 +26,8 @@ function AppLayout({ children }: { children: React.ReactNode }) {
       <div
         className={cn(
           "flex flex-1 flex-col transition-all duration-300",
-          sidebarCollapsed ? "ml-[72px]" : "ml-[240px]"
+          "ml-0 md:ml-[72px]",
+          sidebarCollapsed ? "lg:ml-[72px]" : "lg:ml-[240px]"
         )}
       >
         <Header />

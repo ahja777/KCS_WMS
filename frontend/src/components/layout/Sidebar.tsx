@@ -39,6 +39,7 @@ import {
   FileSpreadsheet,
   Cog,
   Globe,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -76,7 +77,6 @@ function isGroup(item: MenuItem): item is MenuGroup {
 }
 
 // --- Menu Definition ---
-// roles가 없으면 모든 역할에 표시
 const menuItems: MenuItem[] = [
   { href: "/", label: "대시보드", icon: LayoutDashboard },
   {
@@ -196,13 +196,11 @@ function filterMenuByRole(items: MenuItem[], role: UserRole | undefined): MenuIt
     .filter(Boolean) as MenuItem[];
 }
 
-// --- Helper: check if a path is active for a given href ---
 function isPathActive(pathname: string, href: string): boolean {
   if (href === "/") return pathname === "/";
   return pathname === href || pathname.startsWith(href + "/");
 }
 
-// --- Helper: find which group keys should be expanded based on current path ---
 function getActiveGroupKeys(pathname: string): string[] {
   const keys: string[] = [];
   for (const item of menuItems) {
@@ -267,7 +265,7 @@ function CollapsedFlyout({
 // --- Main Sidebar ---
 export default function Sidebar() {
   const pathname = usePathname();
-  const { sidebarCollapsed, toggleSidebar } = useUIStore();
+  const { sidebarCollapsed, toggleSidebar, mobileSidebarOpen, closeMobileSidebar } = useUIStore();
   const userRole = useAuthStore((s) => s.user?.role) as UserRole | undefined;
   const visibleMenuItems = filterMenuByRole(menuItems, userRole);
 
@@ -287,6 +285,23 @@ export default function Sidebar() {
       });
     }
   }, [pathname]);
+
+  // Close mobile sidebar on route change
+  useEffect(() => {
+    closeMobileSidebar();
+  }, [pathname, closeMobileSidebar]);
+
+  // Lock body scroll when mobile sidebar is open
+  useEffect(() => {
+    if (mobileSidebarOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileSidebarOpen]);
 
   const toggleGroup = (key: string) => {
     setExpandedGroups((prev) => {
@@ -320,14 +335,12 @@ export default function Sidebar() {
     }, 150);
   };
 
-  // Cleanup timer on unmount
   useEffect(() => {
     return () => {
       if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
     };
   }, []);
 
-  // Clear flyout when sidebar expands
   useEffect(() => {
     if (!sidebarCollapsed) {
       setHoveredGroup(null);
@@ -335,16 +348,15 @@ export default function Sidebar() {
     }
   }, [sidebarCollapsed]);
 
-  return (
-    <aside
-      className={cn(
-        "fixed left-0 top-0 z-40 flex h-screen flex-col bg-white border-r border-[#F2F4F6] transition-all duration-300",
-        sidebarCollapsed ? "w-[72px]" : "w-[240px]"
-      )}
-    >
+  // Determine if sidebar should show as collapsed (tablet or desktop collapsed)
+  // On tablet (md~lg), always collapsed. On desktop (lg+), respect user toggle.
+  // On mobile (< md), sidebar is overlay drawer (always expanded style).
+
+  const renderSidebarContent = (isCollapsed: boolean) => (
+    <>
       {/* Logo */}
       <div className="flex h-16 items-center justify-between px-4">
-        {!sidebarCollapsed && (
+        {!isCollapsed && (
           <Link href="/" className="flex items-center gap-3 transition-opacity hover:opacity-80">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#3182F6] font-bold text-white text-sm">
               K
@@ -356,7 +368,7 @@ export default function Sidebar() {
             </div>
           </Link>
         )}
-        {sidebarCollapsed && (
+        {isCollapsed && (
           <Link href="/" className="mx-auto flex h-9 w-9 items-center justify-center rounded-xl bg-[#3182F6] font-bold text-white text-sm transition-opacity hover:opacity-80">
             K
           </Link>
@@ -367,7 +379,6 @@ export default function Sidebar() {
       <nav className="flex-1 overflow-y-auto px-3 py-4">
         <ul className="flex flex-col gap-0.5">
           {visibleMenuItems.map((item) => {
-            // --- Direct link item (no children) ---
             if (!isGroup(item)) {
               const active = isPathActive(pathname, item.href);
               const Icon = item.icon;
@@ -380,9 +391,9 @@ export default function Sidebar() {
                       active
                         ? "bg-[#E8F2FF] text-[#3182F6]"
                         : "text-[#4E5968] hover:bg-[#F7F8FA]",
-                      sidebarCollapsed && "justify-center px-2"
+                      isCollapsed && "justify-center px-2"
                     )}
-                    title={sidebarCollapsed ? item.label : undefined}
+                    title={isCollapsed ? item.label : undefined}
                   >
                     <Icon
                       className={cn(
@@ -390,13 +401,12 @@ export default function Sidebar() {
                         active ? "text-[#3182F6]" : "text-[#8B95A1]"
                       )}
                     />
-                    {!sidebarCollapsed && <span>{item.label}</span>}
+                    {!isCollapsed && <span>{item.label}</span>}
                   </Link>
                 </li>
               );
             }
 
-            // --- Group item with children ---
             const group = item;
             const Icon = group.icon;
             const isExpanded = expandedGroups.has(group.key);
@@ -413,19 +423,18 @@ export default function Sidebar() {
                 }
                 onMouseLeave={handleGroupMouseLeave}
               >
-                {/* Group header */}
                 <button
                   onClick={() => {
-                    if (!sidebarCollapsed) toggleGroup(group.key);
+                    if (!isCollapsed) toggleGroup(group.key);
                   }}
                   className={cn(
                     "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
                     hasActiveChild
                       ? "text-[#3182F6]"
                       : "text-[#4E5968] hover:bg-[#F7F8FA]",
-                    sidebarCollapsed && "justify-center px-2"
+                    isCollapsed && "justify-center px-2"
                   )}
-                  title={sidebarCollapsed ? group.label : undefined}
+                  title={isCollapsed ? group.label : undefined}
                 >
                   <Icon
                     className={cn(
@@ -433,7 +442,7 @@ export default function Sidebar() {
                       hasActiveChild ? "text-[#3182F6]" : "text-[#8B95A1]"
                     )}
                   />
-                  {!sidebarCollapsed && (
+                  {!isCollapsed && (
                     <>
                       <span className="flex-1 text-left">{group.label}</span>
                       <ChevronDown
@@ -446,8 +455,7 @@ export default function Sidebar() {
                   )}
                 </button>
 
-                {/* Sub-items (expanded state, only when sidebar is open) */}
-                {!sidebarCollapsed && (
+                {!isCollapsed && (
                   <div
                     className={cn(
                       "overflow-hidden transition-all duration-200 ease-in-out",
@@ -486,8 +494,7 @@ export default function Sidebar() {
                   </div>
                 )}
 
-                {/* Flyout for collapsed sidebar */}
-                {sidebarCollapsed && hoveredGroup === group.key && (
+                {isCollapsed && hoveredGroup === group.key && (
                   <CollapsedFlyout
                     group={group}
                     pathname={pathname}
@@ -499,20 +506,69 @@ export default function Sidebar() {
           })}
         </ul>
       </nav>
+    </>
+  );
 
-      {/* Collapse toggle */}
-      <div className="border-t border-[#F2F4F6] p-3">
-        <button
-          onClick={toggleSidebar}
-          className="flex w-full items-center justify-center rounded-xl py-2 text-[#B0B8C1] transition-all duration-200 hover:bg-[#F7F8FA] hover:text-[#4E5968]"
-        >
-          {sidebarCollapsed ? (
-            <ChevronRight className="h-5 w-5" />
-          ) : (
-            <ChevronLeft className="h-5 w-5" />
-          )}
-        </button>
-      </div>
-    </aside>
+  return (
+    <>
+      {/* Mobile overlay backdrop */}
+      {mobileSidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm md:hidden"
+          onClick={closeMobileSidebar}
+        />
+      )}
+
+      {/* Mobile drawer (< md) */}
+      <aside
+        className={cn(
+          "fixed left-0 top-0 z-50 flex h-screen w-[280px] flex-col bg-white shadow-xl transition-transform duration-300 md:hidden",
+          mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
+        {/* Mobile close button */}
+        <div className="absolute right-3 top-4 z-10">
+          <button
+            onClick={closeMobileSidebar}
+            className="rounded-xl p-2 text-[#B0B8C1] transition-all hover:bg-[#F7F8FA] hover:text-[#4E5968]"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+        {renderSidebarContent(false)}
+      </aside>
+
+      {/* Tablet sidebar (md ~ lg): always collapsed */}
+      <aside
+        className={cn(
+          "fixed left-0 top-0 z-40 hidden h-screen w-[72px] flex-col border-r border-[#F2F4F6] bg-white md:flex lg:hidden"
+        )}
+      >
+        {renderSidebarContent(true)}
+      </aside>
+
+      {/* Desktop sidebar (lg+): collapsible */}
+      <aside
+        className={cn(
+          "fixed left-0 top-0 z-40 hidden h-screen flex-col border-r border-[#F2F4F6] bg-white transition-all duration-300 lg:flex",
+          sidebarCollapsed ? "w-[72px]" : "w-[240px]"
+        )}
+      >
+        {renderSidebarContent(sidebarCollapsed)}
+        {/* Collapse toggle - desktop only */}
+        <div className="border-t border-[#F2F4F6] p-3">
+          <button
+            onClick={toggleSidebar}
+            className="flex w-full items-center justify-center rounded-xl py-2 text-[#B0B8C1] transition-all duration-200 hover:bg-[#F7F8FA] hover:text-[#4E5968]"
+          >
+            {sidebarCollapsed ? (
+              <ChevronRight className="h-5 w-5" />
+            ) : (
+              <ChevronLeft className="h-5 w-5" />
+            )}
+          </button>
+        </div>
+      </aside>
+    </>
   );
 }

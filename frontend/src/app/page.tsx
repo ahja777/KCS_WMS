@@ -314,7 +314,7 @@ export default function DashboardPage() {
             )}
           </div>
           {!isLoading && dispatchTotal > 0 && (
-            <div className="flex items-center gap-4 text-xs text-[#8B95A1]">
+            <div className="flex flex-wrap items-center gap-2 text-xs text-[#8B95A1] sm:gap-4">
               {(["PLANNED", "IN_PROGRESS", "COMPLETED", "CANCELLED"] as const).map((key) => {
                 const dotColor: Record<string, string> = {
                   PLANNED: "bg-[#8B95A1]", IN_PROGRESS: "bg-[#FF9500]",

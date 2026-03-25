@@ -168,7 +168,7 @@ export default function Table<T extends object>({
 
       {totalPages > 1 && (
         <div className="mt-5 flex items-center justify-between">
-          <p className="text-sm text-[#8B95A1]">
+          <p className="hidden text-sm text-[#8B95A1] sm:block">
             총 <span className="font-semibold text-[#191F28]">{total}</span>건
           </p>
           <div className="flex items-center gap-2">
