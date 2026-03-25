@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Search, Trash2, AlertCircle } from "lucide-react";
+import { Plus, Search, Trash2, Pencil, AlertCircle } from "lucide-react";
 import Table, { type Column } from "@/components/ui/Table";
 import Badge from "@/components/ui/Badge";
 import Modal from "@/components/ui/Modal";
@@ -21,7 +21,7 @@ import { formatNumber } from "@/lib/utils";
 import type { Vehicle } from "@/types";
 
 const vehicleSchema = z.object({
-  plateNumber: z.string().min(1, "차량번호를 입력해주세요"),
+  plateNumber: z.string().optional(),
   tonnage: z.coerce.number().min(0, "0 이상 입력해주세요"),
   type: z.string().min(1, "유형을 선택해주세요"),
   driverName: z.string().min(1, "기사명을 입력해주세요"),
@@ -129,12 +129,21 @@ export default function VehiclesPage() {
       key: "actions",
       header: "",
       render: (row) => (
-        <button
-          onClick={(e) => handleDeleteClick(e, row)}
-          className="rounded-lg p-1.5 text-[#B0B8C1] transition-colors hover:bg-red-50 hover:text-red-500"
-        >
-          <Trash2 className="h-4 w-4" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={(e) => { e.stopPropagation(); handleEdit(row); }}
+            className="rounded-lg p-1.5 text-[#B0B8C1] transition-colors hover:bg-[#FFF8E1] hover:text-[#F59E0B]"
+            title="수정"
+          >
+            <Pencil className="h-4 w-4" />
+          </button>
+          <button
+            onClick={(e) => handleDeleteClick(e, row)}
+            className="rounded-lg p-1.5 text-[#B0B8C1] transition-colors hover:bg-red-50 hover:text-red-500"
+          >
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
       ),
     },
   ];
@@ -192,6 +201,7 @@ export default function VehiclesPage() {
         isOpen={isFormOpen}
         onClose={() => setIsFormOpen(false)}
         vehicle={editingVehicle}
+        existingVehicles={vehicles}
       />
 
       <ConfirmModal
@@ -212,10 +222,12 @@ function VehicleFormModal({
   isOpen,
   onClose,
   vehicle,
+  existingVehicles = [],
 }: {
   isOpen: boolean;
   onClose: () => void;
   vehicle?: Vehicle;
+  existingVehicles?: Vehicle[];
 }) {
   const isEdit = !!vehicle;
   const addToast = useToastStore((s) => s.addToast);
@@ -242,6 +254,8 @@ function VehicleFormModal({
   });
 
   const isActive = watch("isActive");
+  const watchedPlate = watch("plateNumber");
+  const isDuplicatePlate = !isEdit && !!watchedPlate && existingVehicles.some(v => v.plateNumber === watchedPlate);
 
   useEffect(() => {
     if (isOpen) {
@@ -268,13 +282,17 @@ function VehicleFormModal({
   }, [isOpen, vehicle, reset]);
 
   const onSubmit = async (data: VehicleFormData) => {
+    if (!isEdit && data.plateNumber && existingVehicles.some(v => v.plateNumber === data.plateNumber)) {
+      addToast({ type: "error", message: "이미 존재하는 차량번호입니다." });
+      return;
+    }
     try {
       if (isEdit && vehicle) {
         await updateMutation.mutateAsync({ id: vehicle.id, payload: data });
-        addToast({ type: "success", message: "차량이 수정되었습니다." });
+        addToast({ type: "success", message: "저장이 완료되었습니다." });
       } else {
         await createMutation.mutateAsync(data);
-        addToast({ type: "success", message: "차량이 등록되었습니다." });
+        addToast({ type: "success", message: "저장이 완료되었습니다." });
       }
       onClose();
     } catch {
@@ -288,16 +306,19 @@ function VehicleFormModal({
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="mb-2 block text-sm font-medium text-[#4E5968]">
-              차량번호 <span className="text-red-500">*</span>
+              차량번호
             </label>
             <input
               {...register("plateNumber")}
-              placeholder="12가 3456"
+              placeholder={isEdit ? "차량번호" : "미입력시 자동생성"}
               className={inputBase}
               disabled={isEdit}
             />
             {errors.plateNumber && (
               <p className="mt-1.5 text-xs text-red-500">{errors.plateNumber.message}</p>
+            )}
+            {isDuplicatePlate && (
+              <p className="mt-1.5 text-xs text-orange-500">이미 존재하는 차량번호입니다.</p>
             )}
           </div>
           <div>

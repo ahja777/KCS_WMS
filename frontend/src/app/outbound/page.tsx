@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useCallback, useRef } from "react";
 import SortableHeader, { useTableSort } from "@/components/ui/SortableHeader";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { Search, RotateCcw, Plus, Trash2 } from "lucide-react";
+import { Search, RotateCcw, Plus, Trash2, Pencil } from "lucide-react";
 import Badge from "@/components/ui/Badge";
 import { cn, formatDate, formatNumber, getStatusLabel } from "@/lib/utils";
 import { downloadExcel } from "@/lib/export";
@@ -55,6 +55,7 @@ export default function OutboundPage() {
   const [selectedRow, setSelectedRow] = useState<OutboundOrder | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
+  const [editOrder, setEditOrder] = useState<OutboundOrder | null>(null);
 
   // Fetch
   const { data: response, isLoading, error } = useOutboundOrders({
@@ -101,6 +102,11 @@ export default function OutboundPage() {
       window.removeEventListener("keydown", handleEscape);
     };
   }, []);
+
+  const handleEditClick = (order: OutboundOrder) => {
+    setEditOrder(order);
+    setShowCreateModal(true);
+  };
 
   const handleRowClick = useCallback((order: OutboundOrder) => {
     setSelectedRow((prev) => (prev?.id === order.id ? null : order));
@@ -360,13 +366,14 @@ export default function OutboundPage() {
                 <SortableHeader field="currentStock" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="text-right">현재고</SortableHeader>
                 <SortableHeader field="order.trackingNumber" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>송장번호</SortableHeader>
                 <SortableHeader field="order.shippingMethod" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>배송방법</SortableHeader>
+                <th className="px-3 py-2.5 text-center text-xs font-medium text-[#8B95A1]">수정</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i} className="border-b border-[#F2F4F6]">
-                    {Array.from({ length: 11 }).map((_, j) => (
+                    {Array.from({ length: 13 }).map((_, j) => (
                       <td key={j} className="px-3 py-2.5">
                         <div className="h-4 animate-pulse rounded bg-[#F2F4F6]" />
                       </td>
@@ -375,13 +382,13 @@ export default function OutboundPage() {
                 ))
               ) : error ? (
                 <tr>
-                  <td colSpan={11} className="py-10 text-center text-sm text-red-500">
+                  <td colSpan={13} className="py-10 text-center text-sm text-red-500">
                     오류가 발생했습니다.
                   </td>
                 </tr>
               ) : masterRows.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="py-16 text-center text-sm text-[#8B95A1]">
+                  <td colSpan={13} className="py-16 text-center text-sm text-[#8B95A1]">
                     데이터가 없습니다.
                   </td>
                 </tr>
@@ -417,6 +424,15 @@ export default function OutboundPage() {
                     <td className="px-3 py-2.5 text-right text-sm font-semibold text-[#3182F6]">{formatNumber(currentStock)}</td>
                     <td className="px-3 py-2.5 text-sm text-[#4E5968]">{order.trackingNumber ?? "-"}</td>
                     <td className="px-3 py-2.5 text-sm text-[#4E5968]">{order.shippingMethod ?? "-"}</td>
+                    <td className="px-3 py-2.5 text-center" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => handleEditClick(order)}
+                        className="rounded-lg p-1.5 text-[#8B95A1] transition-colors hover:bg-[#E8F3FF] hover:text-[#3182F6]"
+                        title="수정"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}
@@ -519,8 +535,9 @@ export default function OutboundPage() {
       {/* Create Modal */}
       <OutboundFormModal
         isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
+        onClose={() => { setShowCreateModal(false); setEditOrder(null); }}
         onSuccess={handleCreateSuccess}
+        editData={editOrder}
       />
     </div>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, AlertCircle, RotateCcw } from "lucide-react";
+import { Search, AlertCircle, RotateCcw, Pencil } from "lucide-react";
 import Table, { type Column } from "@/components/ui/Table";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import { downloadExcel } from "@/lib/export";
@@ -100,18 +100,22 @@ export default function PartnersPage() {
   };
 
   const handleSave = async () => {
-    if (!form.code || !form.name) {
-      addToast({ type: "error", message: "화주코드와 화주명은 필수입니다." });
+    if (!form.name) {
+      addToast({ type: "error", message: "화주명은 필수입니다." });
+      return;
+    }
+    if (isNew && !!form.code && partners.some((p) => p.code === form.code)) {
+      addToast({ type: "error", message: "이미 존재하는 화주코드입니다." });
       return;
     }
     try {
       const payload = { ...form, type: form.type as PartnerType };
       if (isNew) {
         await createMutation.mutateAsync(payload);
-        addToast({ type: "success", message: "화주가 등록되었습니다." });
+        addToast({ type: "success", message: "저장이 완료되었습니다." });
       } else if (selectedPartner) {
         await updateMutation.mutateAsync({ id: selectedPartner.id, payload });
-        addToast({ type: "success", message: "화주가 수정되었습니다." });
+        addToast({ type: "success", message: "저장이 완료되었습니다." });
       }
       setIsNew(false);
     } catch {
@@ -151,6 +155,21 @@ export default function PartnersPage() {
       header: "생성자",
       sortable: true,
       render: () => <span className="text-xs text-[#8B95A1]">-</span>,
+    },
+    {
+      key: "actions" as keyof Partner,
+      header: "수정",
+      width: "w-[60px]",
+      render: (row) => (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); setSelectedPartner(row); setIsNew(false); }}
+          className="rounded p-1 text-[#8B95A1] transition-colors hover:bg-[#F2F4F6] hover:text-[#3182F6]"
+          title="수정"
+        >
+          <Pencil className="h-4 w-4" />
+        </button>
+      ),
     },
   ];
 
@@ -231,7 +250,10 @@ export default function PartnersPage() {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-sm font-medium text-red-500">* 화주코드</label>
-                  <input value={form.code} onChange={(e) => updateField("code", e.target.value)} className={inputBase} disabled={!isNew && !!selectedPartner} />
+                  <input value={form.code} onChange={(e) => updateField("code", e.target.value)} className={inputBase} disabled={!isNew && !!selectedPartner} placeholder={isNew ? "미입력시 자동생성" : ""} />
+                  {isNew && !!form.code && partners.some((p) => p.code === form.code) && (
+                    <p className="mt-1 text-xs text-red-500">이미 존재하는 화주코드입니다.</p>
+                  )}
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-red-500">* 화주명</label>

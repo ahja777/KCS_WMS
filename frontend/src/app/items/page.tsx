@@ -5,7 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useDebounce } from "@/hooks/useDebounce";
-import { Search, AlertCircle } from "lucide-react";
+import { Search, AlertCircle, Pencil } from "lucide-react";
 import Table, { type Column } from "@/components/ui/Table";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import { downloadExcel } from "@/lib/export";
@@ -21,7 +21,7 @@ import { usePermission } from "@/hooks/usePermission";
 import type { Item, ItemGroup } from "@/types";
 
 const itemSchema = z.object({
-  code: z.string().min(1, "상품코드를 입력해주세요"),
+  code: z.string().optional(),
   name: z.string().min(1, "상품명을 입력해주세요"),
   category: z.enum([
     "GENERAL",
@@ -167,6 +167,9 @@ export default function ItemsPage() {
   const isActive = watch("isActive");
   const lotControl = watch("lotControl");
   const expiryControl = watch("expiryControl");
+  const watchedCode = watch("code");
+
+  const isDuplicateCode = isNewMode && !!watchedCode && items.some(i => i.code === watchedCode);
 
   // Populate form when selecting an item
   useEffect(() => {
@@ -231,16 +234,20 @@ export default function ItemsPage() {
   };
 
   const onSubmit = async (data: ItemFormData) => {
+    if (isDuplicateCode) {
+      addToast({ type: "error", message: "이미 사용중인 코드입니다." });
+      return;
+    }
     try {
       if (isEdit && selectedItem) {
         await updateMutation.mutateAsync({
           id: selectedItem.id,
           payload: data,
         });
-        addToast({ type: "success", message: "상품이 수정되었습니다." });
+        addToast({ type: "success", message: "저장이 완료되었습니다." });
       } else {
         await createMutation.mutateAsync(data);
-        addToast({ type: "success", message: "상품이 등록되었습니다." });
+        addToast({ type: "success", message: "저장이 완료되었습니다." });
         setIsNewMode(false);
       }
     } catch (err: unknown) {
@@ -279,6 +286,21 @@ export default function ItemsPage() {
         row.expiryDays != null && row.expiryDays > 0
           ? `${row.expiryDays}일`
           : "-",
+    },
+    {
+      key: "actions" as keyof Item,
+      header: "수정",
+      width: "w-[60px]",
+      render: (row) => (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); handleRowClick(row); }}
+          className="rounded p-1 text-[#8B95A1] transition-colors hover:bg-[#F2F4F6] hover:text-[#3182F6]"
+          title="수정"
+        >
+          <Pencil className="h-4 w-4" />
+        </button>
+      ),
     },
   ];
 
@@ -413,14 +435,19 @@ export default function ItemsPage() {
                     <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className={labelClass}>
-                          상품코드 <span className="text-red-500">*</span>
+                          상품코드
                         </label>
                         <input
                           {...register("code")}
-                          placeholder="상품코드"
-                          className={inputBase}
+                          placeholder={isNewMode ? "미입력시 자동생성" : "상품코드"}
+                          className={`${inputBase} ${isEdit ? "bg-[#F2F4F6] text-[#8B95A1]" : ""}`}
                           disabled={isEdit}
                         />
+                        {isDuplicateCode && (
+                          <p className="mt-0.5 text-xs text-red-500">
+                            이미 사용중인 코드입니다
+                          </p>
+                        )}
                         {errors.code && (
                           <p className="mt-0.5 text-xs text-red-500">
                             {errors.code.message}

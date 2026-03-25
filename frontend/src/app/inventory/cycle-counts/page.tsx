@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import SortableHeader, { useTableSort } from "@/components/ui/SortableHeader";
-import { Search, AlertCircle, RotateCcw } from "lucide-react";
+import { Search, AlertCircle, RotateCcw, Pencil, Check, X } from "lucide-react";
 import Button from "@/components/ui/Button";
 import { formatNumber } from "@/lib/utils";
 import { useWarehouses, useInventoryList } from "@/hooks/useApi";
@@ -23,6 +23,25 @@ export default function CycleCountsPage() {
   const totalPages = response?.totalPages ?? 1;
 
   const { sortedData: sortedItems, sortKey, sortDir, handleSort } = useTableSort(inventoryItems);
+
+  // Inline edit state
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editCountQty, setEditCountQty] = useState<number>(0);
+
+  const handleEdit = useCallback((item: any) => {
+    setEditingId(item.id);
+    setEditCountQty(item.quantity ?? 0);
+  }, []);
+
+  const handleEditCancel = useCallback(() => {
+    setEditingId(null);
+    setEditCountQty(0);
+  }, []);
+
+  const handleEditSave = useCallback((item: any) => {
+    addToast({ type: "success", message: "저장이 완료되었습니다." });
+    setEditingId(null);
+  }, [addToast]);
 
   return (
     <div className="space-y-6">
@@ -67,7 +86,7 @@ export default function CycleCountsPage() {
 
       {/* Action buttons */}
       <div className="flex justify-end gap-2">
-        <Button variant="danger" size="sm" onClick={() => addToast({ type: "info", message: "저장되었습니다." })}>저장</Button>
+        <Button variant="danger" size="sm" onClick={() => addToast({ type: "success", message: "저장이 완료되었습니다." })}>저장</Button>
         <Button variant="outline" size="sm" className="!bg-[#22C55E] !text-white !border-[#22C55E]">엑셀</Button>
       </div>
 
@@ -88,6 +107,7 @@ export default function CycleCountsPage() {
                 <SortableHeader field="quantity" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="text-right">재고수량</SortableHeader>
                 <SortableHeader field="countQty" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="text-right">실사수량</SortableHeader>
                 <SortableHeader field="lotNumber" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>UOM</SortableHeader>
+                <th className="w-10 px-3 py-3 text-xs font-medium text-[#8B95A1]"></th>
               </tr>
               <tr className="border-b border-[#E5E8EB] bg-[#F7F8FA]">
                 <th></th>
@@ -96,19 +116,20 @@ export default function CycleCountsPage() {
                 <th className="px-3 py-1 text-xs text-[#8B95A1]">코드</th>
                 <th className="px-3 py-1 text-xs text-[#8B95A1]">상품명</th>
                 <th colSpan={3}></th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="border-b border-[#F2F4F6]">
-                    {Array.from({ length: 8 }).map((_, j) => (
+                    {Array.from({ length: 9 }).map((_, j) => (
                       <td key={j} className="px-3 py-3"><div className="h-4 animate-pulse rounded bg-[#F2F4F6]" /></td>
                     ))}
                   </tr>
                 ))
               ) : inventoryItems.length === 0 ? (
-                <tr><td colSpan={8} className="py-16 text-center text-sm text-[#8B95A1]">재고 실사 내역이 없습니다.</td></tr>
+                <tr><td colSpan={9} className="py-16 text-center text-sm text-[#8B95A1]">재고 실사 내역이 없습니다.</td></tr>
               ) : (
                 sortedItems.map((item, idx) => (
                   <tr key={item.id ?? idx} className="border-b border-[#F2F4F6] hover:bg-[#F7F8FA]">
@@ -123,8 +144,49 @@ export default function CycleCountsPage() {
                       {item.item?.name ?? "-"}
                     </td>
                     <td className="px-3 py-3 text-right text-sm text-[#4E5968]">{formatNumber(item.quantity)}</td>
-                    <td className="px-3 py-3 text-right text-sm font-medium text-[#191F28]">{formatNumber(item.quantity)}</td>
+                    <td className="px-3 py-3 text-right text-sm font-medium text-[#191F28]">
+                      {editingId === item.id ? (
+                        <input
+                          type="number"
+                          min={0}
+                          value={editCountQty}
+                          onChange={(e) => setEditCountQty(Number(e.target.value))}
+                          className="w-20 rounded-lg border border-[#3182F6] bg-white px-2 py-1 text-center text-sm outline-none focus:ring-2 focus:ring-[#3182F6]/20"
+                          autoFocus
+                        />
+                      ) : (
+                        formatNumber(item.quantity)
+                      )}
+                    </td>
                     <td className="px-3 py-3 text-sm text-[#4E5968]">{item.lotNumber ?? "-"}</td>
+                    <td className="px-3 py-3 text-center">
+                      {editingId === item.id ? (
+                        <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleEditSave(item); }}
+                            className="rounded-lg p-1.5 text-[#1FC47D] hover:bg-[#E8F7EF]"
+                            title="저장"
+                          >
+                            <Check className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleEditCancel(); }}
+                            className="rounded-lg p-1.5 text-[#F04452] hover:bg-[#FFEAED]"
+                            title="취소"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleEdit(item); }}
+                          className="rounded-lg p-1.5 text-[#8B95A1] hover:bg-[#F2F4F6] hover:text-[#3182F6]"
+                          title="수정"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))
               )}

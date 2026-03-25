@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, AlertCircle } from "lucide-react";
+import { Search, AlertCircle, Pencil } from "lucide-react";
 import Table, { type Column } from "@/components/ui/Table";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import {
@@ -121,8 +121,13 @@ export default function ContainersPage() {
   };
 
   const handleSave = async () => {
+    if (isNew && form.containerCode && containers.some((c) => c.containerCode === form.containerCode)) {
+      addToast({ type: "error", message: "이미 존재하는 용기코드입니다." });
+      return;
+    }
+
     const payload: Partial<Container> = {
-      containerCode: form.containerCode,
+      containerCode: form.containerCode || undefined,
       containerName: form.containerName,
       containerGroupId: form.containerGroupId || undefined,
       weight: form.weight ? Number(form.weight) : undefined,
@@ -147,10 +152,10 @@ export default function ContainersPage() {
     try {
       if (isNew) {
         await createMutation.mutateAsync(payload);
-        addToast({ type: "success", message: "물류용기가 등록되었습니다." });
+        addToast({ type: "success", message: "저장이 완료되었습니다." });
       } else if (selectedContainer) {
         await updateMutation.mutateAsync({ id: selectedContainer.id, payload });
-        addToast({ type: "success", message: "물류용기가 수정되었습니다." });
+        addToast({ type: "success", message: "저장이 완료되었습니다." });
       }
       setIsNew(false);
     } catch {
@@ -199,6 +204,21 @@ export default function ContainersPage() {
       header: "유통기간일수",
       sortable: true,
       render: (row) => row.shelfLifeDays ?? "-",
+    },
+    {
+      key: "actions" as keyof Container,
+      header: "수정",
+      width: "w-[60px]",
+      render: (row) => (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); setSelectedContainer(row); setIsNew(false); }}
+          className="rounded p-1 text-[#8B95A1] transition-colors hover:bg-[#F2F4F6] hover:text-[#3182F6]"
+          title="수정"
+        >
+          <Pencil className="h-4 w-4" />
+        </button>
+      ),
     },
   ];
 
@@ -304,8 +324,11 @@ export default function ContainersPage() {
                 </select>
               </div>
               <div>
-                <label className={labelClass}>용기코드 <span className="text-red-500">*</span></label>
-                <input value={form.containerCode} onChange={(e) => updateField("containerCode", e.target.value)} className={inputBase} />
+                <label className={labelClass}>용기코드</label>
+                <input value={form.containerCode} onChange={(e) => updateField("containerCode", e.target.value)} placeholder="미입력시 자동생성" className={inputBase} />
+                {isNew && form.containerCode && containers.some((c) => c.containerCode === form.containerCode) && (
+                  <p className="mt-1 text-xs text-red-500">이미 존재하는 용기코드입니다.</p>
+                )}
               </div>
               <div>
                 <label className={labelClass}>용기명 <span className="text-red-500">*</span></label>

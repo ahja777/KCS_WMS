@@ -91,15 +91,25 @@ export default function UomPage() {
 
     // Save new rows
     for (const row of newRows) {
-      if (!row.code || !row.name) {
-        addToast({ type: "error", message: "UOM코드와 UOM명을 모두 입력해주세요." });
+      if (!row.name) {
+        addToast({ type: "error", message: "UOM명을 입력해주세요." });
         hasError = true;
         continue;
       }
+      // Duplicate check: if code is entered, check against existing UOMs and other new rows
+      if (row.code) {
+        const isDuplicateExisting = uoms.some((u) => u.code === row.code);
+        const isDuplicateNew = newRows.filter((r) => r.id !== row.id && r.code === row.code).length > 0;
+        if (isDuplicateExisting || isDuplicateNew) {
+          addToast({ type: "error", message: `UOM코드 "${row.code}"가 이미 존재합니다.` });
+          hasError = true;
+          continue;
+        }
+      }
       try {
-        await createMutation.mutateAsync({ code: row.code, name: row.name });
+        await createMutation.mutateAsync({ code: row.code || undefined, name: row.name });
       } catch {
-        addToast({ type: "error", message: `"${row.code}" 등록 중 오류가 발생했습니다.` });
+        addToast({ type: "error", message: `"${row.code || row.name}" 등록 중 오류가 발생했습니다.` });
         hasError = true;
       }
     }
@@ -115,7 +125,7 @@ export default function UomPage() {
     }
 
     if (!hasError) {
-      addToast({ type: "success", message: "저장되었습니다." });
+      addToast({ type: "success", message: "저장이 완료되었습니다." });
     }
     setNewRows([]);
     setEditedRows(new Map());
@@ -362,7 +372,7 @@ export default function UomPage() {
                             onChange={(e) => handleCellEdit(row.id, "code", e.target.value)}
                             disabled={!row.isNew}
                             className={`${cellInput} ${row.isNew ? "" : "text-[#191F28] font-medium"}`}
-                            placeholder="UOM코드 입력"
+                            placeholder="미입력시 자동생성"
                           />
                         </td>
                         <td className="px-3 py-2">

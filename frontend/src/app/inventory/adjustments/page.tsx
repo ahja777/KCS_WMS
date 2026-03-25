@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, AlertCircle } from "lucide-react";
+import { Plus, AlertCircle, Pencil } from "lucide-react";
 import Table, { type Column } from "@/components/ui/Table";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
@@ -26,6 +26,7 @@ export default function AdjustmentsPage() {
   const [warehouseFilter, setWarehouseFilter] = useState("");
   const [page, setPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingRow, setEditingRow] = useState<StockAdjustment | null>(null);
   const addToast = useToastStore((s) => s.addToast);
 
   const { data: warehouseResponse } = useWarehouses({ limit: 100 });
@@ -99,13 +100,30 @@ export default function AdjustmentsPage() {
       sortable: true,
       render: (row) => <span className="text-sm text-[#4E5968]">{row.adjustedBy ?? "-"}</span>,
     },
+    {
+      key: "actions" as keyof StockAdjustment,
+      header: "",
+      render: (row) => (
+        <button
+          onClick={(e) => { e.stopPropagation(); handleEdit(row); }}
+          className="rounded-lg p-1.5 text-[#8B95A1] hover:bg-[#F2F4F6] hover:text-[#3182F6]"
+        >
+          <Pencil className="h-4 w-4" />
+        </button>
+      ),
+    },
   ];
+
+  const handleEdit = (row: StockAdjustment) => {
+    setEditingRow(row);
+    setIsModalOpen(true);
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-[#191F28]">재고 조정</h1>
-        <Button onClick={() => setIsModalOpen(true)}>
+        <Button onClick={() => { setEditingRow(null); setIsModalOpen(true); }}>
           <Plus className="h-4 w-4" />
           조정 등록
         </Button>
@@ -148,15 +166,17 @@ export default function AdjustmentsPage() {
       {/* Adjustment form modal matching slide 34 popup */}
       <Modal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title="재고 조정"
+        onClose={() => { setIsModalOpen(false); setEditingRow(null); }}
+        title={editingRow ? "재고 조정 수정" : "재고 조정"}
         size="md"
       >
         <AdjustmentForm
-          onClose={() => setIsModalOpen(false)}
+          editData={editingRow}
+          onClose={() => { setIsModalOpen(false); setEditingRow(null); }}
           onSuccess={() => {
             setIsModalOpen(false);
-            addToast({ type: "success", message: "재고 조정이 완료되었습니다." });
+            setEditingRow(null);
+            addToast({ type: "success", message: "저장이 완료되었습니다." });
           }}
         />
       </Modal>
@@ -164,15 +184,15 @@ export default function AdjustmentsPage() {
   );
 }
 
-function AdjustmentForm({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
-  const [warehouse, setWarehouse] = useState("");
+function AdjustmentForm({ editData, onClose, onSuccess }: { editData?: StockAdjustment | null; onClose: () => void; onSuccess: () => void }) {
+  const [warehouse, setWarehouse] = useState(editData?.warehouseId ?? "");
   const [location, setLocation] = useState("");
-  const [product, setProduct] = useState("");
+  const [product, setProduct] = useState(editData?.item?.code ?? "");
   const [uom, setUom] = useState("EA");
-  const [currentStock, setCurrentStock] = useState(0);
-  const [adjustType, setAdjustType] = useState<"+" | "-">("+");
-  const [adjustQty, setAdjustQty] = useState(0);
-  const [reason, setReason] = useState("");
+  const [currentStock, setCurrentStock] = useState(editData?.beforeQty ?? 0);
+  const [adjustType, setAdjustType] = useState<"+" | "-">(editData && editData.quantity < 0 ? "-" : "+");
+  const [adjustQty, setAdjustQty] = useState(editData ? Math.abs(editData.quantity) : 0);
+  const [reason, setReason] = useState(editData?.reason ?? "");
 
   const user = useAuthStore((s) => s.user);
   const createMutation = useCreateAdjustment();

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useDebounce } from "@/hooks/useDebounce";
-import { Search, AlertCircle, RotateCcw, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, AlertCircle, RotateCcw, ChevronLeft, ChevronRight, Pencil } from "lucide-react";
 import { useUsers, useDeleteUser, useWarehouses, useCreateUser, useUpdateUser } from "@/hooks/useApi";
 import { useToastStore } from "@/stores/toast.store";
 import { usePermission } from "@/hooks/usePermission";
@@ -148,9 +148,19 @@ export default function UsersPage() {
     setActiveTab("detail");
   };
 
+  const isDuplicateUserId = !selectedUser && !!formState.userId && usersRaw.some(u => u.email === formState.userId);
+
   const handleSave = async () => {
-    if (!formState.userId || !formState.userName) {
+    if (!formState.userName) {
       addToast({ type: "error", message: "필수 항목을 입력해주세요." });
+      return;
+    }
+    if (!selectedUser && !formState.password) {
+      addToast({ type: "error", message: "비밀번호를 입력해주세요." });
+      return;
+    }
+    if (isDuplicateUserId) {
+      addToast({ type: "error", message: "이미 사용중인 ID입니다." });
       return;
     }
     try {
@@ -163,19 +173,15 @@ export default function UsersPage() {
             role: formState.userType as UserRole,
           },
         });
-        addToast({ type: "success", message: "사용자가 수정되었습니다." });
+        addToast({ type: "success", message: "저장이 완료되었습니다." });
       } else {
-        if (!formState.password) {
-          addToast({ type: "error", message: "비밀번호를 입력해주세요." });
-          return;
-        }
         await createMutation.mutateAsync({
           name: formState.userName,
           email: formState.userId,
           password: formState.password,
           role: formState.userType as UserRole,
         });
-        addToast({ type: "success", message: "사용자가 등록되었습니다." });
+        addToast({ type: "success", message: "저장이 완료되었습니다." });
       }
       setActiveTab("list");
     } catch {
@@ -376,13 +382,14 @@ export default function UsersPage() {
                           <SortableHeader field="phone" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>전화번호</SortableHeader>
                           <SortableHeader field="mobile" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>핸드폰</SortableHeader>
                           <SortableHeader field="email" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>이메일</SortableHeader>
+                          <th className="px-3 py-2.5 text-xs font-medium text-[#8B95A1] w-[60px] text-center">수정</th>
                         </tr>
                       </thead>
                       <tbody>
                         {isLoading ? (
                           Array.from({ length: 5 }).map((_, i) => (
                             <tr key={i} className="border-b border-[#F2F4F6]">
-                              {Array.from({ length: 10 }).map((_, j) => (
+                              {Array.from({ length: 11 }).map((_, j) => (
                                 <td key={j} className="px-3 py-3">
                                   <div className="h-4 w-full animate-pulse rounded bg-[#F2F4F6]" />
                                 </td>
@@ -391,7 +398,7 @@ export default function UsersPage() {
                           ))
                         ) : users.length === 0 ? (
                           <tr>
-                            <td colSpan={10} className="px-3 py-12 text-center text-sm text-[#B0B8C1]">
+                            <td colSpan={11} className="px-3 py-12 text-center text-sm text-[#B0B8C1]">
                               사용자가 없습니다.
                             </td>
                           </tr>
@@ -421,6 +428,16 @@ export default function UsersPage() {
                               <td className="px-3 py-2.5 text-sm text-[#8B95A1]">-</td>
                               <td className="px-3 py-2.5 text-sm text-[#8B95A1]">-</td>
                               <td className="px-3 py-2.5 text-sm text-[#4E5968]">{user.email}</td>
+                              <td className="px-3 py-2.5 text-center">
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); handleEdit(user); }}
+                                  className="rounded p-1 text-[#8B95A1] transition-colors hover:bg-[#F2F4F6] hover:text-[#3182F6]"
+                                  title="수정"
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </button>
+                              </td>
                             </tr>
                           ))
                         )}
@@ -550,7 +567,11 @@ export default function UsersPage() {
                     onChange={(e) => updateForm("userId", e.target.value)}
                     className={formInputBase}
                     disabled={!!selectedUser}
+                    placeholder={!selectedUser ? "미입력시 자동생성" : ""}
                   />
+                  {isDuplicateUserId && (
+                    <p className="mt-0.5 text-xs text-red-500">이미 사용중인 ID입니다</p>
+                  )}
                 </div>
 
                 {/* 사용자명 */}

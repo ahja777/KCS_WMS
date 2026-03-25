@@ -5,15 +5,12 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Modal from "@/components/ui/Modal";
-import { useCreateWarehouse, useUpdateWarehouse } from "@/hooks/useApi";
+import { useCreateWarehouse, useUpdateWarehouse, useWarehouses } from "@/hooks/useApi";
 import { useToastStore } from "@/stores/toast.store";
 import type { Warehouse } from "@/types";
 
 const warehouseSchema = z.object({
-  code: z
-    .string()
-    .min(1, "창고 코드를 입력해주세요")
-    .regex(/^[A-Za-z0-9-]+$/, "영문, 숫자, 하이픈만 입력 가능합니다"),
+  code: z.string().optional(),
   name: z.string().min(1, "창고명을 입력해주세요"),
   country: z.string().min(1, "국가를 입력해주세요"),
   city: z.string().min(1, "도시를 입력해주세요"),
@@ -73,10 +70,14 @@ export default function WarehouseFormModal({
   const createMutation = useCreateWarehouse();
   const updateMutation = useUpdateWarehouse();
 
+  const { data: warehouseListRes } = useWarehouses({ limit: 100 });
+  const existingWarehouses = warehouseListRes?.data ?? [];
+
   const {
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<WarehouseFormData>({
     resolver: zodResolver(warehouseSchema),
@@ -95,6 +96,9 @@ export default function WarehouseFormModal({
       notes: "",
     },
   });
+
+  const watchedCode = watch("code");
+  const isDuplicateCode = !isEdit && !!watchedCode && existingWarehouses.some(w => w.code === watchedCode);
 
   useEffect(() => {
     if (isOpen) {
@@ -133,16 +137,20 @@ export default function WarehouseFormModal({
   }, [isOpen, warehouse, reset]);
 
   const onSubmit = async (data: WarehouseFormData) => {
+    if (isDuplicateCode) {
+      addToast({ type: "error", message: "이미 사용중인 코드입니다." });
+      return;
+    }
     try {
       if (isEdit && warehouse) {
         await updateMutation.mutateAsync({
           id: warehouse.id,
           payload: data,
         });
-        addToast({ type: "success", message: "창고가 수정되었습니다." });
+        addToast({ type: "success", message: "저장이 완료되었습니다." });
       } else {
         await createMutation.mutateAsync(data);
-        addToast({ type: "success", message: "창고가 등록되었습니다." });
+        addToast({ type: "success", message: "저장이 완료되었습니다." });
       }
       onSuccess();
       onClose();
@@ -169,7 +177,7 @@ export default function WarehouseFormModal({
             </label>
             <input
               {...register("code")}
-              placeholder="예: WH-LA"
+              placeholder={isEdit ? "창고코드" : "미입력시 자동생성"}
               className={inputBase}
               disabled={isEdit}
             />
@@ -177,6 +185,9 @@ export default function WarehouseFormModal({
               <p className="mt-1.5 text-xs text-red-500">
                 {errors.code.message}
               </p>
+            )}
+            {isDuplicateCode && (
+              <p className="mt-1.5 text-xs text-red-500">이미 사용중인 코드입니다</p>
             )}
           </div>
           <div>

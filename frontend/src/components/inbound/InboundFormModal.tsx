@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { Plus, Trash2, AlertCircle, Search } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
 import ItemSearchPopup from "@/components/ui/ItemSearchPopup";
-import { usePartners, useWarehouses, useItems, useCreateInboundOrder } from "@/hooks/useApi";
+import { usePartners, useWarehouses, useItems, useCreateInboundOrder, useUpdateInboundOrder, useInboundOrders } from "@/hooks/useApi";
 import { useToastStore } from "@/stores/toast.store";
 import type { Partner, Warehouse, Item } from "@/types";
 
@@ -29,12 +29,14 @@ interface InboundFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  editData?: any;
 }
 
 export default function InboundFormModal({
   isOpen,
   onClose,
   onSuccess,
+  editData,
 }: InboundFormModalProps) {
   const addToast = useToastStore((s) => s.addToast);
   const [activeTab, setActiveTab] = useState<"standard" | "quick">("standard");
@@ -53,7 +55,11 @@ export default function InboundFormModal({
   const { data: partnersData } = usePartners({ limit: 100 });
   const { data: warehousesData } = useWarehouses({ limit: 100 });
   const { data: itemsData } = useItems({ limit: 200 });
+  const { data: inboundOrdersData } = useInboundOrders({ limit: 500 });
   const createMutation = useCreateInboundOrder();
+  const updateMutation = useUpdateInboundOrder();
+
+  const existingOrderNumbers = (inboundOrdersData?.data ?? []).map((o: any) => o.orderNumber);
 
   const partners = (partnersData?.data ?? []).filter((p: Partner) => p.isActive);
   const warehouses = (warehousesData?.data ?? []).filter((w: Warehouse) => w.status === "ACTIVE");
@@ -84,7 +90,28 @@ export default function InboundFormModal({
   });
 
   const watchItems = watch("items");
+  const watchedOrderNumber = watch("orderNumber");
+  const isDuplicateOrderNumber = !editData && !!watchedOrderNumber && existingOrderNumbers.includes(watchedOrderNumber);
 
+  // Pre-fill form when editData is provided
+  useEffect(() => {
+    if (editData && isOpen) {
+      reset({
+        orderNumber: editData.orderNumber ?? "",
+        partnerId: editData.partnerId ?? "",
+        warehouseId: editData.warehouseId ?? "",
+        expectedDate: editData.expectedDate ? new Date(editData.expectedDate).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
+        notes: editData.notes ?? "",
+        items: (editData.lines ?? editData.items ?? []).length > 0
+          ? (editData.lines ?? editData.items ?? []).map((line: any) => ({
+              itemId: line.itemId ?? "",
+              expectedQty: line.expectedQty ?? 1,
+              notes: line.notes ?? "",
+            }))
+          : [{ itemId: "", expectedQty: 1 }],
+      });
+    }
+  }, [editData, isOpen, reset]);
 
   const filteredItems = allItems.filter(
     (item: Item) =>
@@ -106,7 +133,7 @@ export default function InboundFormModal({
 
   const onSubmit = async (data: InboundFormData) => {
     try {
-      await createMutation.mutateAsync({
+      const payload: any = {
         ...(data.orderNumber ? { orderNumber: data.orderNumber } : {}),
         partnerId: data.partnerId,
         warehouseId: data.warehouseId,
@@ -116,8 +143,14 @@ export default function InboundFormModal({
           itemId: item.itemId,
           expectedQty: Number(item.expectedQty),
         })),
-      } as any);
-      addToast({ type: "success", message: "저장되었습니다." });
+      };
+
+      if (editData?.id) {
+        await updateMutation.mutateAsync({ id: editData.id, payload });
+      } else {
+        await createMutation.mutateAsync(payload);
+      }
+      addToast({ type: "success", message: "저장이 완료되었습니다." });
       reset();
       onSuccess();
       onClose();
@@ -158,7 +191,7 @@ export default function InboundFormModal({
         notes: quickNotes || undefined,
         items: itemsWithQty,
       } as any);
-      addToast({ type: "success", message: "저장되었습니다." });
+      addToast({ type: "success", message: "저장이 완료되었습니다." });
       resetQuick();
       onSuccess();
       onClose();
@@ -187,7 +220,7 @@ export default function InboundFormModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={handleClose} title="입고 등록" size="xl">
+    <Modal isOpen={isOpen} onClose={handleClose} title={editData ? "입고 수정" : "입고 등록"} size="xl">
       {/* Tab bar */}
       <div className="mb-5 flex gap-1 rounded-xl bg-[#F2F4F6] p-1">
         <button
@@ -225,10 +258,15 @@ export default function InboundFormModal({
               </label>
               <input
                 {...register("orderNumber")}
-                placeholder="자동생성 (미입력시)"
-                className="mt-2 w-full rounded-xl border-none bg-[#F7F8FA] px-4 py-3 text-sm text-[#191F28] placeholder:text-[#B0B8C1] outline-none transition-all focus:bg-white focus:ring-2 focus:ring-[#3182F6]/20"
+                placeholder="미입력시 자동생성"
+                disabled={!!editData}
+                className={`mt-2 w-full rounded-xl border-none bg-[#F7F8FA] px-4 py-3 text-sm text-[#191F28] placeholder:text-[#B0B8C1] outline-none transition-all focus:bg-white focus:ring-2 focus:ring-[#3182F6]/20 ${editData ? "opacity-60 cursor-not-allowed" : ""} ${isDuplicateOrderNumber ? "ring-2 ring-red-400" : ""}`}
               />
-              <p className="mt-1 text-xs text-[#8B95A1]">비워두면 IB-YYYYMMDD-NNNN 형식으로 자동생성됩니다</p>
+              {isDuplicateOrderNumber ? (
+                <p className="mt-1 text-xs text-[#F04452]">이미 사용 중인 주문번호입니다.</p>
+              ) : (
+                <p className="mt-1 text-xs text-[#8B95A1]">비워두면 IB-YYYYMMDD-NNNN 형식으로 자동생성됩니다</p>
+              )}
             </div>
 
             <div>
@@ -404,8 +442,8 @@ export default function InboundFormModal({
             <Button type="button" variant="secondary" onClick={handleClose}>
               취소
             </Button>
-            <Button type="submit" isLoading={createMutation.isPending}>
-              입고 등록
+            <Button type="submit" isLoading={createMutation.isPending || updateMutation.isPending}>
+              {editData ? "수정 저장" : "입고 등록"}
             </Button>
           </div>
 

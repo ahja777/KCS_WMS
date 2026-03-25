@@ -17,6 +17,7 @@ import {
   Edit,
   Zap,
   FileText,
+  Pencil,
 } from "lucide-react";
 import SortableHeader, { useTableSort } from "@/components/ui/SortableHeader";
 import Button from "@/components/ui/Button";
@@ -76,6 +77,7 @@ export default function InboundPage() {
 
   // --- UI states ---
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editOrder, setEditOrder] = useState<InboundOrder | null>(null);
   const [selectedMasterId, setSelectedMasterId] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
@@ -189,6 +191,11 @@ export default function InboundPage() {
         setShowCreateModal(true);
         break;
     }
+  };
+
+  const handleEditClick = (order: InboundOrder) => {
+    setEditOrder(order);
+    setShowCreateModal(true);
   };
 
   const handleCreateSuccess = () => {
@@ -428,13 +435,16 @@ export default function InboundPage() {
                   <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">
                     BL번호
                   </th>
+                  <th className="px-3 py-3 text-center text-xs font-medium text-[#8B95A1]">
+                    수정
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {isLoading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <tr key={i} className="border-b border-[#F2F4F6]">
-                      {Array.from({ length: 11 }).map((_, j) => (
+                      {Array.from({ length: 13 }).map((_, j) => (
                         <td key={j} className="px-3 py-3">
                           <div className="h-4 animate-pulse rounded bg-[#F2F4F6]" />
                         </td>
@@ -443,7 +453,7 @@ export default function InboundPage() {
                   ))
                 ) : error ? (
                   <tr>
-                    <td colSpan={11} className="py-10 text-center">
+                    <td colSpan={13} className="py-10 text-center">
                       <div className="flex items-center justify-center gap-2 text-sm text-red-600">
                         <AlertCircle className="h-4 w-4" />
                         데이터를 불러오는 중 오류가 발생했습니다.
@@ -453,7 +463,7 @@ export default function InboundPage() {
                 ) : sortedMasterRows.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={11}
+                      colSpan={13}
                       className="py-16 text-center text-sm text-[#8B95A1]"
                     >
                       데이터가 없습니다.
@@ -520,6 +530,18 @@ export default function InboundPage() {
                       </td>
                       <td className="px-3 py-3 text-sm text-[#4E5968]">
                         {row.blNumber}
+                      </td>
+                      <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          onClick={() => {
+                            const order = orders.find((o) => o.id === row.id);
+                            if (order) handleEditClick(order);
+                          }}
+                          className="rounded-lg p-1.5 text-[#8B95A1] transition-colors hover:bg-[#E8F3FF] hover:text-[#3182F6]"
+                          title="수정"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
                       </td>
                     </tr>
                   ))
@@ -774,8 +796,9 @@ export default function InboundPage() {
       {/* Create Modal */}
       <InboundFormModal
         isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
+        onClose={() => { setShowCreateModal(false); setEditOrder(null); }}
         onSuccess={handleCreateSuccess}
+        editData={editOrder}
       />
     </div>
   );

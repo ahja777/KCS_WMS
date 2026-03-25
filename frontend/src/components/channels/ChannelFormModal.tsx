@@ -93,7 +93,7 @@ export default function ChannelFormModal({
       } else {
         await createMutation.mutateAsync(payload);
       }
-      addToast({ type: "success", message: "저장되었습니다." });
+      addToast({ type: "success", message: "저장이 완료되었습니다." });
       onSuccess?.();
       onClose();
     } catch {

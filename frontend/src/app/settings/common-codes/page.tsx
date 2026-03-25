@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Search, AlertCircle, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, AlertCircle, ChevronLeft, ChevronRight, Pencil } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import ConfirmModal from "@/components/ui/ConfirmModal";
 import SortableHeader, { useTableSort } from "@/components/ui/SortableHeader";
@@ -20,7 +20,7 @@ import type { CommonCode } from "@/types";
 const codeSchema = z.object({
   codeType: z.string().min(1, "코드유형을 입력해주세요"),
   typeNm: z.string().optional(),
-  code: z.string().min(1, "코드를 입력해주세요"),
+  code: z.string().optional(),
   codeNm: z.string().min(1, "코드명을 입력해주세요"),
   value: z.string().optional(),
   sortOrder: z.coerce.number().min(0),
@@ -433,13 +433,14 @@ export default function CommonCodesPage() {
                       <SortableHeader field="codeNm" sortKey={rsk} sortDir={rsd} onSort={rhs}>*기초코드명</SortableHeader>
                       <SortableHeader field="value" sortKey={rsk} sortDir={rsd} onSort={rhs}>값</SortableHeader>
                       <SortableHeader field="sortOrder" sortKey={rsk} sortDir={rsd} onSort={rhs}>순서</SortableHeader>
+                      <th className="px-3 py-2.5 text-xs font-medium text-[#8B95A1] w-[60px] text-center">수정</th>
                     </tr>
                   </thead>
                   <tbody>
                     {isLoading ? (
                       Array.from({ length: 5 }).map((_, i) => (
                         <tr key={i} className="border-b border-[#F2F4F6]">
-                          {Array.from({ length: 6 }).map((_, j) => (
+                          {Array.from({ length: 7 }).map((_, j) => (
                             <td key={j} className="px-3 py-3">
                               <div className="h-4 w-full animate-pulse rounded bg-[#F2F4F6]" />
                             </td>
@@ -448,7 +449,7 @@ export default function CommonCodesPage() {
                       ))
                     ) : rightPagedData.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-3 py-12 text-center text-sm text-[#B0B8C1]">
+                        <td colSpan={7} className="px-3 py-12 text-center text-sm text-[#B0B8C1]">
                           기초코드가 없습니다.
                         </td>
                       </tr>
@@ -477,6 +478,18 @@ export default function CommonCodesPage() {
                           <td className="px-3 py-2.5 text-sm text-[#4E5968]">{row.codeNm}</td>
                           <td className="px-3 py-2.5 text-sm text-[#4E5968]">{row.value ?? "-"}</td>
                           <td className="px-3 py-2.5 text-sm text-[#4E5968]">{row.sortOrder}</td>
+                          <td className="px-3 py-2.5 text-center" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              onClick={() => {
+                                setEditingCode(row);
+                                setIsRightFormOpen(true);
+                              }}
+                              className="inline-flex items-center justify-center rounded p-1 text-[#8B95A1] hover:bg-[#F2F4F6] hover:text-[#3182F6]"
+                              title="수정"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                          </td>
                         </tr>
                       ))
                     )}
@@ -520,6 +533,7 @@ export default function CommonCodesPage() {
         onClose={() => setIsFormOpen(false)}
         code={editingCode}
         defaultGroupCode=""
+        existingCodes={codes}
       />
 
       {/* Create/Edit form for right (basic code) */}
@@ -528,6 +542,7 @@ export default function CommonCodesPage() {
         onClose={() => setIsRightFormOpen(false)}
         code={editingCode}
         defaultGroupCode={selectedGroup}
+        existingCodes={codes}
       />
 
       <ConfirmModal
@@ -549,11 +564,13 @@ function CommonCodeFormModal({
   onClose,
   code,
   defaultGroupCode,
+  existingCodes = [],
 }: {
   isOpen: boolean;
   onClose: () => void;
   code?: CommonCode;
   defaultGroupCode?: string;
+  existingCodes?: CommonCode[];
 }) {
   const isEdit = !!code;
   const addToast = useToastStore((s) => s.addToast);
@@ -581,6 +598,8 @@ function CommonCodeFormModal({
   });
 
   const isActive = watch("isActive");
+  const watchedCode = watch("code");
+  const isDuplicateCode = !isEdit && !!watchedCode?.trim() && existingCodes.some((c) => c.code === watchedCode.trim());
 
   useEffect(() => {
     if (isOpen) {
@@ -609,13 +628,21 @@ function CommonCodeFormModal({
   }, [isOpen, code, defaultGroupCode, reset]);
 
   const onSubmit = async (data: CodeFormData) => {
+    // Duplicate check before save
+    if (!isEdit && data.code?.trim()) {
+      const duplicate = existingCodes.some((c) => c.code === data.code!.trim());
+      if (duplicate) {
+        addToast({ type: "error", message: `코드 "${data.code}"가 이미 존재합니다.` });
+        return;
+      }
+    }
     try {
       if (isEdit && code) {
         await updateMutation.mutateAsync({ id: code.id, payload: data });
-        addToast({ type: "success", message: "코드가 수정되었습니다." });
+        addToast({ type: "success", message: "저장이 완료되었습니다." });
       } else {
         await createMutation.mutateAsync(data);
-        addToast({ type: "success", message: "코드가 등록되었습니다." });
+        addToast({ type: "success", message: "저장이 완료되었습니다." });
       }
       onClose();
     } catch {
@@ -645,11 +672,14 @@ function CommonCodeFormModal({
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="mb-2 block text-sm font-medium text-[#4E5968]">
-              코드 <span className="text-red-500">*</span>
+              코드
             </label>
-            <input {...register("code")} placeholder="코드" className={inputBase} disabled={isEdit} />
+            <input {...register("code")} placeholder={isEdit ? "코드" : "미입력시 자동생성"} className={inputBase} disabled={isEdit} />
             {errors.code && (
               <p className="mt-1.5 text-xs text-red-500">{errors.code.message}</p>
+            )}
+            {isDuplicateCode && (
+              <p className="mt-1.5 text-xs text-red-500">이미 존재하는 코드입니다.</p>
             )}
           </div>
           <div>

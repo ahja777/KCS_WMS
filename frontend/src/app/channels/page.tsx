@@ -12,6 +12,7 @@ import {
   ArrowUpDown,
   ShoppingCart,
   Package,
+  Pencil,
 } from "lucide-react";
 import Table, { type Column } from "@/components/ui/Table";
 import Badge from "@/components/ui/Badge";
@@ -239,6 +240,13 @@ export default function ChannelsPage() {
       header: "",
       render: (row) => (
         <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+          <button
+            onClick={(e) => { e.stopPropagation(); handleEdit(row); }}
+            title="수정"
+            className="rounded-lg p-1.5 text-[#B0B8C1] hover:bg-[#E8F3FF] hover:text-[#3182F6]"
+          >
+            <Pencil className="h-4 w-4" />
+          </button>
           <button
             onClick={(e) => handleTest(e, row)}
             title="연결 테스트"

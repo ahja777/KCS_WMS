@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useDebounce } from "@/hooks/useDebounce";
-import { Plus, Search, AlertCircle, Trash2, Eye, Download } from "lucide-react";
+import { Plus, Search, AlertCircle, Trash2, Eye, Download, Pencil } from "lucide-react";
 import Table, { type Column } from "@/components/ui/Table";
 import Badge from "@/components/ui/Badge";
 import ConfirmModal from "@/components/ui/ConfirmModal";
@@ -85,6 +85,16 @@ export default function WarehousePage() {
       header: "",
       render: (row) => (
         <div className="flex items-center gap-1">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleEdit(row);
+            }}
+            className="rounded-lg p-1.5 text-[#B0B8C1] transition-colors hover:bg-[#FFF8E1] hover:text-[#F59E0B]"
+            title="수정"
+          >
+            <Pencil className="h-4 w-4" />
+          </button>
           <button
             onClick={(e) => {
               e.stopPropagation();

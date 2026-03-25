@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Search, AlertCircle } from "lucide-react";
+import { Search, AlertCircle, Pencil } from "lucide-react";
 import Table, { type Column } from "@/components/ui/Table";
 import SortableHeader, { useTableSort } from "@/components/ui/SortableHeader";
 import Modal from "@/components/ui/Modal";
@@ -31,7 +31,7 @@ const inputBase =
   "w-full rounded-xl border-0 bg-[#F7F8FA] px-4 py-3 text-sm text-[#191F28] placeholder-[#B0B8C1] outline-none transition-all focus:border focus:border-[#3182F6] focus:bg-white focus:ring-2 focus:ring-[#3182F6]/20";
 
 const cgSchema = z.object({
-  groupCode: z.string().min(1, "용기군코드를 입력해주세요"),
+  groupCode: z.string().optional(),
   groupName: z.string().min(1, "용기군명을 입력해주세요"),
   centerId: z.string().optional(),
   zoneId: z.string().optional(),
@@ -273,13 +273,14 @@ export default function ContainerGroupsPage() {
                     <SortableHeader field="createdBy" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>등록자번호</SortableHeader>
                     <SortableHeader field="updatedAt" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>수정일자</SortableHeader>
                     <SortableHeader field="updatedBy" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>수정자번호</SortableHeader>
+                    <th className="px-5 py-4 text-xs font-medium uppercase tracking-wider text-[#8B95A1] w-[60px] text-center">수정</th>
                   </tr>
                 </thead>
                 <tbody>
                   {isLoading ? (
                     Array.from({ length: 5 }).map((_, i) => (
                       <tr key={i} className="border-b border-[#F2F4F6]">
-                        {Array.from({ length: 10 }).map((_, j) => (
+                        {Array.from({ length: 11 }).map((_, j) => (
                           <td key={j} className="px-5 py-4">
                             <div className="h-4 w-full animate-pulse rounded-lg bg-[#F2F4F6]" />
                           </td>
@@ -288,7 +289,7 @@ export default function ContainerGroupsPage() {
                     ))
                   ) : groups.length === 0 ? (
                     <tr>
-                      <td colSpan={10} className="px-5 py-16 text-center text-[#B0B8C1]">
+                      <td colSpan={11} className="px-5 py-16 text-center text-[#B0B8C1]">
                         물류용기군 데이터가 없습니다.
                       </td>
                     </tr>
@@ -317,6 +318,16 @@ export default function ContainerGroupsPage() {
                         <td className="px-5 py-4 text-sm text-[#4E5968]">{row.createdBy ?? "-"}</td>
                         <td className="px-5 py-4 text-sm text-[#4E5968]">{formatDate(row.updatedAt)}</td>
                         <td className="px-5 py-4 text-sm text-[#4E5968]">{row.updatedBy ?? "-"}</td>
+                        <td className="px-5 py-4 text-center">
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); handleEdit(row); }}
+                            className="rounded p-1 text-[#8B95A1] transition-colors hover:bg-[#F2F4F6] hover:text-[#3182F6]"
+                            title="수정"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                        </td>
                       </tr>
                     ))
                   )}
@@ -376,10 +387,16 @@ function CgFormModal({ isOpen, onClose, group }: { isOpen: boolean; onClose: () 
   const createMutation = useCreateContainerGroup();
   const updateMutation = useUpdateContainerGroup();
 
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<CgFormData>({
+  const { data: allGroupsRes } = useContainerGroups({ limit: 100 });
+  const allGroups = allGroupsRes?.data ?? [];
+
+  const { register, handleSubmit, reset, watch, formState: { errors, isSubmitting } } = useForm<CgFormData>({
     resolver: zodResolver(cgSchema),
     defaultValues: { groupCode: "", groupName: "", centerId: "", zoneId: "" },
   });
+
+  const watchedGroupCode = watch("groupCode");
+  const isDuplicate = !isEdit && !!watchedGroupCode && allGroups.some((g: ContainerGroup) => g.groupCode === watchedGroupCode);
 
   useEffect(() => {
     if (isOpen) {
@@ -392,13 +409,18 @@ function CgFormModal({ isOpen, onClose, group }: { isOpen: boolean; onClose: () 
   }, [isOpen, group, reset]);
 
   const onSubmit = async (data: CgFormData) => {
+    if (!isEdit && data.groupCode && allGroups.some((g: ContainerGroup) => g.groupCode === data.groupCode)) {
+      addToast({ type: "error", message: "이미 존재하는 용기군코드입니다." });
+      return;
+    }
+
     try {
       if (isEdit && group) {
         await updateMutation.mutateAsync({ id: group.id, payload: data });
-        addToast({ type: "success", message: "용기군이 수정되었습니다." });
+        addToast({ type: "success", message: "저장이 완료되었습니다." });
       } else {
         await createMutation.mutateAsync(data);
-        addToast({ type: "success", message: "용기군이 등록되었습니다." });
+        addToast({ type: "success", message: "저장이 완료되었습니다." });
       }
       onClose();
     } catch {
@@ -411,9 +433,10 @@ function CgFormModal({ isOpen, onClose, group }: { isOpen: boolean; onClose: () 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="mb-2 block text-sm font-medium text-[#4E5968]">용기군코드 <span className="text-red-500">*</span></label>
-            <input {...register("groupCode")} placeholder="GRP-001" className={inputBase} disabled={isEdit} />
+            <label className="mb-2 block text-sm font-medium text-[#4E5968]">용기군코드</label>
+            <input {...register("groupCode")} placeholder={isEdit ? "" : "미입력시 자동생성"} className={inputBase} disabled={isEdit} />
             {errors.groupCode && <p className="mt-1.5 text-xs text-red-500">{errors.groupCode.message}</p>}
+            {isDuplicate && <p className="mt-1.5 text-xs text-red-500">이미 존재하는 용기군코드입니다.</p>}
           </div>
           <div>
             <label className="mb-2 block text-sm font-medium text-[#4E5968]">용기군명 <span className="text-red-500">*</span></label>

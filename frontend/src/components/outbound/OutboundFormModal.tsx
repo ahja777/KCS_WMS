@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { Plus, Trash2, AlertCircle, Search, RotateCcw } from "lucide-react";
 import Modal from "@/components/ui/Modal";
@@ -14,6 +14,7 @@ import {
   useItems,
   useCreateOutboundOrder,
   useUpdateOutboundOrder,
+  useOutboundOrders,
 } from "@/hooks/useApi";
 import { useToastStore } from "@/stores/toast.store";
 import type { Partner, Warehouse, Item } from "@/types";
@@ -112,8 +113,11 @@ export default function OutboundFormModal({
   const { data: partnersData } = usePartners({ limit: 100 });
   const { data: warehousesData } = useWarehouses({ limit: 100 });
   const { data: itemsData } = useItems({ limit: 200 });
+  const { data: outboundOrdersData } = useOutboundOrders({ limit: 500 });
   const createMutation = useCreateOutboundOrder();
   const updateMutation = useUpdateOutboundOrder();
+
+  const existingOrderNumbers = (outboundOrdersData?.data ?? []).map((o: any) => o.orderNumber);
 
   const partners = (partnersData?.data ?? []).filter(
     (p: Partner) => p.isActive
@@ -154,6 +158,40 @@ export default function OutboundFormModal({
   });
 
   const watchItems = watch("items");
+  const watchedOrderNumber = watch("orderNumber");
+  const isDuplicateOrderNumber = !editData && !!watchedOrderNumber && existingOrderNumbers.includes(watchedOrderNumber);
+
+  // Pre-fill form when editData is provided
+  useEffect(() => {
+    if (editData && isOpen) {
+      reset({
+        orderNumber: editData.orderNumber ?? "",
+        partnerId: editData.partnerId ?? "",
+        shipDate: editData.shipDate ? new Date(editData.shipDate).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
+        blNumber: editData.blNumber ?? "",
+        deliveryPartnerId: editData.deliveryPartnerId ?? "",
+        orderType: editData.shippingMethod ?? "NORMAL",
+        paymentConfirmed: "",
+        partnerOrderNumber: "",
+        isUrgent: "N",
+        warehouseId: editData.warehouseId ?? "",
+        notes: editData.notes ?? "",
+        items: (editData.lines ?? editData.items ?? []).length > 0
+          ? (editData.lines ?? editData.items ?? []).map((line: any) => ({
+              itemId: line.itemId ?? "",
+              lotNumber: line.lotNumber ?? "",
+              orderedQty: line.orderedQty ?? 0,
+              orderWeight: 0,
+              uom: line.item?.uom ?? "",
+              unitPrice: line.unitPrice ?? 0,
+              boxQty: 0,
+              pltQty: 0,
+              manufactureDate: "",
+            }))
+          : [{ itemId: "", lotNumber: "", orderedQty: 0, orderWeight: 0, uom: "", unitPrice: 0, boxQty: 0, pltQty: 0, manufactureDate: "" }],
+      });
+    }
+  }, [editData, isOpen, reset]);
 
   const getItemById = (id: string) => allItems.find((i: Item) => i.id === id);
 
@@ -196,7 +234,7 @@ export default function OutboundFormModal({
       } else {
         await createMutation.mutateAsync(payload);
       }
-      addToast({ type: "success", message: "저장되었습니다." });
+      addToast({ type: "success", message: "저장이 완료되었습니다." });
       handleReset();
       onSuccess();
       onClose();
@@ -235,7 +273,7 @@ export default function OutboundFormModal({
         notes: quickNotes || undefined,
         items: itemsWithQty,
       } as any);
-      addToast({ type: "success", message: "저장되었습니다." });
+      addToast({ type: "success", message: "저장이 완료되었습니다." });
       resetQuick();
       onSuccess();
       onClose();
@@ -273,7 +311,7 @@ export default function OutboundFormModal({
     <Modal
       isOpen={isOpen}
       onClose={handleClose}
-      title="출고등록"
+      title={editData ? "출고 수정" : "출고 등록"}
       size="xl"
       className="max-w-6xl"
     >
@@ -316,6 +354,23 @@ export default function OutboundFormModal({
 
           {/* ── Header fields (3-col grid, 3 rows) ── */}
           <div className="rounded-xl border border-[#E5E8EB] bg-white p-4">
+            {/* Row 0: 주문번호 */}
+            <div className="mb-3 grid grid-cols-3 gap-4">
+              <div>
+                <label className={labelBase}>주문번호</label>
+                <input
+                  {...register("orderNumber")}
+                  placeholder="미입력시 자동생성"
+                  disabled={!!editData}
+                  className={`${inputBase} ${editData ? "opacity-60 cursor-not-allowed" : ""} ${isDuplicateOrderNumber ? "!ring-2 !ring-red-400 !border-red-400" : ""}`}
+                />
+                {isDuplicateOrderNumber ? (
+                  <p className="mt-0.5 text-xs text-[#F04452]">이미 사용 중인 주문번호입니다.</p>
+                ) : (
+                  <p className="mt-0.5 text-xs text-[#8B95A1]">비워두면 OB-YYYYMMDD-NNNN 형식으로 자동생성됩니다</p>
+                )}
+              </div>
+            </div>
             {/* Row 1 */}
             <div className="grid grid-cols-3 gap-4">
               <div>

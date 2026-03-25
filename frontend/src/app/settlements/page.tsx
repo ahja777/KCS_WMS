@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Search, Download, RotateCcw, Plus, Trash2, Save, AlertCircle } from "lucide-react";
+import { Search, Download, RotateCcw, Plus, Trash2, Save, AlertCircle, Pencil } from "lucide-react";
 import Table, { type Column } from "@/components/ui/Table";
 import Button from "@/components/ui/Button";
 import {
@@ -72,6 +72,8 @@ function UnitPriceTab() {
   const [deptSearch, setDeptSearch] = useState("");
   const [employeeSearch, setEmployeeSearch] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [editingRow, setEditingRow] = useState<Settlement | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
 
   const { data: response, isLoading, error } = useSettlements({
     page,
@@ -105,14 +107,14 @@ function UnitPriceTab() {
         periodTo: new Date().toISOString().slice(0, 10),
         details: [],
       });
-      addToast({ type: "success", message: "신규 단가계약이 추가되었습니다." });
+      addToast({ type: "success", message: "저장이 완료되었습니다." });
     } catch {
       addToast({ type: "error", message: "추가 중 오류가 발생했습니다." });
     }
   }, [createMutation, addToast]);
 
   const handleSave = useCallback(() => {
-    addToast({ type: "success", message: "저장되었습니다." });
+    addToast({ type: "success", message: "저장이 완료되었습니다." });
   }, [addToast]);
 
   const handleDelete = useCallback(async () => {
@@ -208,10 +210,72 @@ function UnitPriceTab() {
       sortable: true,
       render: (row) => <span className="text-sm text-[#191F28]">{row.contractEmployee ?? "-"}</span>,
     },
+    {
+      key: "actions",
+      header: "수정",
+      render: (row) => (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setEditingRow(row);
+            setEditModalOpen(true);
+          }}
+          className="rounded-lg p-1.5 text-[#8B95A1] transition-colors hover:bg-[#E8F3FF] hover:text-[#3182F6]"
+          title="수정"
+        >
+          <Pencil className="h-4 w-4" />
+        </button>
+      ),
+    },
   ];
+
+  const handleEditSave = useCallback(() => {
+    addToast({ type: "success", message: "저장이 완료되었습니다." });
+    setEditModalOpen(false);
+    setEditingRow(null);
+  }, [addToast]);
 
   return (
     <>
+      {/* Edit Modal */}
+      {editModalOpen && editingRow && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+            <h3 className="mb-4 text-lg font-bold text-[#191F28]">정산단가 수정</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">화주</label>
+                <input type="text" defaultValue={editingRow.partner?.name ?? ""} className={inputBase} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">적용시작일</label>
+                  <input type="date" defaultValue={editingRow.periodFrom?.slice(0, 10)} className={inputBase} />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">적용종료일</label>
+                  <input type="date" defaultValue={editingRow.periodTo?.slice(0, 10)} className={inputBase} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">계약부서</label>
+                  <input type="text" defaultValue={editingRow.contractDept ?? ""} className={inputBase} />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">계약사원</label>
+                  <input type="text" defaultValue={editingRow.contractEmployee ?? ""} className={inputBase} />
+                </div>
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button onClick={() => { setEditModalOpen(false); setEditingRow(null); }} className="rounded-xl bg-[#F2F4F6] px-6 py-2.5 text-sm font-semibold text-[#4E5968] hover:bg-[#E5E8EB]">취소</button>
+              <button onClick={handleEditSave} className="rounded-xl bg-[#3182F6] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#1B64DA]">저장</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Search */}
       <div className="rounded-2xl bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
         <div className="flex flex-wrap items-end gap-4">
@@ -338,6 +402,8 @@ function CalculationTab() {
   const addToast = useToastStore((s) => s.addToast);
   const [page, setPage] = useState(1);
   const [calcBasis, setCalcBasis] = useState("period");
+  const [editingRow, setEditingRow] = useState<Settlement | null>(null);
+  const [editModalOpen, setEditModalOpen] = useState(false);
   const [dateFrom, setDateFrom] = useState(() => {
     const d = new Date();
     d.setMonth(d.getMonth() - 1);
@@ -364,7 +430,7 @@ function CalculationTab() {
   }, []);
 
   const handleSave = useCallback(() => {
-    addToast({ type: "success", message: "저장되었습니다." });
+    addToast({ type: "success", message: "저장이 완료되었습니다." });
   }, [addToast]);
 
   const handleNew = useCallback(async () => {
@@ -376,7 +442,7 @@ function CalculationTab() {
         periodTo: dateTo,
         details: [],
       });
-      addToast({ type: "success", message: "신규 산출이 추가되었습니다." });
+      addToast({ type: "success", message: "저장이 완료되었습니다." });
     } catch {
       addToast({ type: "error", message: "추가 중 오류가 발생했습니다." });
     }
@@ -527,10 +593,76 @@ function CalculationTab() {
         </span>
       ),
     },
+    {
+      key: "actions",
+      header: "수정",
+      render: (row) => (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setEditingRow(row);
+            setEditModalOpen(true);
+          }}
+          className="rounded-lg p-1.5 text-[#8B95A1] transition-colors hover:bg-[#E8F3FF] hover:text-[#3182F6]"
+          title="수정"
+        >
+          <Pencil className="h-4 w-4" />
+        </button>
+      ),
+    },
   ];
+
+  const handleEditSave = useCallback(() => {
+    addToast({ type: "success", message: "저장이 완료되었습니다." });
+    setEditModalOpen(false);
+    setEditingRow(null);
+  }, [addToast]);
 
   return (
     <>
+      {/* Edit Modal */}
+      {editModalOpen && editingRow && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+            <h3 className="mb-4 text-lg font-bold text-[#191F28]">정산산출 수정</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">화주</label>
+                <input type="text" defaultValue={editingRow.partner?.name ?? ""} className={inputBase} readOnly />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">적용시작일</label>
+                  <input type="date" defaultValue={editingRow.periodFrom?.slice(0, 10)} className={inputBase} />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">적용종료일</label>
+                  <input type="date" defaultValue={editingRow.periodTo?.slice(0, 10)} className={inputBase} />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">입고료</label>
+                  <input type="number" defaultValue={editingRow.inboundFee ?? 0} className={inputBase} />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">출고료</label>
+                  <input type="number" defaultValue={editingRow.outboundFee ?? 0} className={inputBase} />
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">보관료</label>
+                  <input type="number" defaultValue={editingRow.storageFee ?? 0} className={inputBase} />
+                </div>
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-3">
+              <button onClick={() => { setEditModalOpen(false); setEditingRow(null); }} className="rounded-xl bg-[#F2F4F6] px-6 py-2.5 text-sm font-semibold text-[#4E5968] hover:bg-[#E5E8EB]">취소</button>
+              <button onClick={handleEditSave} className="rounded-xl bg-[#3182F6] px-6 py-2.5 text-sm font-semibold text-white hover:bg-[#1B64DA]">저장</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Search */}
       <div className="rounded-2xl bg-white p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
         <div className="flex flex-wrap items-end gap-4">

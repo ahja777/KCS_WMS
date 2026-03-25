@@ -111,7 +111,7 @@ export default function RolesPage() {
         id: editingUser.id,
         payload: { role: newRole },
       });
-      addToast({ type: "success", message: `${editingUser.name}의 권한이 변경되었습니다.` });
+      addToast({ type: "success", message: "저장이 완료되었습니다." });
       setEditingUser(null);
     } catch {
       addToast({ type: "error", message: "권한 변경에 실패했습니다." });

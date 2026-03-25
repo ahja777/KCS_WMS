@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import SortableHeader, { useTableSort } from "@/components/ui/SortableHeader";
-import { Search, Download } from "lucide-react";
+import { Search, Download, Pencil } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Modal from "@/components/ui/Modal";
 import { useToastStore } from "@/stores/toast.store";
@@ -116,10 +116,10 @@ export default function MultilingualPage() {
   const handleFormSave = (row: I18nRow) => {
     if (editingRow) {
       setData((prev) => prev.map((r) => (r.id === row.id ? row : r)));
-      addToast({ type: "success", message: "수정되었습니다." });
+      addToast({ type: "success", message: "저장이 완료되었습니다." });
     } else {
       setData((prev) => [...prev, { ...row, id: Math.max(...prev.map((r) => r.id)) + 1 }]);
-      addToast({ type: "success", message: "등록되었습니다." });
+      addToast({ type: "success", message: "저장이 완료되었습니다." });
     }
     setIsFormOpen(false);
   };
@@ -175,11 +175,12 @@ export default function MultilingualPage() {
                 <SortableHeader field="japanese" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>일본어</SortableHeader>
                 <SortableHeader field="chinese" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>중국어</SortableHeader>
                 <SortableHeader field="english" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>영어</SortableHeader>
+                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1] w-[60px] text-center">수정</th>
               </tr>
             </thead>
             <tbody>
               {pagedData.length === 0 ? (
-                <tr><td colSpan={6} className="py-16 text-center text-sm text-[#8B95A1]">데이터가 없습니다.</td></tr>
+                <tr><td colSpan={7} className="py-16 text-center text-sm text-[#8B95A1]">데이터가 없습니다.</td></tr>
               ) : (
                 sortedPagedData.map((row) => (
                   <tr key={row.id} onClick={() => handleRowClick(row)} className="cursor-pointer border-b border-[#F2F4F6] transition-colors hover:bg-[#F7F8FA]">
@@ -191,6 +192,15 @@ export default function MultilingualPage() {
                     <td className="px-3 py-3 text-sm text-[#4E5968]">{row.japanese}</td>
                     <td className="px-3 py-3 text-sm text-[#4E5968]">{row.chinese}</td>
                     <td className="px-3 py-3 text-sm text-[#4E5968]">{row.english}</td>
+                    <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => handleRowClick(row)}
+                        className="inline-flex items-center justify-center rounded p-1 text-[#8B95A1] hover:bg-[#F2F4F6] hover:text-[#3182F6]"
+                        title="수정"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                    </td>
                   </tr>
                 ))
               )}

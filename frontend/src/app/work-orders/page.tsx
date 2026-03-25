@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import SortableHeader, { useTableSort } from "@/components/ui/SortableHeader";
-import { Plus, UserCheck, Play, CheckCircle, Printer, AlertCircle } from "lucide-react";
+import { Plus, UserCheck, Play, CheckCircle, Printer, AlertCircle, Pencil } from "lucide-react";
 import Badge from "@/components/ui/Badge";
 import Modal from "@/components/ui/Modal";
 import {
@@ -80,6 +80,10 @@ export default function WorkOrdersPage() {
   // Create modal
   const [createModalOpen, setCreateModalOpen] = useState(false);
 
+  // Edit modal
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingOrder, setEditingOrder] = useState<WorkOrder | null>(null);
+
   // API
   const { data: response, isLoading, error } = useWorkOrders({
     page,
@@ -128,7 +132,7 @@ export default function WorkOrdersPage() {
     if (!assignee.trim()) return;
     try {
       await assignMutation.mutateAsync({ id: assignTargetId, payload: { assignee } });
-      addToast({ type: "success", message: "작업이 배정되었습니다." });
+      addToast({ type: "success", message: "저장이 완료되었습니다." });
       setAssignModalOpen(false);
     } catch {
       addToast({ type: "error", message: "배정 중 오류가 발생했습니다." });
@@ -147,7 +151,7 @@ export default function WorkOrdersPage() {
     }
     try {
       await startMutation.mutateAsync(selectedId);
-      addToast({ type: "success", message: "작업이 시작되었습니다." });
+      addToast({ type: "success", message: "저장이 완료되었습니다." });
     } catch {
       addToast({ type: "error", message: "시작 중 오류가 발생했습니다." });
     }
@@ -165,7 +169,7 @@ export default function WorkOrdersPage() {
     }
     try {
       await completeMutation.mutateAsync(selectedId);
-      addToast({ type: "success", message: "작업이 완료되었습니다." });
+      addToast({ type: "success", message: "저장이 완료되었습니다." });
     } catch {
       addToast({ type: "error", message: "완료 처리 중 오류가 발생했습니다." });
     }
@@ -373,18 +377,19 @@ export default function WorkOrdersPage() {
                   <SortableHeader field="items.length" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="text-right">품목수</SortableHeader>
                   <SortableHeader field="createdAt" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>생성일</SortableHeader>
                   <SortableHeader field="updatedAt" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>완료일</SortableHeader>
+                  <th className="px-4 py-3 text-xs font-semibold text-[#6B7684] text-center">수정</th>
                 </tr>
               </thead>
               <tbody>
                 {isLoading ? (
                   <tr>
-                    <td colSpan={8} className="py-16 text-center">
+                    <td colSpan={9} className="py-16 text-center">
                       <div className="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-[#3182F6] border-t-transparent" />
                     </td>
                   </tr>
                 ) : orders.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-16 text-center text-sm text-[#8B95A1]">
+                    <td colSpan={9} className="py-16 text-center text-sm text-[#8B95A1]">
                       작업 데이터가 없습니다.
                     </td>
                   </tr>
@@ -423,6 +428,19 @@ export default function WorkOrdersPage() {
                       </td>
                       <td className="px-4 py-3 text-sm text-[#4E5968]">
                         {order.status === "COMPLETED" ? formatDate(order.updatedAt) : "-"}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingOrder(order);
+                            setEditModalOpen(true);
+                          }}
+                          className="inline-flex items-center justify-center rounded-lg p-1.5 text-[#6B7684] transition-colors hover:bg-[#F2F4F6] hover:text-[#3182F6]"
+                          title="수정"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
                       </td>
                     </tr>
                   ))
@@ -586,6 +604,64 @@ export default function WorkOrdersPage() {
             </button>
           </div>
         </div>
+      </Modal>
+
+      {/* Edit Work Order Modal */}
+      <Modal
+        isOpen={editModalOpen}
+        onClose={() => { setEditModalOpen(false); setEditingOrder(null); }}
+        title="작업지시 수정"
+        size="md"
+      >
+        {editingOrder && (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">작업번호</label>
+                <input type="text" defaultValue={editingOrder.orderNumber} className={inputBase} readOnly />
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">유형</label>
+                <select defaultValue={editingOrder.type} className={selectBase + " w-full"}>
+                  {typeFilters.filter(f => f.value).map(f => (
+                    <option key={f.value} value={f.value}>{f.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">창고</label>
+                <select defaultValue={editingOrder.warehouseId ?? ""} className={selectBase + " w-full"}>
+                  <option value="">선택</option>
+                  {warehouses.map((w: any) => (
+                    <option key={w.id} value={w.id}>{w.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">담당자</label>
+                <input type="text" defaultValue={editingOrder.assignee ?? ""} className={inputBase} />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 border-t border-[#F2F4F6] pt-4">
+              <button
+                onClick={() => { setEditModalOpen(false); setEditingOrder(null); }}
+                className="rounded-xl bg-[#F2F4F6] px-6 py-2.5 text-sm font-semibold text-[#4E5968] transition-colors hover:bg-[#E5E8EB]"
+              >
+                취소
+              </button>
+              <button
+                onClick={() => {
+                  addToast({ type: "success", message: "저장이 완료되었습니다." });
+                  setEditModalOpen(false);
+                  setEditingOrder(null);
+                }}
+                className="rounded-xl bg-[#3182F6] px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#1B64DA]"
+              >
+                저장
+              </button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

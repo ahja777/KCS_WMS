@@ -133,13 +133,17 @@ export default function ItemGroupsPage() {
 
     // Validate
     for (const row of dirtyRows) {
-      if (!row.code.trim()) {
-        addToast({ type: "error", message: "상품군코드를 입력해주세요." });
-        return;
-      }
       if (!row.name.trim()) {
         addToast({ type: "error", message: "상품군명을 입력해주세요." });
         return;
+      }
+      // Duplicate check: new row code must not match existing groups
+      if (row.isNew && row.code.trim()) {
+        const isDuplicate = groups.some((g) => g.code === row.code.trim());
+        if (isDuplicate) {
+          addToast({ type: "error", message: `상품군코드 "${row.code}"가 이미 존재합니다.` });
+          return;
+        }
       }
     }
 
@@ -157,7 +161,7 @@ export default function ItemGroupsPage() {
           await updateMutation.mutateAsync({ id: row.id, payload });
         }
       }
-      addToast({ type: "success", message: `${dirtyRows.length}건이 저장되었습니다.` });
+      addToast({ type: "success", message: "저장이 완료되었습니다." });
       setHasLocalChanges(false);
       setEditableRows([]);
     } catch {
@@ -248,17 +252,25 @@ export default function ItemGroupsPage() {
       key: "code",
       header: "상품군코드",
       sortable: true,
-      render: (row) => (
-        <input
-          type="text"
-          value={row.code}
-          onChange={(e) => handleCellChange(row.id, "code", e.target.value)}
-          onClick={(e) => e.stopPropagation()}
-          placeholder="코드 입력"
-          className={cellInput}
-          disabled={!row.isNew}
-        />
-      ),
+      render: (row) => {
+        const isDuplicate = row.isNew && row.code.trim() !== "" && groups.some((g) => g.code === row.code.trim());
+        return (
+          <div>
+            <input
+              type="text"
+              value={row.code}
+              onChange={(e) => handleCellChange(row.id, "code", e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+              placeholder="미입력시 자동생성"
+              className={`${cellInput} ${isDuplicate ? "!ring-1 !ring-red-400 !bg-red-50" : ""}`}
+              disabled={!row.isNew}
+            />
+            {isDuplicate && (
+              <p className="mt-0.5 text-xs text-red-500">이미 존재하는 코드입니다.</p>
+            )}
+          </div>
+        );
+      },
     },
     {
       key: "name",

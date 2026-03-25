@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, RotateCcw } from "lucide-react";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
@@ -9,6 +9,8 @@ import { useToastStore } from "@/stores/toast.store";
 interface AssemblyFormModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
+  editData?: any;
 }
 
 const selectBase =
@@ -55,12 +57,26 @@ const MOCK_PARTS: PartItem[] = [
   { id: "p3", locationAssign: "A-02-01", partCode: "PT-003", partName: "부분품A-3", qty: 300, uom: "EA", ownerCode: "OWN-01", ownerName: "(주)화주A", warehouseCode: "WH-01", warehouseName: "본사창고" },
 ];
 
-export default function AssemblyFormModal({ isOpen, onClose }: AssemblyFormModalProps) {
+export default function AssemblyFormModal({ isOpen, onClose, editData }: AssemblyFormModalProps) {
   const addToast = useToastStore((s) => s.addToast);
   const [dateFrom, setDateFrom] = useState("2026-01-01");
   const [dateTo, setDateTo] = useState(() => new Date().toISOString().slice(0, 10));
   const [finishedWarehouse, setFinishedWarehouse] = useState("");
   const [partsWarehouse, setPartsWarehouse] = useState("");
+
+  useEffect(() => {
+    if (isOpen && editData) {
+      setDateFrom(editData.workDate || "2026-01-01");
+      setDateTo(editData.workDate || new Date().toISOString().slice(0, 10));
+      setFinishedWarehouse(editData.warehouseCode || "");
+      setPartsWarehouse(editData.warehouseCode || "");
+    } else if (isOpen && !editData) {
+      setDateFrom("2026-01-01");
+      setDateTo(new Date().toISOString().slice(0, 10));
+      setFinishedWarehouse("");
+      setPartsWarehouse("");
+    }
+  }, [isOpen, editData]);
 
   const handleReset = () => {
     setDateFrom("2026-01-01");
@@ -70,7 +86,7 @@ export default function AssemblyFormModal({ isOpen, onClose }: AssemblyFormModal
   };
 
   const handleSave = () => {
-    addToast({ type: "success", message: "임가공조립이 저장되었습니다." });
+    addToast({ type: "success", message: editData ? "수정이 완료되었습니다." : "저장이 완료되었습니다." });
   };
 
   const handleDelete = () => {
@@ -78,7 +94,7 @@ export default function AssemblyFormModal({ isOpen, onClose }: AssemblyFormModal
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="임가공조립" size="xl" className="!max-w-6xl">
+    <Modal isOpen={isOpen} onClose={onClose} title={editData ? "임가공조립 수정" : "임가공조립 등록"} size="xl" className="!max-w-6xl">
       <div className="space-y-5">
         {/* Search area */}
         <div className="rounded-xl bg-[#F7F8FA] p-4">
