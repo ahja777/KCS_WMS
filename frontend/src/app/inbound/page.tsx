@@ -377,6 +377,19 @@ export default function InboundPage() {
 
       {/* Action Buttons */}
       <div className="flex justify-end gap-2">
+        <button
+          onClick={() => {
+            if (selectedMasterId) {
+              const order = orders.find((o) => o.id === selectedMasterId);
+              if (order) handleEditClick(order);
+            }
+          }}
+          disabled={!selectedMasterId}
+          className="inline-flex items-center gap-1.5 rounded-xl bg-[#FF9500] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[#E08200] focus:ring-2 focus:ring-[#FF9500]/30 focus:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <Pencil className="h-4 w-4" />
+          수정
+        </button>
         <Button size="sm" onClick={() => setShowCreateModal(true)}>
           <Plus className="mr-1 h-3.5 w-3.5" />
           입고등록
@@ -435,16 +448,13 @@ export default function InboundPage() {
                   <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]">
                     BL번호
                   </th>
-                  <th className="px-3 py-3 text-center text-xs font-medium text-[#8B95A1]">
-                    수정
-                  </th>
                 </tr>
               </thead>
               <tbody>
                 {isLoading ? (
                   Array.from({ length: 5 }).map((_, i) => (
                     <tr key={i} className="border-b border-[#F2F4F6]">
-                      {Array.from({ length: 13 }).map((_, j) => (
+                      {Array.from({ length: 12 }).map((_, j) => (
                         <td key={j} className="px-3 py-3">
                           <div className="h-4 animate-pulse rounded bg-[#F2F4F6]" />
                         </td>
@@ -453,7 +463,7 @@ export default function InboundPage() {
                   ))
                 ) : error ? (
                   <tr>
-                    <td colSpan={13} className="py-10 text-center">
+                    <td colSpan={12} className="py-10 text-center">
                       <div className="flex items-center justify-center gap-2 text-sm text-red-600">
                         <AlertCircle className="h-4 w-4" />
                         데이터를 불러오는 중 오류가 발생했습니다.
@@ -463,7 +473,7 @@ export default function InboundPage() {
                 ) : sortedMasterRows.length === 0 ? (
                   <tr>
                     <td
-                      colSpan={13}
+                      colSpan={12}
                       className="py-16 text-center text-sm text-[#8B95A1]"
                     >
                       데이터가 없습니다.
@@ -530,18 +540,6 @@ export default function InboundPage() {
                       </td>
                       <td className="px-3 py-3 text-sm text-[#4E5968]">
                         {row.blNumber}
-                      </td>
-                      <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          onClick={() => {
-                            const order = orders.find((o) => o.id === row.id);
-                            if (order) handleEditClick(order);
-                          }}
-                          className="rounded-lg p-1.5 text-[#8B95A1] transition-colors hover:bg-[#E8F3FF] hover:text-[#3182F6]"
-                          title="수정"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
                       </td>
                     </tr>
                   ))

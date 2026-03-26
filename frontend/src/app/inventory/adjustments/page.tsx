@@ -27,6 +27,7 @@ export default function AdjustmentsPage() {
   const [page, setPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<StockAdjustment | null>(null);
+  const [selectedRow, setSelectedRow] = useState<StockAdjustment | null>(null);
   const addToast = useToastStore((s) => s.addToast);
 
   const { data: warehouseResponse } = useWarehouses({ limit: 100 });
@@ -100,18 +101,6 @@ export default function AdjustmentsPage() {
       sortable: true,
       render: (row) => <span className="text-sm text-[#4E5968]">{row.adjustedBy ?? "-"}</span>,
     },
-    {
-      key: "actions" as keyof StockAdjustment,
-      header: "",
-      render: (row) => (
-        <button
-          onClick={(e) => { e.stopPropagation(); handleEdit(row); }}
-          className="rounded-lg p-1.5 text-[#8B95A1] hover:bg-[#F2F4F6] hover:text-[#3182F6]"
-        >
-          <Pencil className="h-4 w-4" />
-        </button>
-      ),
-    },
   ];
 
   const handleEdit = (row: StockAdjustment) => {
@@ -123,10 +112,20 @@ export default function AdjustmentsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-[#191F28]">재고 조정</h1>
-        <Button onClick={() => { setEditingRow(null); setIsModalOpen(true); }}>
-          <Plus className="h-4 w-4" />
-          조정 등록
-        </Button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => { if (selectedRow) handleEdit(selectedRow); }}
+            disabled={!selectedRow}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-[#FF9500] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[#E08200] focus:ring-2 focus:ring-[#FF9500]/30 focus:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Pencil className="h-4 w-4" />
+            수정
+          </button>
+          <Button onClick={() => { setEditingRow(null); setIsModalOpen(true); }}>
+            <Plus className="h-4 w-4" />
+            조정 등록
+          </Button>
+        </div>
       </div>
 
       <InventoryTabNav />
@@ -158,6 +157,7 @@ export default function AdjustmentsPage() {
             totalPages={totalPages}
             total={total}
             onPageChange={setPage}
+            onRowClick={(row: StockAdjustment) => setSelectedRow((prev) => (prev?.id === row.id ? null : row))}
             emptyMessage="재고 조정 내역이 없습니다."
           />
         )}

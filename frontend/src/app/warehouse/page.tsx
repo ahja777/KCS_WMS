@@ -21,6 +21,7 @@ export default function WarehousePage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingWarehouse, setEditingWarehouse] = useState<Warehouse | undefined>();
   const [deletingWarehouse, setDeletingWarehouse] = useState<Warehouse | undefined>();
+  const [selectedWarehouse, setSelectedWarehouse] = useState<Warehouse | undefined>();
 
   const addToast = useToastStore((s) => s.addToast);
 
@@ -88,16 +89,6 @@ export default function WarehousePage() {
           <button
             onClick={(e) => {
               e.stopPropagation();
-              handleEdit(row);
-            }}
-            className="rounded-lg p-1.5 text-[#B0B8C1] transition-colors hover:bg-[#FFF8E1] hover:text-[#F59E0B]"
-            title="수정"
-          >
-            <Pencil className="h-4 w-4" />
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
               router.push(`/warehouse/${row.id}`);
             }}
             className="rounded-lg p-1.5 text-[#B0B8C1] transition-colors hover:bg-[#E8F2FF] hover:text-[#3182F6]"
@@ -121,6 +112,14 @@ export default function WarehousePage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-[#191F28]">창고 관리</h1>
         <div className="flex gap-3">
+          <button
+            onClick={() => selectedWarehouse && handleEdit(selectedWarehouse)}
+            disabled={!selectedWarehouse}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-[#FF9500] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[#E08200] focus:ring-2 focus:ring-[#FF9500]/30 focus:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Pencil className="h-4 w-4" />
+            수정
+          </button>
           <button
             onClick={() => {
               downloadExcel('/export/warehouses', `warehouses_${new Date().toISOString().slice(0,10).replace(/-/g,'')}.xlsx`);
@@ -172,7 +171,8 @@ export default function WarehousePage() {
             totalPages={totalPages}
             total={total}
             onPageChange={setPage}
-            onRowClick={(row) => router.push(`/warehouse/${row.id}`)}
+            onRowClick={(row) => setSelectedWarehouse(row)}
+            activeRowId={selectedWarehouse?.id}
           />
         )}
       </div>

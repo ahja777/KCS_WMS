@@ -233,7 +233,13 @@ export default function ContainerGroupsPage() {
           const id = Array.from(selectedRows)[0];
           const group = groups.find((g) => g.id === id);
           if (group) handleEdit(group);
-        }} className="rounded-xl bg-[#F04452] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#D63341]">수정</button>
+        }}
+          disabled={selectedRows.size !== 1}
+          className="inline-flex items-center gap-1.5 rounded-xl bg-[#FF9500] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[#E08200] focus:ring-2 focus:ring-[#FF9500]/30 focus:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <Pencil className="h-4 w-4" />
+          수정
+        </button>
         <button onClick={handleDeleteClick} className="rounded-xl bg-[#8B95A1] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#6B7684]">삭제</button>
         <button onClick={() => downloadExcel("/export/container-groups", "container_groups.xlsx")} className="rounded-xl bg-[#1FC47D] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#17A86B]">엑셀</button>
       </div>
@@ -273,14 +279,13 @@ export default function ContainerGroupsPage() {
                     <SortableHeader field="createdBy" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>등록자번호</SortableHeader>
                     <SortableHeader field="updatedAt" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>수정일자</SortableHeader>
                     <SortableHeader field="updatedBy" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>수정자번호</SortableHeader>
-                    <th className="px-5 py-4 text-xs font-medium uppercase tracking-wider text-[#8B95A1] w-[60px] text-center">수정</th>
                   </tr>
                 </thead>
                 <tbody>
                   {isLoading ? (
                     Array.from({ length: 5 }).map((_, i) => (
                       <tr key={i} className="border-b border-[#F2F4F6]">
-                        {Array.from({ length: 11 }).map((_, j) => (
+                        {Array.from({ length: 10 }).map((_, j) => (
                           <td key={j} className="px-5 py-4">
                             <div className="h-4 w-full animate-pulse rounded-lg bg-[#F2F4F6]" />
                           </td>
@@ -289,7 +294,7 @@ export default function ContainerGroupsPage() {
                     ))
                   ) : groups.length === 0 ? (
                     <tr>
-                      <td colSpan={11} className="px-5 py-16 text-center text-[#B0B8C1]">
+                      <td colSpan={10} className="px-5 py-16 text-center text-[#B0B8C1]">
                         물류용기군 데이터가 없습니다.
                       </td>
                     </tr>
@@ -318,16 +323,6 @@ export default function ContainerGroupsPage() {
                         <td className="px-5 py-4 text-sm text-[#4E5968]">{row.createdBy ?? "-"}</td>
                         <td className="px-5 py-4 text-sm text-[#4E5968]">{formatDate(row.updatedAt)}</td>
                         <td className="px-5 py-4 text-sm text-[#4E5968]">{row.updatedBy ?? "-"}</td>
-                        <td className="px-5 py-4 text-center">
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); handleEdit(row); }}
-                            className="rounded p-1 text-[#8B95A1] transition-colors hover:bg-[#F2F4F6] hover:text-[#3182F6]"
-                            title="수정"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </button>
-                        </td>
                       </tr>
                     ))
                   )}

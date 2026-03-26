@@ -44,6 +44,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useUIStore } from "@/stores/ui.store";
+import KcsLogo from "@/components/ui/KcsLogo";
 import { useAuthStore } from "@/stores/auth.store";
 import type { UserRole } from "@/types";
 
@@ -357,20 +358,19 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="flex h-16 items-center justify-between px-4">
         {!isCollapsed && (
-          <Link href="/" className="flex items-center gap-3 transition-opacity hover:opacity-80">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#3182F6] font-bold text-white text-sm">
-              K
-            </div>
+          <Link href="/" className="flex items-center gap-2.5 transition-opacity hover:opacity-80">
+            <KcsLogo height={38} />
             <div>
               <h1 className="text-base font-bold tracking-tight text-[#191F28]">
                 KCS WMS
               </h1>
+              <p className="text-[10px] text-[#8B95A1] -mt-0.5">Warehouse Management</p>
             </div>
           </Link>
         )}
         {isCollapsed && (
-          <Link href="/" className="mx-auto flex h-9 w-9 items-center justify-center rounded-xl bg-[#3182F6] font-bold text-white text-sm transition-opacity hover:opacity-80">
-            K
+          <Link href="/" className="mx-auto transition-opacity hover:opacity-80">
+            <KcsLogo height={32} />
           </Link>
         )}
       </div>

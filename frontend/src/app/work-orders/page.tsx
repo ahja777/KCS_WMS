@@ -347,6 +347,17 @@ export default function WorkOrdersPage() {
           <CheckCircle className="h-3.5 w-3.5" /> 완료
         </button>
         <button
+          onClick={() => {
+            if (!selectedId) return;
+            const selected = orders.find((o: WorkOrder) => o.id === selectedId);
+            if (selected) { setEditingOrder(selected); setEditModalOpen(true); }
+          }}
+          disabled={!selectedId}
+          className="inline-flex items-center gap-1.5 rounded-xl bg-[#FF9500] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[#E08200] focus:ring-2 focus:ring-[#FF9500]/30 focus:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <Pencil className="h-4 w-4" /> 수정
+        </button>
+        <button
           onClick={handlePrint}
           className="flex items-center gap-1.5 rounded-xl border border-[#E5E8EB] bg-white px-4 py-2 text-xs font-semibold text-[#4E5968] hover:bg-[#F7F8FA]"
         >
@@ -377,19 +388,18 @@ export default function WorkOrdersPage() {
                   <SortableHeader field="items.length" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="text-right">품목수</SortableHeader>
                   <SortableHeader field="createdAt" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>생성일</SortableHeader>
                   <SortableHeader field="updatedAt" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>완료일</SortableHeader>
-                  <th className="px-4 py-3 text-xs font-semibold text-[#6B7684] text-center">수정</th>
                 </tr>
               </thead>
               <tbody>
                 {isLoading ? (
                   <tr>
-                    <td colSpan={9} className="py-16 text-center">
+                    <td colSpan={8} className="py-16 text-center">
                       <div className="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-[#3182F6] border-t-transparent" />
                     </td>
                   </tr>
                 ) : orders.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="py-16 text-center text-sm text-[#8B95A1]">
+                    <td colSpan={8} className="py-16 text-center text-sm text-[#8B95A1]">
                       작업 데이터가 없습니다.
                     </td>
                   </tr>
@@ -428,19 +438,6 @@ export default function WorkOrdersPage() {
                       </td>
                       <td className="px-4 py-3 text-sm text-[#4E5968]">
                         {order.status === "COMPLETED" ? formatDate(order.updatedAt) : "-"}
-                      </td>
-                      <td className="px-4 py-3 text-center">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditingOrder(order);
-                            setEditModalOpen(true);
-                          }}
-                          className="inline-flex items-center justify-center rounded-lg p-1.5 text-[#6B7684] transition-colors hover:bg-[#F2F4F6] hover:text-[#3182F6]"
-                          title="수정"
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
                       </td>
                     </tr>
                   ))

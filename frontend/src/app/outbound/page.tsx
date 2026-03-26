@@ -329,6 +329,14 @@ export default function OutboundPage() {
               출고등록
             </button>
             <button
+              onClick={() => { if (selectedRow) handleEditClick(selectedRow); }}
+              disabled={!selectedRow}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-[#FF9500] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[#E08200] focus:ring-2 focus:ring-[#FF9500]/30 focus:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Pencil className="h-4 w-4" />
+              수정
+            </button>
+            <button
               onClick={handleDelete}
               className="flex h-8 items-center gap-1 rounded-lg border border-[#E5E8EB] bg-white px-4 text-xs font-medium text-[#4E5968] hover:bg-[#F7F8FA]"
             >
@@ -366,14 +374,13 @@ export default function OutboundPage() {
                 <SortableHeader field="currentStock" sortKey={sortKey} sortDir={sortDir} onSort={handleSort} className="text-right">현재고</SortableHeader>
                 <SortableHeader field="order.trackingNumber" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>송장번호</SortableHeader>
                 <SortableHeader field="order.shippingMethod" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>배송방법</SortableHeader>
-                <th className="px-3 py-2.5 text-center text-xs font-medium text-[#8B95A1]">수정</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 Array.from({ length: 6 }).map((_, i) => (
                   <tr key={i} className="border-b border-[#F2F4F6]">
-                    {Array.from({ length: 13 }).map((_, j) => (
+                    {Array.from({ length: 12 }).map((_, j) => (
                       <td key={j} className="px-3 py-2.5">
                         <div className="h-4 animate-pulse rounded bg-[#F2F4F6]" />
                       </td>
@@ -382,13 +389,13 @@ export default function OutboundPage() {
                 ))
               ) : error ? (
                 <tr>
-                  <td colSpan={13} className="py-10 text-center text-sm text-red-500">
+                  <td colSpan={12} className="py-10 text-center text-sm text-red-500">
                     오류가 발생했습니다.
                   </td>
                 </tr>
               ) : masterRows.length === 0 ? (
                 <tr>
-                  <td colSpan={13} className="py-16 text-center text-sm text-[#8B95A1]">
+                  <td colSpan={12} className="py-16 text-center text-sm text-[#8B95A1]">
                     데이터가 없습니다.
                   </td>
                 </tr>
@@ -424,15 +431,6 @@ export default function OutboundPage() {
                     <td className="px-3 py-2.5 text-right text-sm font-semibold text-[#3182F6]">{formatNumber(currentStock)}</td>
                     <td className="px-3 py-2.5 text-sm text-[#4E5968]">{order.trackingNumber ?? "-"}</td>
                     <td className="px-3 py-2.5 text-sm text-[#4E5968]">{order.shippingMethod ?? "-"}</td>
-                    <td className="px-3 py-2.5 text-center" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        onClick={() => handleEditClick(order)}
-                        className="rounded-lg p-1.5 text-[#8B95A1] transition-colors hover:bg-[#E8F3FF] hover:text-[#3182F6]"
-                        title="수정"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                    </td>
                   </tr>
                 ))
               )}

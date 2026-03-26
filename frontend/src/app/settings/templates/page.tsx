@@ -54,6 +54,7 @@ export default function TemplatesPage() {
   const [page, setPage] = useState(1);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<TemplateRow | null>(null);
+  const [selectedRow, setSelectedRow] = useState<TemplateRow | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
   const perPage = 20;
@@ -126,6 +127,14 @@ export default function TemplatesPage() {
 
       {/* Action buttons */}
       <div className="flex justify-end gap-2">
+        <button
+          onClick={() => { if (selectedRow) { setEditingRow(selectedRow); setIsFormOpen(true); } }}
+          disabled={!selectedRow}
+          className="inline-flex items-center gap-1.5 rounded-xl bg-[#FF9500] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[#E08200] focus:ring-2 focus:ring-[#FF9500]/30 focus:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <Pencil className="h-4 w-4" />
+          수정
+        </button>
         <Button variant="danger" size="sm" onClick={() => addToast({ type: "info", message: "저장되었습니다." })}>저장</Button>
         <Button size="sm" onClick={() => { setEditingRow(null); setIsFormOpen(true); }}>신규</Button>
         <Button variant="secondary" size="sm" onClick={handleDelete}>삭제</Button>
@@ -153,18 +162,17 @@ export default function TemplatesPage() {
                 <SortableHeader field="viewOrder" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>보기순번</SortableHeader>
                 <SortableHeader field="dataType" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>데이터타입</SortableHeader>
                 <SortableHeader field="displayFormat" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>표시형식</SortableHeader>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1] w-[60px] text-center">수정</th>
               </tr>
             </thead>
             <tbody>
               {pagedData.length === 0 ? (
-                <tr><td colSpan={14} className="py-16 text-center text-sm text-[#8B95A1]">데이터가 없습니다.</td></tr>
+                <tr><td colSpan={13} className="py-16 text-center text-sm text-[#8B95A1]">데이터가 없습니다.</td></tr>
               ) : (
                 sortedPagedData.map((row) => (
                   <tr
                     key={row.id}
-                    onClick={() => { setEditingRow(row); setIsFormOpen(true); }}
-                    className="cursor-pointer border-b border-[#F2F4F6] transition-colors hover:bg-[#F7F8FA]"
+                    onClick={() => setSelectedRow((prev) => (prev?.id === row.id ? null : row))}
+                    className={`cursor-pointer border-b border-[#F2F4F6] transition-colors ${selectedRow?.id === row.id ? "bg-[#E8F2FF]" : "hover:bg-[#F7F8FA]"}`}
                   >
                     <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                       <input type="checkbox" className="h-4 w-4 rounded border-[#D1D6DB]" checked={selectedIds.has(row.id)} onChange={() => toggleSelect(row.id)} />
@@ -189,15 +197,6 @@ export default function TemplatesPage() {
                     <td className="px-3 py-3 text-sm text-[#4E5968]">{row.viewOrder}</td>
                     <td className="px-3 py-3 text-sm text-[#4E5968]">{row.dataType}</td>
                     <td className="px-3 py-3 text-sm text-[#4E5968]">{row.displayFormat}</td>
-                    <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        onClick={() => { setEditingRow(row); setIsFormOpen(true); }}
-                        className="inline-flex items-center justify-center rounded p-1 text-[#8B95A1] hover:bg-[#F2F4F6] hover:text-[#3182F6]"
-                        title="수정"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                    </td>
                   </tr>
                 ))
               )}

@@ -287,21 +287,6 @@ export default function ItemsPage() {
           ? `${row.expiryDays}일`
           : "-",
     },
-    {
-      key: "actions" as keyof Item,
-      header: "수정",
-      width: "w-[60px]",
-      render: (row) => (
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); handleRowClick(row); }}
-          className="rounded p-1 text-[#8B95A1] transition-colors hover:bg-[#F2F4F6] hover:text-[#3182F6]"
-          title="수정"
-        >
-          <Pencil className="h-4 w-4" />
-        </button>
-      ),
-    },
   ];
 
   // UOM conversion history columns (read-only)
@@ -405,6 +390,15 @@ export default function ItemsPage() {
                   삭제
                 </button>
               )}
+              <button
+                type="button"
+                onClick={() => selectedItem && handleRowClick(selectedItem)}
+                disabled={!selectedItem}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-[#FF9500] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[#E08200] focus:ring-2 focus:ring-[#FF9500]/30 focus:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Pencil className="h-4 w-4" />
+                수정
+              </button>
               {perm.canExport && (
                 <button
                   type="button"

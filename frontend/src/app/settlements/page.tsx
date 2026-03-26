@@ -74,6 +74,7 @@ function UnitPriceTab() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [editingRow, setEditingRow] = useState<Settlement | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedRow, setSelectedRow] = useState<Settlement | null>(null);
 
   const { data: response, isLoading, error } = useSettlements({
     page,
@@ -210,23 +211,6 @@ function UnitPriceTab() {
       sortable: true,
       render: (row) => <span className="text-sm text-[#191F28]">{row.contractEmployee ?? "-"}</span>,
     },
-    {
-      key: "actions",
-      header: "수정",
-      render: (row) => (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setEditingRow(row);
-            setEditModalOpen(true);
-          }}
-          className="rounded-lg p-1.5 text-[#8B95A1] transition-colors hover:bg-[#E8F3FF] hover:text-[#3182F6]"
-          title="수정"
-        >
-          <Pencil className="h-4 w-4" />
-        </button>
-      ),
-    },
   ];
 
   const handleEditSave = useCallback(() => {
@@ -343,6 +327,14 @@ function UnitPriceTab() {
             <Search className="h-4 w-4" />
             조회
           </Button>
+          <button
+            onClick={() => { if (selectedRow) { setEditingRow(selectedRow); setEditModalOpen(true); } }}
+            disabled={!selectedRow}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-[#FF9500] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[#E08200] focus:ring-2 focus:ring-[#FF9500]/30 focus:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Pencil className="h-4 w-4" />
+            수정
+          </button>
           <Button size="sm" variant="primary" onClick={handleSave}>
             <Save className="h-4 w-4" />
             저장
@@ -389,6 +381,7 @@ function UnitPriceTab() {
             totalPages={totalPages}
             total={total}
             onPageChange={setPage}
+            onRowClick={(row: Settlement) => setSelectedRow((prev) => (prev?.id === row.id ? null : row))}
             emptyMessage="정산 단가 데이터가 없습니다."
           />
         )}
@@ -404,6 +397,7 @@ function CalculationTab() {
   const [calcBasis, setCalcBasis] = useState("period");
   const [editingRow, setEditingRow] = useState<Settlement | null>(null);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedRow, setSelectedRow] = useState<Settlement | null>(null);
   const [dateFrom, setDateFrom] = useState(() => {
     const d = new Date();
     d.setMonth(d.getMonth() - 1);
@@ -593,23 +587,6 @@ function CalculationTab() {
         </span>
       ),
     },
-    {
-      key: "actions",
-      header: "수정",
-      render: (row) => (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setEditingRow(row);
-            setEditModalOpen(true);
-          }}
-          className="rounded-lg p-1.5 text-[#8B95A1] transition-colors hover:bg-[#E8F3FF] hover:text-[#3182F6]"
-          title="수정"
-        >
-          <Pencil className="h-4 w-4" />
-        </button>
-      ),
-    },
   ];
 
   const handleEditSave = useCallback(() => {
@@ -719,6 +696,14 @@ function CalculationTab() {
             <Search className="h-4 w-4" />
             조회
           </Button>
+          <button
+            onClick={() => { if (selectedRow) { setEditingRow(selectedRow); setEditModalOpen(true); } }}
+            disabled={!selectedRow}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-[#FF9500] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[#E08200] focus:ring-2 focus:ring-[#FF9500]/30 focus:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Pencil className="h-4 w-4" />
+            수정
+          </button>
           <Button size="sm" variant="primary" onClick={handleSave}>
             <Save className="h-4 w-4" />
             저장
@@ -765,6 +750,7 @@ function CalculationTab() {
             totalPages={totalPages}
             total={total}
             onPageChange={setPage}
+            onRowClick={(row: Settlement) => setSelectedRow((prev) => (prev?.id === row.id ? null : row))}
             emptyMessage="정산 산출 데이터가 없습니다."
           />
         )}

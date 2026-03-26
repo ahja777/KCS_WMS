@@ -56,6 +56,7 @@ export default function MultilingualPage() {
   const [page, setPage] = useState(1);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingRow, setEditingRow] = useState<I18nRow | null>(null);
+  const [selectedRow, setSelectedRow] = useState<I18nRow | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
   const perPage = 20;
@@ -152,6 +153,14 @@ export default function MultilingualPage() {
 
       {/* Action buttons */}
       <div className="flex justify-end gap-2">
+        <button
+          onClick={() => { if (selectedRow) handleRowClick(selectedRow); }}
+          disabled={!selectedRow}
+          className="inline-flex items-center gap-1.5 rounded-xl bg-[#FF9500] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[#E08200] focus:ring-2 focus:ring-[#FF9500]/30 focus:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <Pencil className="h-4 w-4" />
+          수정
+        </button>
         <Button variant="danger" size="sm" onClick={() => addToast({ type: "info", message: "저장되었습니다." })}>저장</Button>
         <Button size="sm" onClick={handleCreate}>신규</Button>
         <Button variant="secondary" size="sm" onClick={handleDelete}>삭제</Button>
@@ -175,15 +184,14 @@ export default function MultilingualPage() {
                 <SortableHeader field="japanese" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>일본어</SortableHeader>
                 <SortableHeader field="chinese" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>중국어</SortableHeader>
                 <SortableHeader field="english" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>영어</SortableHeader>
-                <th className="px-3 py-3 text-xs font-medium text-[#8B95A1] w-[60px] text-center">수정</th>
               </tr>
             </thead>
             <tbody>
               {pagedData.length === 0 ? (
-                <tr><td colSpan={7} className="py-16 text-center text-sm text-[#8B95A1]">데이터가 없습니다.</td></tr>
+                <tr><td colSpan={6} className="py-16 text-center text-sm text-[#8B95A1]">데이터가 없습니다.</td></tr>
               ) : (
                 sortedPagedData.map((row) => (
-                  <tr key={row.id} onClick={() => handleRowClick(row)} className="cursor-pointer border-b border-[#F2F4F6] transition-colors hover:bg-[#F7F8FA]">
+                  <tr key={row.id} onClick={() => setSelectedRow((prev) => (prev?.id === row.id ? null : row))} className={`cursor-pointer border-b border-[#F2F4F6] transition-colors ${selectedRow?.id === row.id ? "bg-[#E8F2FF]" : "hover:bg-[#F7F8FA]"}`}>
                     <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
                       <input type="checkbox" className="h-4 w-4 rounded border-[#D1D6DB]" checked={selectedIds.has(row.id)} onChange={() => toggleSelect(row.id)} />
                     </td>
@@ -192,15 +200,6 @@ export default function MultilingualPage() {
                     <td className="px-3 py-3 text-sm text-[#4E5968]">{row.japanese}</td>
                     <td className="px-3 py-3 text-sm text-[#4E5968]">{row.chinese}</td>
                     <td className="px-3 py-3 text-sm text-[#4E5968]">{row.english}</td>
-                    <td className="px-3 py-3 text-center" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        onClick={() => handleRowClick(row)}
-                        className="inline-flex items-center justify-center rounded p-1 text-[#8B95A1] hover:bg-[#F2F4F6] hover:text-[#3182F6]"
-                        title="수정"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                    </td>
                   </tr>
                 ))
               )}

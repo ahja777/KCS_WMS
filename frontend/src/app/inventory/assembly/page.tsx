@@ -225,6 +225,14 @@ export default function AssemblyPage() {
 
       {/* Action buttons */}
       <div className="flex justify-end gap-2">
+        <button
+          onClick={() => { if (selectedId) { const item = MOCK_ASSEMBLY_LIST.find(i => i.id === selectedId); if (item) handleEdit(item); } }}
+          disabled={!selectedId}
+          className="inline-flex items-center gap-1.5 rounded-xl bg-[#FF9500] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[#E08200] focus:ring-2 focus:ring-[#FF9500]/30 focus:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <Pencil className="h-4 w-4" />
+          수정
+        </button>
         <Button size="sm" onClick={() => { setEditingItem(null); setShowFormModal(true); }}>신규</Button>
         <Button variant="outline" size="sm" className="!bg-[#22C55E] !text-white !border-[#22C55E]">엑셀</Button>
       </div>
@@ -251,7 +259,6 @@ export default function AssemblyPage() {
                 <SortableHeader field="location" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>로케이션</SortableHeader>
                 <SortableHeader field="ownerCode" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>화주</SortableHeader>
                 <th className="px-3 py-3 text-xs font-medium text-[#8B95A1]"></th>
-                <th className="w-10 px-3 py-3 text-xs font-medium text-[#8B95A1]"></th>
               </tr>
               <tr className="border-b border-[#E5E8EB] bg-[#F7F8FA]">
                 <th></th>
@@ -267,12 +274,11 @@ export default function AssemblyPage() {
                 <th></th>
                 <th className="px-3 py-1 text-xs text-[#8B95A1]">코드</th>
                 <th className="px-3 py-1 text-xs text-[#8B95A1]">화주명</th>
-                <th></th>
               </tr>
             </thead>
             <tbody>
               {MOCK_ASSEMBLY_LIST.length === 0 ? (
-                <tr><td colSpan={14} className="py-16 text-center text-sm text-[#8B95A1]">데이터가 없습니다.</td></tr>
+                <tr><td colSpan={13} className="py-16 text-center text-sm text-[#8B95A1]">데이터가 없습니다.</td></tr>
               ) : (
                 sortedAssemblyList.map((item) => (
                   <tr
@@ -293,14 +299,6 @@ export default function AssemblyPage() {
                     <td className="px-3 py-3 text-sm font-mono text-[#4E5968]">{item.location}</td>
                     <td className="px-3 py-3 text-sm font-mono text-[#4E5968]">{item.ownerCode}</td>
                     <td className="px-3 py-3 text-sm text-[#4E5968]">{item.ownerName}</td>
-                    <td className="px-3 py-3 text-center">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); handleEdit(item); }}
-                        className="rounded-lg p-1.5 text-[#8B95A1] hover:bg-[#F2F4F6] hover:text-[#3182F6]"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                    </td>
                   </tr>
                 ))
               )}

@@ -55,6 +55,7 @@ export default function CommonCodesPage() {
   const [deletingCode, setDeletingCode] = useState<CommonCode | undefined>();
   const [leftChecked, setLeftChecked] = useState<Set<string>>(new Set());
   const [rightChecked, setRightChecked] = useState<Set<string>>(new Set());
+  const [selectedRightRow, setSelectedRightRow] = useState<CommonCode | null>(null);
 
   const addToast = useToastStore((s) => s.addToast);
 
@@ -373,6 +374,14 @@ export default function CommonCodesPage() {
           {/* Right action buttons */}
           <div className="flex items-center justify-end gap-2 px-4 py-2.5">
             <button
+              onClick={() => { if (selectedRightRow) { setEditingCode(selectedRightRow); setIsRightFormOpen(true); } }}
+              disabled={!selectedRightRow}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-[#FF9500] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[#E08200] focus:ring-2 focus:ring-[#FF9500]/30 focus:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Pencil className="h-4 w-4" />
+              수정
+            </button>
+            <button
               onClick={() => addToast({ type: "info", message: "저장되었습니다." })}
               className="rounded px-4 py-1.5 text-xs font-semibold text-white bg-[#F04452] hover:bg-[#E03340]"
             >
@@ -433,14 +442,13 @@ export default function CommonCodesPage() {
                       <SortableHeader field="codeNm" sortKey={rsk} sortDir={rsd} onSort={rhs}>*기초코드명</SortableHeader>
                       <SortableHeader field="value" sortKey={rsk} sortDir={rsd} onSort={rhs}>값</SortableHeader>
                       <SortableHeader field="sortOrder" sortKey={rsk} sortDir={rsd} onSort={rhs}>순서</SortableHeader>
-                      <th className="px-3 py-2.5 text-xs font-medium text-[#8B95A1] w-[60px] text-center">수정</th>
                     </tr>
                   </thead>
                   <tbody>
                     {isLoading ? (
                       Array.from({ length: 5 }).map((_, i) => (
                         <tr key={i} className="border-b border-[#F2F4F6]">
-                          {Array.from({ length: 7 }).map((_, j) => (
+                          {Array.from({ length: 6 }).map((_, j) => (
                             <td key={j} className="px-3 py-3">
                               <div className="h-4 w-full animate-pulse rounded bg-[#F2F4F6]" />
                             </td>
@@ -449,7 +457,7 @@ export default function CommonCodesPage() {
                       ))
                     ) : rightPagedData.length === 0 ? (
                       <tr>
-                        <td colSpan={7} className="px-3 py-12 text-center text-sm text-[#B0B8C1]">
+                        <td colSpan={6} className="px-3 py-12 text-center text-sm text-[#B0B8C1]">
                           기초코드가 없습니다.
                         </td>
                       </tr>
@@ -457,10 +465,9 @@ export default function CommonCodesPage() {
                       rightPagedData.map((row, idx) => (
                         <tr
                           key={row.id}
-                          className="border-b border-[#F2F4F6] transition-colors hover:bg-[#F7F8FA] cursor-pointer"
+                          className={`border-b border-[#F2F4F6] transition-colors cursor-pointer ${selectedRightRow?.id === row.id ? "bg-[#E8F2FF]" : "hover:bg-[#F7F8FA]"}`}
                           onClick={() => {
-                            setEditingCode(row);
-                            setIsRightFormOpen(true);
+                            setSelectedRightRow((prev) => (prev?.id === row.id ? null : row));
                           }}
                         >
                           <td className="px-3 py-2.5 text-center text-sm text-[#4E5968]">
@@ -478,18 +485,6 @@ export default function CommonCodesPage() {
                           <td className="px-3 py-2.5 text-sm text-[#4E5968]">{row.codeNm}</td>
                           <td className="px-3 py-2.5 text-sm text-[#4E5968]">{row.value ?? "-"}</td>
                           <td className="px-3 py-2.5 text-sm text-[#4E5968]">{row.sortOrder}</td>
-                          <td className="px-3 py-2.5 text-center" onClick={(e) => e.stopPropagation()}>
-                            <button
-                              onClick={() => {
-                                setEditingCode(row);
-                                setIsRightFormOpen(true);
-                              }}
-                              className="inline-flex items-center justify-center rounded p-1 text-[#8B95A1] hover:bg-[#F2F4F6] hover:text-[#3182F6]"
-                              title="수정"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </button>
-                          </td>
                         </tr>
                       ))
                     )}

@@ -156,21 +156,6 @@ export default function PartnersPage() {
       sortable: true,
       render: () => <span className="text-xs text-[#8B95A1]">-</span>,
     },
-    {
-      key: "actions" as keyof Partner,
-      header: "수정",
-      width: "w-[60px]",
-      render: (row) => (
-        <button
-          type="button"
-          onClick={(e) => { e.stopPropagation(); setSelectedPartner(row); setIsNew(false); }}
-          className="rounded p-1 text-[#8B95A1] transition-colors hover:bg-[#F2F4F6] hover:text-[#3182F6]"
-          title="수정"
-        >
-          <Pencil className="h-4 w-4" />
-        </button>
-      ),
-    },
   ];
 
   const updateField = (field: string, value: string | boolean) => {
@@ -203,6 +188,14 @@ export default function PartnersPage() {
 
       {/* Actions */}
       <div className="flex justify-end gap-2">
+        <button
+          onClick={() => { if (selectedPartner) { setSelectedPartner(selectedPartner); setIsNew(false); } }}
+          disabled={!selectedPartner}
+          className="inline-flex items-center gap-1.5 rounded-xl bg-[#FF9500] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[#E08200] focus:ring-2 focus:ring-[#FF9500]/30 focus:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <Pencil className="h-4 w-4" />
+          수정
+        </button>
         <button onClick={handleSave} className="rounded-xl bg-[#F04452] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#D63341]">저장</button>
         <button onClick={handleNew} className="rounded-xl bg-[#3182F6] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#1B64DA]">신규</button>
         <button onClick={() => selectedPartner && setDeletingPartner(selectedPartner)} className="rounded-xl bg-[#8B95A1] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#6B7684]">삭제</button>

@@ -348,6 +348,24 @@ export default function UsersPage() {
             </div>
           </div>
 
+          {/* Action Buttons */}
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => selectedUser && handleEdit(selectedUser)}
+              disabled={!selectedUser}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-[#FF9500] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[#E08200] focus:ring-2 focus:ring-[#FF9500]/30 focus:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Pencil className="h-4 w-4" />
+              수정
+            </button>
+            <button
+              onClick={handleNewUser}
+              className="rounded px-4 py-2 text-sm font-semibold text-white bg-[#3182F6] hover:bg-[#1B64DA]"
+            >
+              신규
+            </button>
+          </div>
+
           {/* Users Grid */}
           <div className="rounded-lg bg-white border border-[#E5E8EB] overflow-hidden">
             <div className="bg-[#4A5568] px-4 py-2.5">
@@ -382,14 +400,13 @@ export default function UsersPage() {
                           <SortableHeader field="phone" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>전화번호</SortableHeader>
                           <SortableHeader field="mobile" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>핸드폰</SortableHeader>
                           <SortableHeader field="email" sortKey={sortKey} sortDir={sortDir} onSort={handleSort}>이메일</SortableHeader>
-                          <th className="px-3 py-2.5 text-xs font-medium text-[#8B95A1] w-[60px] text-center">수정</th>
                         </tr>
                       </thead>
                       <tbody>
                         {isLoading ? (
                           Array.from({ length: 5 }).map((_, i) => (
                             <tr key={i} className="border-b border-[#F2F4F6]">
-                              {Array.from({ length: 11 }).map((_, j) => (
+                              {Array.from({ length: 10 }).map((_, j) => (
                                 <td key={j} className="px-3 py-3">
                                   <div className="h-4 w-full animate-pulse rounded bg-[#F2F4F6]" />
                                 </td>
@@ -398,7 +415,7 @@ export default function UsersPage() {
                           ))
                         ) : users.length === 0 ? (
                           <tr>
-                            <td colSpan={11} className="px-3 py-12 text-center text-sm text-[#B0B8C1]">
+                            <td colSpan={10} className="px-3 py-12 text-center text-sm text-[#B0B8C1]">
                               사용자가 없습니다.
                             </td>
                           </tr>
@@ -406,8 +423,8 @@ export default function UsersPage() {
                           users.map((user, idx) => (
                             <tr
                               key={user.id}
-                              className="border-b border-[#F2F4F6] cursor-pointer transition-colors hover:bg-[#F7F8FA]"
-                              onClick={() => perm.canEdit && handleEdit(user)}
+                              className={`border-b border-[#F2F4F6] cursor-pointer transition-colors hover:bg-[#F7F8FA] ${selectedUser?.id === user.id ? "bg-[#EBF5FF]" : ""}`}
+                              onClick={() => setSelectedUser(user)}
                             >
                               <td className="px-3 py-2.5 text-center text-sm text-[#4E5968]">
                                 {(page - 1) * 20 + idx + 1}
@@ -428,16 +445,6 @@ export default function UsersPage() {
                               <td className="px-3 py-2.5 text-sm text-[#8B95A1]">-</td>
                               <td className="px-3 py-2.5 text-sm text-[#8B95A1]">-</td>
                               <td className="px-3 py-2.5 text-sm text-[#4E5968]">{user.email}</td>
-                              <td className="px-3 py-2.5 text-center">
-                                <button
-                                  type="button"
-                                  onClick={(e) => { e.stopPropagation(); handleEdit(user); }}
-                                  className="rounded p-1 text-[#8B95A1] transition-colors hover:bg-[#F2F4F6] hover:text-[#3182F6]"
-                                  title="수정"
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </button>
-                              </td>
                             </tr>
                           ))
                         )}

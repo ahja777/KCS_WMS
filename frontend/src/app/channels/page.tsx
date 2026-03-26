@@ -61,6 +61,7 @@ export default function ChannelsPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingChannel, setEditingChannel] = useState<SalesChannel | undefined>();
   const [deletingChannel, setDeletingChannel] = useState<SalesChannel | undefined>();
+  const [selectedChannel, setSelectedChannel] = useState<SalesChannel | undefined>();
   const addToast = useToastStore((s) => s.addToast);
 
   const {
@@ -241,13 +242,6 @@ export default function ChannelsPage() {
       render: (row) => (
         <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
           <button
-            onClick={(e) => { e.stopPropagation(); handleEdit(row); }}
-            title="수정"
-            className="rounded-lg p-1.5 text-[#B0B8C1] hover:bg-[#E8F3FF] hover:text-[#3182F6]"
-          >
-            <Pencil className="h-4 w-4" />
-          </button>
-          <button
             onClick={(e) => handleTest(e, row)}
             title="연결 테스트"
             className="rounded-lg p-1.5 text-[#B0B8C1] hover:bg-[#E8F3FF] hover:text-[#3182F6]"
@@ -291,13 +285,23 @@ export default function ChannelsPage() {
             외부 이커머스 플랫폼 연동 관리
           </p>
         </div>
-        <button
-          onClick={handleCreate}
-          className="flex items-center gap-2 rounded-xl bg-[#3182F6] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#1B64DA]"
-        >
-          <Plus className="h-4 w-4" />
-          채널 등록
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => selectedChannel && handleEdit(selectedChannel)}
+            disabled={!selectedChannel}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-[#FF9500] px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-[#E08200] focus:ring-2 focus:ring-[#FF9500]/30 focus:ring-offset-2 disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <Pencil className="h-4 w-4" />
+            수정
+          </button>
+          <button
+            onClick={handleCreate}
+            className="flex items-center gap-2 rounded-xl bg-[#3182F6] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#1B64DA]"
+          >
+            <Plus className="h-4 w-4" />
+            채널 등록
+          </button>
+        </div>
       </div>
 
       {/* 플랫폼 요약 카드 */}
@@ -384,7 +388,8 @@ export default function ChannelsPage() {
             totalPages={totalPages}
             total={total}
             onPageChange={setPage}
-            onRowClick={handleEdit}
+            onRowClick={(row) => setSelectedChannel(row)}
+            activeRowId={selectedChannel?.id}
           />
         )}
       </div>
