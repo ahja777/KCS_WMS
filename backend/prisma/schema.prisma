@@ -310,6 +310,7 @@ model Partner {
   inboundOrders  InboundOrder[]
   outboundOrders OutboundOrder[]
   containers     Container[]
+  settlements    Settlement[]
 
   @@index([type])
   @@index([name])
@@ -863,9 +864,11 @@ model Settlement {
   updatedAt        DateTime         @updatedAt
 
   warehouse Warehouse          @relation(fields: [warehouseId], references: [id])
+  partner   Partner?           @relation(fields: [partnerId], references: [id])
   details   SettlementDetail[]
 
   @@index([warehouseId])
+  @@index([partnerId])
   @@index([periodStart, periodEnd])
   @@index([status])
   @@map("settlements")

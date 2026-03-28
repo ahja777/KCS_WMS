@@ -439,6 +439,8 @@ export interface Settlement {
   warehouse?: Warehouse;
   periodFrom: string;
   periodTo: string;
+  periodStart?: string;
+  periodEnd?: string;
   totalAmount: number;
   inboundFee?: number;
   outboundFee?: number;

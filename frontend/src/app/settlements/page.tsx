@@ -104,8 +104,8 @@ function UnitPriceTab() {
       await createMutation.mutateAsync({
         partnerId: "",
         warehouseId: "",
-        periodFrom: new Date().toISOString().slice(0, 10),
-        periodTo: new Date().toISOString().slice(0, 10),
+        periodStart: new Date().toISOString().slice(0, 10),
+        periodEnd: new Date().toISOString().slice(0, 10),
         details: [],
       });
       addToast({ type: "success", message: "저장이 완료되었습니다." });
@@ -185,13 +185,13 @@ function UnitPriceTab() {
       key: "periodFrom",
       header: "적용시작일",
       sortable: true,
-      render: (row) => <span className="text-sm text-[#191F28]">{formatDate(row.periodFrom)}</span>,
+      render: (row) => <span className="text-sm text-[#191F28]">{formatDate(row.periodFrom || row.periodStart)}</span>,
     },
     {
       key: "periodTo",
       header: "적용종료일",
       sortable: true,
-      render: (row) => <span className="text-sm text-[#191F28]">{formatDate(row.periodTo)}</span>,
+      render: (row) => <span className="text-sm text-[#191F28]">{formatDate(row.periodTo || row.periodEnd)}</span>,
     },
     {
       key: "partnerId",
@@ -234,11 +234,11 @@ function UnitPriceTab() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">적용시작일</label>
-                  <input type="date" defaultValue={editingRow.periodFrom?.slice(0, 10)} className={inputBase} />
+                  <input type="date" defaultValue={(editingRow.periodFrom || editingRow.periodStart)?.slice(0, 10)} className={inputBase} />
                 </div>
                 <div>
                   <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">적용종료일</label>
-                  <input type="date" defaultValue={editingRow.periodTo?.slice(0, 10)} className={inputBase} />
+                  <input type="date" defaultValue={(editingRow.periodTo || editingRow.periodEnd)?.slice(0, 10)} className={inputBase} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -432,8 +432,8 @@ function CalculationTab() {
       await createMutation.mutateAsync({
         partnerId: "",
         warehouseId: "",
-        periodFrom: dateFrom,
-        periodTo: dateTo,
+        periodStart: dateFrom,
+        periodEnd: dateTo,
         details: [],
       });
       addToast({ type: "success", message: "저장이 완료되었습니다." });
@@ -513,13 +513,13 @@ function CalculationTab() {
       key: "periodFrom",
       header: "적용시작일",
       sortable: true,
-      render: (row) => <span className="text-sm text-[#191F28]">{formatDate(row.periodFrom)}</span>,
+      render: (row) => <span className="text-sm text-[#191F28]">{formatDate(row.periodFrom || row.periodStart)}</span>,
     },
     {
       key: "periodTo",
       header: "적용종료일",
       sortable: true,
-      render: (row) => <span className="text-sm text-[#191F28]">{formatDate(row.periodTo)}</span>,
+      render: (row) => <span className="text-sm text-[#191F28]">{formatDate(row.periodTo || row.periodEnd)}</span>,
     },
     {
       key: "partnerId",
@@ -610,11 +610,11 @@ function CalculationTab() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">적용시작일</label>
-                  <input type="date" defaultValue={editingRow.periodFrom?.slice(0, 10)} className={inputBase} />
+                  <input type="date" defaultValue={(editingRow.periodFrom || editingRow.periodStart)?.slice(0, 10)} className={inputBase} />
                 </div>
                 <div>
                   <label className="mb-1.5 block text-xs font-medium text-[#6B7684]">적용종료일</label>
-                  <input type="date" defaultValue={editingRow.periodTo?.slice(0, 10)} className={inputBase} />
+                  <input type="date" defaultValue={(editingRow.periodTo || editingRow.periodEnd)?.slice(0, 10)} className={inputBase} />
                 </div>
               </div>
               <div className="grid grid-cols-3 gap-4">

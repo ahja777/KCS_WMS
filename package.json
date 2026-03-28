@@ -17,5 +17,8 @@
   "bugs": {
     "url": "https://github.com/ahja777/KCS_WMS/issues"
   },
-  "homepage": "https://github.com/ahja777/KCS_WMS#readme"
+  "homepage": "https://github.com/ahja777/KCS_WMS#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.58.2"
+  }
 }

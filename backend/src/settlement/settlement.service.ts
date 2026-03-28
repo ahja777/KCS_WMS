@@ -32,6 +32,7 @@ export class SettlementService {
         orderBy: { [sortBy]: query.sortOrder || 'desc' },
         include: {
           warehouse: { select: { id: true, name: true, code: true } },
+          partner: { select: { id: true, name: true, code: true } },
         },
       }),
       this.prisma.settlement.count({ where }),
@@ -45,6 +46,7 @@ export class SettlementService {
       where: { id },
       include: {
         warehouse: { select: { id: true, name: true, code: true } },
+        partner: { select: { id: true, name: true, code: true } },
         details: { orderBy: { workDate: 'asc' } },
       },
     });
